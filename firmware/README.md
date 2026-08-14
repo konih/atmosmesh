@@ -33,11 +33,13 @@ SDS011 PM2.5/PM10 when UART2 frames parse, and MQ135 **raw ADC / GPIO volts** (n
 prefers I²C **0x3C**, then **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
 
 The glass is driven by **one** renderer: U8g2 full-frame
-(`U8G2_SH1106_128X64_NONAME_F_HW_I2C` by default; SSD1306 128×64 / 128×32 constructors when
-`-DATMOSMESH_OLED_CONTROLLER_ID=0` and/or `-DATMOSMESH_OLED_HEIGHT=32`). After `begin()` the
-firmware turns the panel on, sets contrast 255, fills **white**, then draws large **HI**, then
-sends SSD1306 multiplex `0xA8 0x1F` as a 128×32 attempt. Serial: `oled: full white` then
-`oled: text HI`. **OLED VCC = 3V3**; 5 V on VCC with pull-ups to VCC can kill GPIO5/4.
+(`U8G2_SSD1306_128X64_ALT0_F_HW_I2C` by default — sequential COM `0x02` for cheap 0.96" modules
+that skip rows with alternate `0x12`). SH1106 is a compile fallback
+(`-DATMOSMESH_OLED_CONTROLLER_ID=1`); 128×32 uses `-DATMOSMESH_OLED_HEIGHT=32`. After `begin()` the
+firmware turns the panel on, sets contrast 255, and draws a brief **HI** (no full-white hold, no
+mux-32 rewrite) so the live T/RH / BMP / PM / MQ page is readable. Serial includes
+`constructor=U8G2_SSD1306_128X64_ALT0_F_HW_I2C`. I²C clock is **100 kHz**. **OLED VCC = 3V3**;
+5 V on VCC with pull-ups to VCC can kill GPIO5/4.
 
 ## Sensor wiring (operator 2026-08-14)
 

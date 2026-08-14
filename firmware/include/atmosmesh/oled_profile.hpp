@@ -24,6 +24,7 @@ struct OledProfile {
 
 OledController parse_oled_controller_flag(std::string_view name);
 const char* oled_controller_name(OledController controller);
+const char* oled_profile_name(const OledProfile& profile);
 std::uint8_t oled_compins_arg(OledComPins com_pins);
 
 OledProfile resolve_oled_profile(OledController controller, int height_px);

@@ -49,7 +49,7 @@ U8G2* make_u8g2(const atmosmesh::OledProfile& profile) {
     if (profile.height_px == atmosmesh::kOledHeightPxAlt) {
         return new U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, scl, sda);
     }
-    return new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, scl, sda);
+    return new U8G2_SSD1306_128X64_ALT0_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, scl, sda);
 }
 
 void show_lines(const std::string* lines, std::size_t count) {
@@ -115,26 +115,11 @@ void prove_oled_glass() {
 
     oled->clearBuffer();
     oled->setDrawColor(1);
-    oled->drawBox(0, 0, oled->getDisplayWidth(), oled->getDisplayHeight());
-    oled->sendBuffer();
-    Serial.println(atmosmesh::format_oled_full_white_log().c_str());
-
-    delay(300);
-
-    oled->clearBuffer();
-    oled->setDrawColor(1);
     oled->setFont(u8g2_font_logisoso32_tr);
     oled->drawStr(0, oled->getAscent(), "HI");
     oled->sendBuffer();
     Serial.println(atmosmesh::format_oled_text_hi_log().c_str());
-
-    delay(300);
-    oled->sendF("ca", atmosmesh::kSsd1306SetMultiplex, atmosmesh::kSsd1306MuxRatio32);
-    Serial.println(atmosmesh::format_oled_mux32_log().c_str());
-    oled->clearBuffer();
-    oled->setFont(u8g2_font_logisoso32_tr);
-    oled->drawStr(0, oled->getAscent(), "HI");
-    oled->sendBuffer();
+    delay(200);
 }
 
 void setup_oled() {

@@ -10,7 +10,7 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | SDS011 (Nova; board often labelled d011v2) | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART2 9600 8N1, 3.3-V TTL | **GPIO16/17 only.** Never RX0/TX0 (GPIO3/1) |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
-| Mini OLED, 4 pins | Station local status (D-001) | **3V3** | I²C **0x3C** (fallback 0x3D) | Serial 2026-08-14: ACK at 0x3C, SDA=GPIO5, SCL=GPIO4. SSD1306 sequential COM inits OK but glass stayed blank; firmware default is now SH1106 |
+| Mini OLED, 4 pins | Station local status (D-001) | **3V3** | I²C **0x3C** (fallback 0x3D) | Serial 2026-08-14: ACK at 0x3C, SDA=GPIO5, SCL=GPIO4. Cheap 0.96" SSD1306: alternate COM 0x12 skips rows; firmware default is U8g2 SSD1306 ALT0 (COM 0x02 sequential). SH1106 is compile fallback ID=1 |
 | LCD 1602 I²C | Not the product display | **3V3 only** if reused | I²C backpack 0x27/0x3F | Spare. Station firmware drives the OLED, not this panel |
 | MQ135 module | Experimental gas trend | 5 V heater | Analog through divider | Bench 10 kΩ series + 20 kΩ to GND on GPIO34. Never label as CO₂ |
 | Open AC/DC `5V07 / 12V04` | Candidate station 5 V rail | 230 V AC primary | DC output unverified | **Must measure** before use. Family is 5 V/700 mA *or* 12 V/~400 mA. Open mains PCB — enclose first. See [power.md](power.md) |

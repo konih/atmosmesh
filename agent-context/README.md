@@ -15,7 +15,7 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 ## Current blockers
 
 - Exact ESP32 **devboard** silkscreen (`VIN`/`5V` vs `3V3`) is not confirmed (chip is ESP32-D0WDQ6).
-- OLED: SSD1306 at **0x3C** on SDA=GPIO5 SCL=GPIO4 (serial-proven). SH1106 still possible on a second module.
+- OLED: SSD1306 at **0x3C** on SDA=GPIO5 SCL=GPIO4 (serial-proven). Default firmware is U8g2 **SSD1306 ALT0** (sequential COM). SH1106 remains a compile fallback.
 - BMP280 breakout is 6-pin (VCC GND SCL SDA CSB SDO); onboard regulator / 5 V VCC still unconfirmed.
 - Candidate 5 V AC/DC `5V07 / 12V04` is unverified (5 V/700 mA vs 12 V) and still an open mains PCB.
 - Shared-rail peak current (~650 mA) vs 700 mA module rating is unresolved.

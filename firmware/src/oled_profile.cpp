@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #ifndef ATMOSMESH_OLED_CONTROLLER_ID
-#define ATMOSMESH_OLED_CONTROLLER_ID 1
+#define ATMOSMESH_OLED_CONTROLLER_ID 0
 #endif
 
 #ifndef ATMOSMESH_OLED_HEIGHT
@@ -21,6 +21,19 @@ OledController parse_oled_controller_flag(std::string_view name) {
 
 const char* oled_controller_name(OledController controller) {
     return controller == OledController::Sh1106 ? "SH1106" : "SSD1306";
+}
+
+const char* oled_profile_name(const OledProfile& profile) {
+    if (profile.controller == OledController::Sh1106) {
+        return "SH1106";
+    }
+    if (profile.height_px == kOledHeightPxAlt) {
+        return "SSD1306_128X32";
+    }
+    if (profile.com_pins == OledComPins::Sequential) {
+        return "SSD1306_ALT0";
+    }
+    return "SSD1306";
 }
 
 std::uint8_t oled_compins_arg(OledComPins com_pins) {
@@ -41,22 +54,23 @@ OledProfile resolve_oled_profile(OledController controller, int height_px) {
 }
 
 OledProfile default_oled_profile() {
-    return resolve_oled_profile(OledController::Sh1106, kOledHeightPx);
+    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx);
 }
 
 OledProfile compiled_oled_profile() {
-    // 1 (default) = SH1106. 0 = SSD1306 sequential COM compile fallback.
-    const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 0) ? OledController::Ssd1306
-                                                                : OledController::Sh1106;
+    // 0 (default) = SSD1306 ALT0 sequential COM 0x02. 1 = SH1106 compile fallback.
+    const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 1) ? OledController::Sh1106
+                                                                : OledController::Ssd1306;
     return resolve_oled_profile(controller, ATMOSMESH_OLED_HEIGHT);
 }
 
 std::string format_oled_init_log(const OledProfile& profile, unsigned address) {
-    char line[192];
+    char line[224];
     std::snprintf(line, sizeof(line),
-                  "oled: init ok controller=%s width=%d height=%d addr=0x%02X com=%s i2c_hz=%u",
-                  oled_controller_name(profile.controller), profile.width_px, profile.height_px,
-                  address & 0xFFU,
+                  "oled: init ok controller=%s profile=%s width=%d height=%d addr=0x%02X com=%s "
+                  "i2c_hz=%u",
+                  oled_controller_name(profile.controller), oled_profile_name(profile),
+                  profile.width_px, profile.height_px, address & 0xFFU,
                   profile.com_pins == OledComPins::Sequential ? "sequential" : "alternate",
                   static_cast<unsigned>(kOledI2cHz));
     return line;
@@ -93,7 +107,7 @@ const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile) {
     if (profile.height_px == kOledHeightPxAlt) {
         return "U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C";
     }
-    return "U8G2_SSD1306_128X64_NONAME_F_HW_I2C";
+    return "U8G2_SSD1306_128X64_ALT0_F_HW_I2C";
 }
 
 }  // namespace atmosmesh

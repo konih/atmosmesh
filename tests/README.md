@@ -7,8 +7,8 @@ pio test -e native
 ```
 
 Run that from `firmware/`. PlatformIO Unity covers OLED banner clipping, D5/D4 pin constants,
-SSD1306 address selection (0x3C then 0x3D), OLED controller/geometry (default SH1106 128×64 with
-2-pixel offset; SSD1306 sequential COM as compile fallback ID=0), U8g2 constructor names and
+SSD1306 address selection (0x3C then 0x3D), OLED controller/geometry (default SSD1306 ALT0 128×64
+sequential COM `0x02`; SH1106 as compile fallback ID=1), U8g2 constructor names and
 prove-life serial lines, SDS011 listen-on-GPIO16 log, and MQ135 ADC millivolt scale
 (10 kΩ/20 kΩ divider inverse; never CO₂). These tests must fail if that behaviour is removed.
 
