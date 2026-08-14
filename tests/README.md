@@ -7,7 +7,8 @@ pio test -e native
 ```
 
 Run that from `firmware/`. PlatformIO Unity covers OLED banner clipping, D5/D4 pin constants,
-and SSD1306 address selection (0x3C then 0x3D). These tests must fail if that behaviour is removed.
+SSD1306 address selection (0x3C then 0x3D), and OLED controller/geometry (128×64 sequential COM,
+SH1106 2-pixel offset, 100 kHz). These tests must fail if that behaviour is removed.
 
 Still required later (not yet automated):
 

@@ -31,6 +31,12 @@ Mini I²C SSD1306 on the DevBoard (serial-proven 0x3C):
 Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows AM2302 T/RH and BMP280 address.
 Firmware prefers I²C **0x3C**, then **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
 
+Default panel programming is **SSD1306 128×64** at **100 kHz** with **sequential COM** (`0xDA 0x02`).
+That is the usual fix when a 0.96" module shows pixels but drops every other line (Adafruit's
+128×64 default uses alternate COM `0x12`). If the glass is still shifted, rebuild with
+`-DATMOSMESH_OLED_CONTROLLER_ID=1` (SH1106, 2-pixel column offset). If only the top half is used,
+`-DATMOSMESH_OLED_HEIGHT=32`. Serial logs `oled: init ok controller=… width=… height=… addr=…`.
+
 ## Sensor wiring (operator 2026-08-14)
 
 | Device | ESP32 | Notes |
@@ -50,9 +56,10 @@ with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 | --- | --- |
 | `include/atmosmesh/` | Shared headers (pins, banner, I²C address pick) |
 | `src/display_text.cpp` | Host-testable OLED string clipping (128×64 / 128×32 pages) |
+| `src/oled_profile.cpp` | Host-testable controller/geometry/COM selection (SSD1306 vs SH1106) |
 | `src/oled_address.cpp` | Host-testable SSD1306 address selection (0x3C then 0x3D) |
 | `src/bmp_address.cpp` | Host-testable BMP280 address pick |
 | `src/am2302_frame.cpp` | Host-testable AM2302 checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
-| `src/main.cpp` | Bring-up: SSD1306, BMP280 chip-id, AM2302 |
+| `src/main.cpp` | Bring-up: OLED (SSD1306 sequential COM / SH1106), BMP280 chip-id, AM2302 |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |

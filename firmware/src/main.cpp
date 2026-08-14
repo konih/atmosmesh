@@ -1,4 +1,5 @@
 #include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <DHT.h>
@@ -8,12 +9,18 @@
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/i2c_bus.hpp"
 #include "atmosmesh/oled_address.hpp"
+#include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
 
 namespace {
 
 DHT am2302(atmosmesh::kAm2302DataGpio, DHT22);
-Adafruit_SSD1306* oled = nullptr;
+Adafruit_SSD1306* ssd1306 = nullptr;
+Adafruit_SH1106G* sh1106 = nullptr;
+Adafruit_GFX* panel = nullptr;
+void (*oled_clear)() = nullptr;
+void (*oled_flush)() = nullptr;
+atmosmesh::OledProfile oled_profile{};
 bool oled_ready = false;
 int bmp_address = -1;
 
@@ -26,18 +33,29 @@ void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::ui
     }
 }
 
+void release_oled() {
+    delete ssd1306;
+    ssd1306 = nullptr;
+    delete sh1106;
+    sh1106 = nullptr;
+    panel = nullptr;
+    oled_clear = nullptr;
+    oled_flush = nullptr;
+}
+
 void show_lines(const std::string* lines, std::size_t count) {
-    if (!oled_ready || oled == nullptr) {
+    if (!oled_ready || panel == nullptr || oled_clear == nullptr || oled_flush == nullptr) {
         return;
     }
-    oled->clearDisplay();
-    oled->setTextSize(1);
-    oled->setTextColor(SSD1306_WHITE);
-    oled->setCursor(0, 0);
+    oled_clear();
+    panel->setTextSize(1);
+    panel->setTextColor(1);
+    panel->setCursor(oled_profile.column_offset_px, 0);
     for (std::size_t i = 0; i < count; ++i) {
-        oled->println(lines[i].c_str());
+        panel->setCursor(oled_profile.column_offset_px, static_cast<int16_t>(i * 8));
+        panel->print(lines[i].c_str());
     }
-    oled->display();
+    oled_flush();
 }
 
 bool try_oled_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh::I2cDevice* out) {
@@ -53,18 +71,58 @@ bool try_oled_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh
     return true;
 }
 
-bool begin_oled(std::uint8_t address, int height_px) {
-    delete oled;
-    oled = new Adafruit_SSD1306(atmosmesh::kOledWidthPx, height_px, &Wire, -1);
-    if (!oled->begin(SSD1306_SWITCHCAPVCC, address)) {
-        Serial.printf("oled: init error addr=0x%02X height=%d\n", address, height_px);
-        delete oled;
-        oled = nullptr;
-        return false;
+bool begin_oled(std::uint8_t address, const atmosmesh::OledProfile& profile) {
+    release_oled();
+    Wire.setClock(atmosmesh::kOledI2cHz);
+
+    if (profile.controller == atmosmesh::OledController::Sh1106) {
+        sh1106 = new Adafruit_SH1106G(profile.width_px, profile.height_px, &Wire, -1);
+        if (!sh1106->begin(address, true)) {
+            Serial.printf("oled: init error controller=SH1106 addr=0x%02X height=%d\n", address,
+                          profile.height_px);
+            release_oled();
+            return false;
+        }
+        panel = sh1106;
+        oled_clear = []() { sh1106->clearDisplay(); };
+        oled_flush = []() { sh1106->display(); };
+    } else {
+        ssd1306 = new Adafruit_SSD1306(profile.width_px, profile.height_px, &Wire, -1,
+                                       atmosmesh::kOledI2cHz, atmosmesh::kOledI2cHz);
+        if (!ssd1306->begin(SSD1306_SWITCHCAPVCC, address)) {
+            Serial.printf("oled: init error controller=SSD1306 addr=0x%02X height=%d\n", address,
+                          profile.height_px);
+            release_oled();
+            return false;
+        }
+        ssd1306->ssd1306_command(SSD1306_SETCOMPINS);
+        ssd1306->ssd1306_command(atmosmesh::oled_compins_arg(profile.com_pins));
+        Wire.setClock(atmosmesh::kOledI2cHz);
+        panel = ssd1306;
+        oled_clear = []() { ssd1306->clearDisplay(); };
+        oled_flush = []() { ssd1306->display(); };
     }
-    Serial.printf("oled: init ok addr=0x%02X height=%d sda=%d scl=%d\n", address, height_px,
-                  atmosmesh::kOledSdaGpio, atmosmesh::kOledSclGpio);
+
+    oled_profile = profile;
+    panel->setRotation(0);
+    Serial.println(atmosmesh::format_oled_init_log(profile, address).c_str());
+    Serial.printf("oled: sda=%d scl=%d column_offset=%d\n", atmosmesh::kOledSdaGpio,
+                  atmosmesh::kOledSclGpio, profile.column_offset_px);
     return true;
+}
+
+void draw_probe_pattern() {
+    if (panel == nullptr || oled_clear == nullptr || oled_flush == nullptr) {
+        return;
+    }
+    oled_clear();
+    panel->fillRect(oled_profile.column_offset_px, 0, oled_profile.width_px, 8, 1);
+    panel->setTextSize(1);
+    panel->setTextColor(1);
+    panel->setCursor(oled_profile.column_offset_px, 10);
+    panel->print("AtmosMesh");
+    oled_flush();
+    Serial.println("oled: probe bar=row0 text=line1");
 }
 
 void setup_oled() {
@@ -84,13 +142,31 @@ void setup_oled() {
     Serial.printf("oled address=0x%02X sda=%d scl=%d\n", device.address, device.pins.sda_gpio,
                   device.pins.scl_gpio);
 
-    if (!begin_oled(device.address, atmosmesh::kOledHeightPx) &&
-        !begin_oled(device.address, atmosmesh::kOledHeightPxAlt)) {
+    const auto compiled = atmosmesh::compiled_oled_profile();
+    const atmosmesh::OledProfile candidates[] = {
+        compiled,
+        atmosmesh::resolve_oled_profile(compiled.controller, compiled.height_px == 64 ? 32 : 64),
+        atmosmesh::resolve_oled_profile(compiled.controller == atmosmesh::OledController::Sh1106
+                                            ? atmosmesh::OledController::Ssd1306
+                                            : atmosmesh::OledController::Sh1106,
+                                        64),
+    };
+
+    bool started = false;
+    for (const auto& candidate : candidates) {
+        if (begin_oled(device.address, candidate)) {
+            started = true;
+            break;
+        }
+    }
+    if (!started) {
         Serial.println("oled: init failed");
         return;
     }
 
     oled_ready = true;
+    draw_probe_pattern();
+    delay(400);
     const auto lines = atmosmesh::dummy_banner();
     show_lines(lines.data(), lines.size());
 }

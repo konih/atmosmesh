@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace atmosmesh {
 
 // Mini I²C SSD1306 (D-001, serial-proven 2026-08-14): D5 = SDA, D4 = SCL.
@@ -18,6 +20,7 @@ inline constexpr int kAm2302DataGpio = 18;
 inline constexpr int kOledWidthPx = 128;
 inline constexpr int kOledHeightPx = 64;
 inline constexpr int kOledHeightPxAlt = 32;
+inline constexpr std::uint32_t kOledI2cHz = 100000;
 inline constexpr int kOledGlyphWidthPx = 6;
 inline constexpr int kOledGlyphHeightPx = 8;
 inline constexpr int kOledMaxChars = kOledWidthPx / kOledGlyphWidthPx;

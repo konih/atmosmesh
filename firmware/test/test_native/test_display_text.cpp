@@ -7,6 +7,7 @@
 #include "atmosmesh/bmp_address.hpp"
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/oled_address.hpp"
+#include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
 
 void test_clip_truncates_to_oled_width() {
@@ -120,6 +121,59 @@ void test_am2302_checksum_and_parse() {
     TEST_ASSERT_FLOAT_WITHIN(0.01F, 26.7F, sample.temperature_c);
 }
 
+void test_oled_i2c_clock_is_100khz_for_cheap_modules() {
+    TEST_ASSERT_EQUAL_UINT32(100000U, atmosmesh::kOledI2cHz);
+}
+
+void test_default_oled_profile_is_ssd1306_128x64_sequential_com() {
+    const auto profile = atmosmesh::default_oled_profile();
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Ssd1306),
+                          static_cast<int>(profile.controller));
+    TEST_ASSERT_EQUAL_INT(128, profile.width_px);
+    TEST_ASSERT_EQUAL_INT(64, profile.height_px);
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledComPins::Sequential),
+                          static_cast<int>(profile.com_pins));
+    TEST_ASSERT_EQUAL_INT(0, profile.column_offset_px);
+    TEST_ASSERT_EQUAL_HEX8(0x02, atmosmesh::oled_compins_arg(profile.com_pins));
+}
+
+void test_resolve_sh1106_uses_two_pixel_column_offset() {
+    const auto profile =
+        atmosmesh::resolve_oled_profile(atmosmesh::OledController::Sh1106, 64);
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Sh1106),
+                          static_cast<int>(profile.controller));
+    TEST_ASSERT_EQUAL_INT(128, profile.width_px);
+    TEST_ASSERT_EQUAL_INT(64, profile.height_px);
+    TEST_ASSERT_EQUAL_INT(2, profile.column_offset_px);
+    TEST_ASSERT_EQUAL_STRING("SH1106", atmosmesh::oled_controller_name(profile.controller));
+}
+
+void test_resolve_ssd1306_32px_uses_four_pages() {
+    const auto profile =
+        atmosmesh::resolve_oled_profile(atmosmesh::OledController::Ssd1306, 32);
+    TEST_ASSERT_EQUAL_INT(32, profile.height_px);
+    TEST_ASSERT_EQUAL_INT(4, atmosmesh::oled_page_count(profile.height_px));
+    TEST_ASSERT_EQUAL_INT(0, profile.column_offset_px);
+    TEST_ASSERT_EQUAL_STRING("SSD1306", atmosmesh::oled_controller_name(profile.controller));
+}
+
+void test_oled_init_log_includes_controller_geometry_and_addr() {
+    const auto profile = atmosmesh::default_oled_profile();
+    const std::string line = atmosmesh::format_oled_init_log(profile, 0x3C);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("controller=SSD1306"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("width=128"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("height=64"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("addr=0x3C"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("com=sequential"));
+}
+
+void test_parse_oled_controller_flag() {
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Ssd1306),
+                          static_cast<int>(atmosmesh::parse_oled_controller_flag("SSD1306")));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Sh1106),
+                          static_cast<int>(atmosmesh::parse_oled_controller_flag("SH1106")));
+}
+
 void test_am2302_bad_checksum_is_missing() {
     const std::uint8_t frame[5] = {0x02, 0x92, 0x01, 0x0B, 0x00};
     TEST_ASSERT_FALSE(atmosmesh::am2302_checksum_ok(frame));
@@ -145,6 +199,12 @@ int main() {
     RUN_TEST(test_pick_bmp_address_prefers_0x76);
     RUN_TEST(test_pick_bmp_address_accepts_0x77);
     RUN_TEST(test_bmp_family_ids);
+    RUN_TEST(test_oled_i2c_clock_is_100khz_for_cheap_modules);
+    RUN_TEST(test_default_oled_profile_is_ssd1306_128x64_sequential_com);
+    RUN_TEST(test_resolve_sh1106_uses_two_pixel_column_offset);
+    RUN_TEST(test_resolve_ssd1306_32px_uses_four_pages);
+    RUN_TEST(test_oled_init_log_includes_controller_geometry_and_addr);
+    RUN_TEST(test_parse_oled_controller_flag);
     RUN_TEST(test_am2302_checksum_and_parse);
     RUN_TEST(test_am2302_bad_checksum_is_missing);
     return UNITY_END();

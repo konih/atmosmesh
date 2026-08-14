@@ -2,11 +2,14 @@
 
 #include <Wire.h>
 
+#include "atmosmesh/pins.hpp"
+
 namespace atmosmesh {
 
 std::size_t scan_i2c_bus(TwoWire& bus, const I2cBusMap& pins, std::uint8_t* found,
                          std::size_t found_cap) {
     bus.begin(pins.sda_gpio, pins.scl_gpio);
+    bus.setClock(kOledI2cHz);
     delay(50);
 
     std::size_t count = 0;
