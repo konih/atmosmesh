@@ -9,6 +9,7 @@
 #include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
+#include "atmosmesh/sds011_frame.hpp"
 
 void test_clip_truncates_to_oled_width() {
     const std::string clipped = atmosmesh::clip_oled_line("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -40,8 +41,8 @@ void test_dummy_banner_is_identifiable() {
 }
 
 void test_live_page_fits_and_shows_sensors() {
-    const auto lines = atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 0x76);
-    TEST_ASSERT_EQUAL_INT(3, static_cast<int>(lines.size()));
+    const auto lines = atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 0x76, true, 12.3F, 20.1F);
+    TEST_ASSERT_EQUAL_INT(4, static_cast<int>(lines.size()));
     TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::oled_page_count(32), static_cast<int>(lines.size()));
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
@@ -49,12 +50,14 @@ void test_live_page_fits_and_shows_sensors() {
     TEST_ASSERT_EQUAL_STRING("AtmosMesh", lines[0].c_str());
     TEST_ASSERT_EQUAL_STRING("T 23.4C RH 48.1%", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("BMP 0x76", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM 12.3/20.1", lines[3].c_str());
 }
 
 void test_live_page_missing_sensors() {
-    const auto lines = atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, -1);
+    const auto lines = atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, -1, false, 0.0F, 0.0F);
     TEST_ASSERT_EQUAL_STRING("AM2302 missing", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("BMP280 missing", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("SDS011 missing", lines[3].c_str());
 }
 
 void test_i2c_pins_match_operator_oled_d5_d4() {
@@ -66,6 +69,13 @@ void test_sensor_pins_match_operator_bmp_am2302() {
     TEST_ASSERT_EQUAL_INT(21, atmosmesh::kSensorSdaGpio);
     TEST_ASSERT_EQUAL_INT(19, atmosmesh::kSensorSclGpio);
     TEST_ASSERT_EQUAL_INT(18, atmosmesh::kAm2302DataGpio);
+}
+
+void test_sds011_uart_pins_are_rx2_tx2() {
+    TEST_ASSERT_EQUAL_INT(16, atmosmesh::kSds011RxGpio);
+    TEST_ASSERT_EQUAL_INT(17, atmosmesh::kSds011TxGpio);
+    TEST_ASSERT_EQUAL_INT(9600, atmosmesh::kSds011Baud);
+    TEST_ASSERT_EQUAL_INT(34, atmosmesh::kMq135AdcGpio);
 }
 
 void test_oled_address_list_prefers_ssd1306_not_lcd() {
@@ -180,6 +190,45 @@ void test_am2302_bad_checksum_is_missing() {
     TEST_ASSERT_FALSE(atmosmesh::parse_am2302_frame(frame).ok);
 }
 
+void test_sds011_checksum_and_parse() {
+    // PM2.5=12.3, PM10=20.1, id=A1B2; CRC = sum of payload bytes 2..7.
+    const std::uint8_t frame[10] = {0xAA, 0xC0, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x97, 0xAB};
+    TEST_ASSERT_TRUE(atmosmesh::sds011_checksum_ok(frame));
+    const auto sample = atmosmesh::parse_sds011_frame(frame);
+    TEST_ASSERT_TRUE(sample.ok);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 12.3F, sample.pm25_ug_m3);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 20.1F, sample.pm10_ug_m3);
+}
+
+void test_sds011_bad_checksum_is_missing() {
+    const std::uint8_t frame[10] = {0xAA, 0xC0, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x00, 0xAB};
+    TEST_ASSERT_FALSE(atmosmesh::sds011_checksum_ok(frame));
+    TEST_ASSERT_FALSE(atmosmesh::parse_sds011_frame(frame).ok);
+}
+
+void test_sds011_rejects_wrong_header_or_tail() {
+    const std::uint8_t bad_cmd[10] = {0xAA, 0xC5, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x97, 0xAB};
+    const std::uint8_t bad_tail[10] = {0xAA, 0xC0, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x97, 0x00};
+    TEST_ASSERT_FALSE(atmosmesh::parse_sds011_frame(bad_cmd).ok);
+    TEST_ASSERT_FALSE(atmosmesh::parse_sds011_frame(bad_tail).ok);
+    TEST_ASSERT_FALSE(atmosmesh::parse_sds011_frame(nullptr).ok);
+}
+
+void test_sds011_stream_skips_noise_then_parses() {
+    atmosmesh::Sds011Stream stream;
+    const std::uint8_t noise[] = {0x00, 0xAA, 0x11, 0xAA};
+    for (std::uint8_t b : noise) {
+        TEST_ASSERT_FALSE(stream.feed(b).ok);
+    }
+    const std::uint8_t frame[10] = {0xAA, 0xC0, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x97, 0xAB};
+    atmosmesh::Sds011Sample last{};
+    for (std::uint8_t b : frame) {
+        last = stream.feed(b);
+    }
+    TEST_ASSERT_TRUE(last.ok);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 12.3F, last.pm25_ug_m3);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_clip_truncates_to_oled_width);
@@ -207,5 +256,10 @@ int main() {
     RUN_TEST(test_parse_oled_controller_flag);
     RUN_TEST(test_am2302_checksum_and_parse);
     RUN_TEST(test_am2302_bad_checksum_is_missing);
+    RUN_TEST(test_sds011_uart_pins_are_rx2_tx2);
+    RUN_TEST(test_sds011_checksum_and_parse);
+    RUN_TEST(test_sds011_bad_checksum_is_missing);
+    RUN_TEST(test_sds011_rejects_wrong_header_or_tail);
+    RUN_TEST(test_sds011_stream_skips_noise_then_parses);
     return UNITY_END();
 }

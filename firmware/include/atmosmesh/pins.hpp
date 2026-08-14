@@ -16,6 +16,15 @@ inline constexpr int kSensorSclGpio = 19;
 // AM2302 / DHT22 data (operator 2026-08-14): GPIO18. Idle-high matches 3.3 V flash-voltage strap.
 inline constexpr int kAm2302DataGpio = 18;
 
+// SDS011 UART2: sensor TX → ESP32 RX2 (GPIO16), ESP32 TX2 (GPIO17) → sensor RX.
+// Sensor VCC is 5 V; UART must stay 3.3 V. Do not put MQ135 analog on these pins.
+inline constexpr int kSds011RxGpio = 16;
+inline constexpr int kSds011TxGpio = 17;
+inline constexpr int kSds011Baud = 9600;
+
+// MQ135 analog (KiCad J5 divider) — ADC1 input-only. Never UART, never 5 V into the pin.
+inline constexpr int kMq135AdcGpio = 34;
+
 // Adafruit 5×7 glyph + 1 px pad; 128 px → 21 columns. 8 px rows → 8 pages (64) or 4 (32).
 inline constexpr int kOledWidthPx = 128;
 inline constexpr int kOledHeightPx = 64;

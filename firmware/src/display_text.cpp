@@ -23,7 +23,7 @@ OledBanner dummy_banner() {
 }
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
-                               int bmp_address) {
+                               int bmp_address, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3) {
     char am_line[32];
     if (am_ok) {
         std::snprintf(am_line, sizeof(am_line), "T %4.1fC RH %4.1f%%",
@@ -40,7 +40,16 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
         std::snprintf(bmp_line, sizeof(bmp_line), "BMP280 missing");
     }
 
-    return {clip_oled_line("AtmosMesh"), clip_oled_line(am_line), clip_oled_line(bmp_line)};
+    char pm_line[32];
+    if (pm_ok) {
+        std::snprintf(pm_line, sizeof(pm_line), "PM %4.1f/%4.1f", static_cast<double>(pm25_ug_m3),
+                      static_cast<double>(pm10_ug_m3));
+    } else {
+        std::snprintf(pm_line, sizeof(pm_line), "SDS011 missing");
+    }
+
+    return {clip_oled_line("AtmosMesh"), clip_oled_line(am_line), clip_oled_line(bmp_line),
+            clip_oled_line(pm_line)};
 }
 
 }  // namespace atmosmesh

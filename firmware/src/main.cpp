@@ -11,6 +11,7 @@
 #include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
+#include "atmosmesh/sds011_frame.hpp"
 
 namespace {
 
@@ -23,6 +24,12 @@ void (*oled_flush)() = nullptr;
 atmosmesh::OledProfile oled_profile{};
 bool oled_ready = false;
 int bmp_address = -1;
+atmosmesh::Sds011Stream sds011{};
+bool pm_ok = false;
+float pm25_ug_m3 = 0.0F;
+float pm10_ug_m3 = 0.0F;
+unsigned long last_pm_ms = 0;
+constexpr unsigned long kPmStaleMs = 5000;
 
 void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::uint8_t* found,
               std::size_t count) {
@@ -202,6 +209,25 @@ void setup_bmp280() {
     }
 }
 
+void poll_sds011() {
+    while (Serial2.available() > 0) {
+        const auto sample = sds011.feed(static_cast<std::uint8_t>(Serial2.read()));
+        if (!sample.ok) {
+            continue;
+        }
+        pm_ok = true;
+        pm25_ug_m3 = sample.pm25_ug_m3;
+        pm10_ug_m3 = sample.pm10_ug_m3;
+        last_pm_ms = millis();
+        Serial.printf("sds011: pm25=%.1f ug/m3 pm10=%.1f ug/m3\n", static_cast<double>(pm25_ug_m3),
+                      static_cast<double>(pm10_ug_m3));
+    }
+    if (pm_ok && (millis() - last_pm_ms) > kPmStaleMs) {
+        pm_ok = false;
+        Serial.println("sds011: no AA C0 frame (MQ135 analog is not UART; check sensor TX->GPIO16)");
+    }
+}
+
 }  // namespace
 
 void setup() {
@@ -209,15 +235,22 @@ void setup() {
     delay(200);
     Serial.println("atmosmesh bench bring-up");
     Serial.println("OLED VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO18");
+    Serial.println("sds011: VCC=5V only; UART 3.3V; sensor TX -> GPIO16 RX2; ESP TX2 GPIO17 -> sensor RX");
+    Serial.println("mq135: analog via divider to GPIO34, not UART. Do not put 5V on GPIO16/17");
 
     setup_oled();
     setup_bmp280();
     am2302.begin();
     Serial.printf("am2302: data=GPIO%d\n", atmosmesh::kAm2302DataGpio);
+    Serial2.begin(atmosmesh::kSds011Baud, SERIAL_8N1, atmosmesh::kSds011RxGpio,
+                  atmosmesh::kSds011TxGpio);
+    Serial.printf("sds011: uart2 rx=GPIO%d tx=GPIO%d baud=%d\n", atmosmesh::kSds011RxGpio,
+                  atmosmesh::kSds011TxGpio, atmosmesh::kSds011Baud);
 }
 
 void loop() {
     delay(atmosmesh::kAm2302MinIntervalMs);
+    poll_sds011();
     const float humidity = am2302.readHumidity();
     const float temperature = am2302.readTemperature();
     const bool am_ok = !isnan(humidity) && !isnan(temperature);
@@ -228,7 +261,7 @@ void loop() {
         Serial.println("am2302: read failed (need 3V3, 10k pull-up to 3V3 if the module has none)");
     }
 
-    const auto lines =
-        atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_address >= 0, bmp_address);
+    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_address >= 0,
+                                                    bmp_address, pm_ok, pm25_ug_m3, pm10_ug_m3);
     show_lines(lines.data(), lines.size());
 }

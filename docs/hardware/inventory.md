@@ -63,7 +63,16 @@ If VCC is 5 V and the module’s I²C pull-ups sit on VCC, SDA/SCL become 5 V an
 | AM2302 data | GPIO18 / D18 | Operator, 2026-08-14. Idle-high OK (3.3 V flash-voltage strap) |
 | SDS011 TX | GPIO16 / RX2 | Sensor TX into ESP32 RX |
 | SDS011 RX | GPIO17 / TX2 | ESP32 TX into sensor RX |
-| MQ135 analog | GPIO34 / ADC1 | Input-only; divider required; measure before connection |
+| MQ135 analog | GPIO34 / ADC1 | Input-only; divider required; measure before connection. **Not** RX2/TX2 |
+
+## Bench mix-up (2026-08-14) — MQ135 vs SDS011 on UART2
+
+Operator wired a module called “MQ13” to RX2/TX2 (GPIO16/17). **MQ135 is analog AOUT + 5 V heater;
+it has no UART.** SDS011 is the UART sensor on those pins (sensor TX → GPIO16, ESP TX → GPIO17).
+Firmware does not bit-bang analog on GPIO16/17. If the gas board is still on RX2/TX2, unplug it
+before applying 5 V. OLED blanking with a live `oled: init ok` is not explained by UART2; a 5 V
+short onto GPIO can brown out `3V3` and blank the glass — serial on 2026-08-14 showed **no**
+brownout and I²C 0x3C/0x76 still present.
 
 Datasheet support for these electrical choices is recorded in [spec-comparison.md](spec-comparison.md).
 Photos still block construction.
