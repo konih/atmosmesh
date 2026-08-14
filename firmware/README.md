@@ -50,6 +50,9 @@ VCC with pull-ups to VCC can kill GPIO5/4.
 | SDS011 TX | GPIO16 / RX2 | Sensor TX → **D16/RX2**. VCC=**5 V**. UART **3.3 V**. **Not** TX2, **not** RX0/GPIO3 |
 | SDS011 RX | GPIO17 / TX2 | ESP32 TX2 → sensor RX (commands). Do not put sensor TX on TX2. **Not** TX0/GPIO1 |
 | MQ135 AOUT | GPIO34 via divider | Analog, not UART. Neither RX2/TX2 nor RX0/TX0 |
+| Beeper SIG | GPIO25 | 3-pin VCC/GND/SIG. 50 ms HIGH at boot; 50 ms on PIR rising edge |
+| PIR D-SUN OUT | GPIO33 | 3-pin. Digital. Was reserved 27 — **use 33** |
+| HC-20 / DC-20 SIG | GPIO22 | 3-pin digital **DO** (sound detect). **GPIO22 is not ADC** — never analog AO |
 
 Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SDS011 only.
 **Do not wire SDS011 (d011v2) to RX0/TX0** (GPIO3/GPIO1). Those pins are the CP2102 USB-UART used
@@ -78,5 +81,6 @@ with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 | `src/sds011_frame.cpp` | Host-testable SDS011 `AA C0 … AB` checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
 | `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
-| `src/main.cpp` | Bring-up: U8g2 OLED prove-life, BMP280 chip-id, AM2302, SDS011 UART2 RX2, MQ135 ADC |
+| `src/digital_edge.cpp` | Host-testable 50 ms debounce + `pir:` / `mic:` / `beep:` serial labels |
+| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, AM2302, SDS011 UART2, MQ135 ADC, PIR/mic/beeper |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |

@@ -5,6 +5,7 @@
 
 #include "atmosmesh/am2302_frame.hpp"
 #include "atmosmesh/bmp_address.hpp"
+#include "atmosmesh/digital_edge.hpp"
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/mq135_scale.hpp"
@@ -70,6 +71,20 @@ void test_live_page_is_three_rows_on_64px() {
     TEST_ASSERT_EQUAL_STRING("PM2.5 12   PM10 20", lines[2].c_str());
 }
 
+void test_live_page_appends_p_when_pir_motion_and_space() {
+    const auto idle =
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
+                                     false);
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", idle[0].c_str());
+    const auto motion =
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
+                                     true);
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH P", motion[0].c_str());
+    TEST_ASSERT_EQUAL_STRING(idle[1].c_str(), motion[1].c_str());
+    TEST_ASSERT_EQUAL_STRING(idle[2].c_str(), motion[2].c_str());
+    TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(motion[0].size()));
+}
+
 void test_live_page_fits_worst_case_six_cells() {
     const auto lines =
         atmosmesh::live_sensor_lines(true, -10.0F, 100.0F, true, 1013.2F, true, 999.4F, 999.4F,
@@ -113,6 +128,17 @@ void test_sds011_uart_pins_are_rx2_tx2() {
     TEST_ASSERT_EQUAL_INT(17, atmosmesh::kSds011TxGpio);
     TEST_ASSERT_EQUAL_INT(9600, atmosmesh::kSds011Baud);
     TEST_ASSERT_EQUAL_INT(34, atmosmesh::kMq135AdcGpio);
+}
+
+void test_extra_peripheral_pins_match_live_bench() {
+    TEST_ASSERT_EQUAL_INT(25, atmosmesh::kBeeperGpio);
+    TEST_ASSERT_EQUAL_INT(33, atmosmesh::kPirGpio);
+    TEST_ASSERT_EQUAL_INT(22, atmosmesh::kMicGpio);
+    TEST_ASSERT_EQUAL_INT(50, atmosmesh::kDigitalDebounceMs);
+    TEST_ASSERT_EQUAL_INT(50, atmosmesh::kBeeperPulseMs);
+    // GPIO22 is not ADC1/ADC2. HC-20/DC-20 on D22 is digital DO, never analog AO.
+    TEST_ASSERT_FALSE(atmosmesh::gpio_is_adc1(atmosmesh::kMicGpio));
+    TEST_ASSERT_TRUE(atmosmesh::gpio_is_adc1(atmosmesh::kMq135AdcGpio));
 }
 
 void test_oled_address_list_prefers_ssd1306_not_lcd() {
@@ -425,6 +451,27 @@ void test_sds011_stream_skips_noise_then_parses() {
     TEST_ASSERT_FLOAT_WITHIN(0.01F, 12.3F, last.pm25_ug_m3);
 }
 
+void test_pir_mic_serial_labels() {
+    TEST_ASSERT_EQUAL_STRING("pir: motion", atmosmesh::format_pir_log(true).c_str());
+    TEST_ASSERT_EQUAL_STRING("pir: idle", atmosmesh::format_pir_log(false).c_str());
+    TEST_ASSERT_EQUAL_STRING("mic: sound", atmosmesh::format_mic_log(true).c_str());
+    TEST_ASSERT_EQUAL_STRING("mic: quiet", atmosmesh::format_mic_log(false).c_str());
+    TEST_ASSERT_EQUAL_STRING("beep: boot", atmosmesh::format_beep_boot_log().c_str());
+}
+
+void test_debounce_ignores_glitch_under_50ms() {
+    atmosmesh::DebouncedLevel pir{};
+    TEST_ASSERT_TRUE(atmosmesh::update_debounced_level(pir, false, 0, atmosmesh::kDigitalDebounceMs));
+    TEST_ASSERT_FALSE(pir.stable);
+    TEST_ASSERT_FALSE(atmosmesh::update_debounced_level(pir, true, 10, atmosmesh::kDigitalDebounceMs));
+    TEST_ASSERT_FALSE(pir.stable);
+    TEST_ASSERT_FALSE(atmosmesh::update_debounced_level(pir, false, 20, atmosmesh::kDigitalDebounceMs));
+    TEST_ASSERT_FALSE(pir.stable);
+    TEST_ASSERT_FALSE(atmosmesh::update_debounced_level(pir, true, 30, atmosmesh::kDigitalDebounceMs));
+    TEST_ASSERT_TRUE(atmosmesh::update_debounced_level(pir, true, 80, atmosmesh::kDigitalDebounceMs));
+    TEST_ASSERT_TRUE(pir.stable);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_clip_truncates_to_oled_width);
@@ -474,5 +521,9 @@ int main() {
     RUN_TEST(test_sds011_bad_checksum_is_missing);
     RUN_TEST(test_sds011_rejects_wrong_header_or_tail);
     RUN_TEST(test_sds011_stream_skips_noise_then_parses);
+    RUN_TEST(test_live_page_appends_p_when_pir_motion_and_space);
+    RUN_TEST(test_extra_peripheral_pins_match_live_bench);
+    RUN_TEST(test_pir_mic_serial_labels);
+    RUN_TEST(test_debounce_ignores_glitch_under_50ms);
     return UNITY_END();
 }

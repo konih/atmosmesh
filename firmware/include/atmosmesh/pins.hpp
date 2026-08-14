@@ -33,6 +33,19 @@ inline constexpr int kMq135AdcMax = 4095;
 inline constexpr int kMq135AdcFullScaleMv = 3300;
 inline constexpr int kMq135AdcNearZero = 16;
 
+// Extra 3-pin modules (operator 2026-08-14, live breadboard). VCC/GND/SIG.
+// Beeper SIG GPIO25. PIR D-SUN SIG GPIO33 (not the old GPIO27 reserve).
+// HC-20 / DC-20 mic SIG GPIO22. GPIO22 is NOT an ADC pin — digital DO only.
+inline constexpr int kBeeperGpio = 25;
+inline constexpr int kPirGpio = 33;
+inline constexpr int kMicGpio = 22;
+inline constexpr int kDigitalDebounceMs = 50;
+inline constexpr int kBeeperPulseMs = 50;
+
+inline constexpr bool gpio_is_adc1(int gpio) {
+    return gpio == 32 || gpio == 33 || gpio == 34 || gpio == 35 || gpio == 36 || gpio == 39;
+}
+
 // 6×10 font, 128 px → 21 columns. Pages: 8 (64), 6 (48), 4 (32). Default glass is 64 rows.
 inline constexpr int kOledWidthPx = 128;
 inline constexpr int kOledHeightPx = 64;

@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 namespace atmosmesh {
 
@@ -80,13 +81,20 @@ OledBanner dummy_banner() {
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
-                               int mq135_raw_adc) {
+                               int mq135_raw_adc, bool pir_motion) {
     char line0[24];
     if (am_ok) {
         std::snprintf(line0, sizeof(line0), "%.1fC  %.0f%% RH", static_cast<double>(temperature_c),
                       static_cast<double>(humidity_rh));
     } else {
         std::snprintf(line0, sizeof(line0), "--C  --%% RH");
+    }
+    if (pir_motion) {
+        const std::size_t used = std::strlen(line0);
+        if (used + 2 < sizeof(line0) &&
+            static_cast<int>(used) + 2 <= kOledMaxChars) {
+            std::snprintf(line0 + used, sizeof(line0) - used, " P");
+        }
     }
 
     char pressure[16];

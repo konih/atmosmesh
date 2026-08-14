@@ -5,6 +5,7 @@
 #include <Wire.h>
 
 #include "atmosmesh/bmp_address.hpp"
+#include "atmosmesh/digital_edge.hpp"
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/i2c_bus.hpp"
 #include "atmosmesh/mq135_scale.hpp"
@@ -28,6 +29,18 @@ float pm25_ug_m3 = 0.0F;
 float pm10_ug_m3 = 0.0F;
 unsigned long last_pm_ms = 0;
 constexpr unsigned long kPmStaleMs = 5000;
+constexpr unsigned long kLoopSliceMs = 10;
+atmosmesh::DebouncedLevel pir_edge{};
+atmosmesh::DebouncedLevel mic_edge{};
+bool pir_motion = false;
+bool am_ok = false;
+float humidity = 0.0F;
+float temperature = 0.0F;
+float bmp_t_c = 0.0F;
+float bmp_p_hpa = 0.0F;
+bool bmp_read_ok = false;
+int mq_raw = 0;
+unsigned long last_env_ms = 0;
 
 void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::uint8_t* found,
               std::size_t count) {
@@ -72,6 +85,50 @@ void show_lines(const std::string* lines, std::size_t count) {
         oled->drawStr(oled_profile.column_offset_px, y, lines[i].c_str());
     }
     oled->sendBuffer();
+}
+
+void pulse_beeper() {
+    digitalWrite(atmosmesh::kBeeperGpio, HIGH);
+    delay(atmosmesh::kBeeperPulseMs);
+    digitalWrite(atmosmesh::kBeeperGpio, LOW);
+}
+
+void refresh_oled() {
+    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_read_ok,
+                                                    bmp_p_hpa, pm_ok, pm25_ug_m3, pm10_ug_m3,
+                                                    mq_raw, pir_motion);
+    show_lines(lines.data(), lines.size());
+}
+
+void setup_extras() {
+    pinMode(atmosmesh::kBeeperGpio, OUTPUT);
+    digitalWrite(atmosmesh::kBeeperGpio, LOW);
+    pinMode(atmosmesh::kPirGpio, INPUT_PULLDOWN);
+    pinMode(atmosmesh::kMicGpio, INPUT_PULLDOWN);
+    Serial.printf("beeper: GPIO%d output, %d ms boot pulse\n", atmosmesh::kBeeperGpio,
+                  atmosmesh::kBeeperPulseMs);
+    Serial.printf("pir: GPIO%d digital INPUT_PULLDOWN\n", atmosmesh::kPirGpio);
+    Serial.printf("mic: GPIO%d digital DO (not ADC; GPIO22 has no ADC)\n", atmosmesh::kMicGpio);
+    pulse_beeper();
+    Serial.println(atmosmesh::format_beep_boot_log().c_str());
+}
+
+void poll_extras() {
+    const unsigned long now = millis();
+    const bool pir_sample = digitalRead(atmosmesh::kPirGpio) == HIGH;
+    if (atmosmesh::update_debounced_level(pir_edge, pir_sample, now, atmosmesh::kDigitalDebounceMs)) {
+        const bool rose = pir_edge.stable && !pir_motion;
+        pir_motion = pir_edge.stable;
+        Serial.println(atmosmesh::format_pir_log(pir_motion).c_str());
+        if (rose) {
+            pulse_beeper();
+        }
+        refresh_oled();
+    }
+    const bool mic_sample = digitalRead(atmosmesh::kMicGpio) == HIGH;
+    if (atmosmesh::update_debounced_level(mic_edge, mic_sample, now, atmosmesh::kDigitalDebounceMs)) {
+        Serial.println(atmosmesh::format_mic_log(mic_edge.stable).c_str());
+    }
 }
 
 bool try_oled_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh::I2cDevice* out) {
@@ -271,14 +328,21 @@ void setup() {
     Serial.printf("sds011: uart2 rx=GPIO%d tx=GPIO%d baud=%d\n", atmosmesh::kSds011RxGpio,
                   atmosmesh::kSds011TxGpio, atmosmesh::kSds011Baud);
     Serial.println(atmosmesh::format_sds011_listen_log().c_str());
+    setup_extras();
 }
 
 void loop() {
-    delay(atmosmesh::kAm2302MinIntervalMs);
     poll_sds011();
-    const float humidity = am2302.readHumidity();
-    const float temperature = am2302.readTemperature();
-    const bool am_ok = !isnan(humidity) && !isnan(temperature);
+    poll_extras();
+    const unsigned long now = millis();
+    if (last_env_ms != 0 && (now - last_env_ms) < atmosmesh::kAm2302MinIntervalMs) {
+        delay(kLoopSliceMs);
+        return;
+    }
+    last_env_ms = now;
+    humidity = am2302.readHumidity();
+    temperature = am2302.readTemperature();
+    am_ok = !isnan(humidity) && !isnan(temperature);
 
     if (am_ok) {
         Serial.printf("am2302: t=%.1fC rh=%.1f%%\n", temperature, humidity);
@@ -286,12 +350,12 @@ void loop() {
         Serial.println("am2302: read failed (need 3V3, 10k pull-up to 3V3 if the module has none)");
     }
 
-    const int mq_raw = analogRead(atmosmesh::kMq135AdcGpio);
+    mq_raw = analogRead(atmosmesh::kMq135AdcGpio);
     Serial.println(atmosmesh::format_mq135_serial(mq_raw).c_str());
 
-    float bmp_t_c = 0.0F;
-    float bmp_p_hpa = 0.0F;
-    bool bmp_read_ok = false;
+    bmp_t_c = 0.0F;
+    bmp_p_hpa = 0.0F;
+    bmp_read_ok = false;
     if (bmp_ok) {
         bmp_t_c = bmp280.readTemperature();
         bmp_p_hpa = bmp280.readPressure() / 100.0F;
@@ -303,8 +367,6 @@ void loop() {
         }
     }
 
-    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_read_ok,
-                                                    bmp_p_hpa, pm_ok, pm25_ug_m3, pm10_ug_m3,
-                                                    mq_raw);
-    show_lines(lines.data(), lines.size());
+    refresh_oled();
+    delay(kLoopSliceMs);
 }
