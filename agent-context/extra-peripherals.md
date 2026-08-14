@@ -7,7 +7,8 @@ OLED mux-48 did **not** fill the glass; operator still sees **two rows** of live
 lower-band packing). Treat the module as **128×32 visible**. Keep the 3-line lower-band UI.
 Firmware on `fix/oled-u8g2-sds011-listen` is the live image.
 
-**TFT dropped.** Do not add `J_TFT`. GPIO22 was sketched as TFT RST — **free for the mic**.
+**TFT dropped.** Do not add `J_TFT`. GPIO22 was sketched as TFT RST, then as digital mic DO —
+**GPIO22 is now free.** Mic moved to **GPIO35 analog AO**.
 
 ---
 
@@ -25,7 +26,7 @@ Firmware on `fix/oled-u8g2-sds011-listen` is the live image.
 | MQ135 ADC | 34 | Input-only, already divided |
 | Beeper SIG | **25** | Live 3-pin |
 | PIR D-SUN SIG | **33** | Live 3-pin. **Not 27** |
-| HC-20 / DC-20 SIG | **22** | Live 3-pin **digital DO**. **Not ADC** |
+| Mic analog AO | **35** | Live 3-pin **ADC1**. Input-only. **Not 22** |
 | UART0 USB | 1 / 3 | Flash/monitor only |
 | Boot | 0 | Keep free |
 | Strapping | 2 | Keep free (download) |
@@ -43,13 +44,13 @@ All three are **3-pin: VCC, GND, SIG**. Never 5 V into a GPIO. VCC **3V3** unles
 | --- | --- | --- |
 | Beeper | **GPIO25** | Output. Firmware: 50 ms HIGH at boot (`beep: boot`); 50 ms on PIR rising edge. |
 | PIR D-SUN | **GPIO33** | Digital input, `INPUT_PULLDOWN`. Was reserved 27 — **use 33**. Serial `pir: motion` / `pir: idle` (~50 ms debounce). OLED `P` on line 0 when motion if it fits. |
-| HC-20 microphone | **GPIO22** | Digital SIG (sound-detect **DO**). Operator also said **DC-20** (same 3-pin class; SIG on 22 unless they give another pin). Serial `mic: sound` / `mic: quiet`. |
+| Microphone | **GPIO35** | Analog **AO** on ADC1, 11 dB atten. **Input-only — no output.** VCC **3V3**; AO must stay **≤3.3 V**. Serial `mic: raw=…` every ~750 ms. `mic: sound` / `mic: quiet` when raw crosses **800** (~645 mV at 3.3 V FS). Was GPIO22 digital DO. |
 
-### GPIO22 is not analog
+### GPIO35 is analog (input-only)
 
-**GPIO22 is not an ADC pin** on ESP32 (ADC1 is 32, 33, 34, 35, 36, 39). HC-20/DC-20 on D22 is
-**digital SIG / DO**, not analog AO. Firmware uses `digitalRead`. Input `INPUT_PULLDOWN` (or
-leave floating if the module already drives the line). Do **not** wire an analog AO to GPIO22.
+**GPIO35 is ADC1** (with 32, 33, 34, 36, 39). It is **input-only**: no `pinMode(OUTPUT)`, no
+`digitalWrite`, no internal pull. Firmware uses `analogRead` at **11 dB** (~3.3 V full scale).
+Do **not** put 5 V on AO. GPIO22 is **not** the mic.
 
 GPIO33 is ADC-capable but the PIR uses it as **digital** only.
 
@@ -63,11 +64,11 @@ Keep J1 OLED. **No J_TFT.**
 | --- | --- | --- | --- |
 | J_BEEP | 1×3 | VCC, GND, SIG | `BEEP_VCC` (3V3 default, jumper to +5V if buzzer is 5 V **power** only), `GND`, `BEEP_SIG` = **GPIO25**. Silk: beeper. |
 | J_PIR | 1×3 | VCC, GND, SIG | `PIR_VCC` (3V3 default; jumper to +5V only if the board is HC-SR501), `GND`, `PIR_OUT` = **GPIO33**. Silk: D-SUN PIR. Pin order VCC/GND/SIG to match the live 3-pin class (photograph the module if OUT sits in the middle). |
-| J_MIC | 1×3 | VCC, GND, SIG | `MIC_VCC` 3V3, `GND`, `MIC_SIG` = **GPIO22**. Silk: **HC-20/DC-20**. Digital DO only — **no AO pad**. |
+| J_MIC | 1×3 | VCC, GND, SIG | `MIC_VCC` 3V3, `GND`, `MIC_SIG` = **GPIO35 analog AO**. Silk: mic AO. **Not GPIO22.** |
 
 `BEEP_VCC` / `PIR_VCC`: 3V3 with optional jumper to `+5V`. Signals never 5 V.
 
-GPIO leftover after this map: **12** (avoid), **14 / 13 / 15 / 23 / 26 / 27 / 32**, **35 / 36 / 39**
+GPIO leftover after this map: **12** (avoid), **14 / 13 / 15 / 23 / 22 / 26 / 27 / 32**, **36 / 39**
 (ADC1 input-only). Do not assign them without a new live pin from the operator.
 
 ---
@@ -77,13 +78,15 @@ GPIO leftover after this map: **12** (avoid), **14 / 13 / 15 / 23 / 26 / 27 / 32
 - **Beeper:** active vs passive unknown. GPIO25 HIGH for 50 ms is enough to prove the pin.
 - **PIR:** D-SUN 3-pin; mini AM312-class vs HC-SR501 (pots). Photograph size/pots before locking
   VCC jumper default if it looks like SR501.
-- **HC-20 / DC-20:** not a standard I2S MEMS PN. Live wiring is 3-pin SIG on GPIO22 → treat as
-  LM393-class **DO**. Do not add I2S (SCK/WS/SD) copper.
+- **Mic:** live wiring is analog **AO** on GPIO35. Do not add I2S (SCK/WS/SD) copper. Do not treat
+  as LM393 digital DO.
 
 ---
 
 ## Firmware (this session)
 
 Implemented on `fix/oled-u8g2-sds011-listen` (worktree `atmosmesh-oled-u8g2`): pin constants
-`kBeeperGpio=25`, `kPirGpio=33`, `kMicGpio=22`. Native-tested debounce + serial labels. Flash
-`/dev/cu.usbserial-0001`. Do not merge to `main` from the KiCad tree in the same change.
+`kBeeperGpio=25`, `kPirGpio=33`, `kMicGpio=35`. Analog ADC1 11 dB; sound threshold raw **800**.
+Flash `/dev/cu.usbserial-0001`. Do not merge to `main` from the KiCad tree in the same change.
+**Do not edit KiCad from firmware.** Carrier copper may still show MIC on GPIO22 until a later
+KiCad session moves `MIC_SIG` to GPIO35.

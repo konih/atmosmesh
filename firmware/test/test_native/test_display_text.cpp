@@ -133,11 +133,15 @@ void test_sds011_uart_pins_are_rx2_tx2() {
 void test_extra_peripheral_pins_match_live_bench() {
     TEST_ASSERT_EQUAL_INT(25, atmosmesh::kBeeperGpio);
     TEST_ASSERT_EQUAL_INT(33, atmosmesh::kPirGpio);
-    TEST_ASSERT_EQUAL_INT(22, atmosmesh::kMicGpio);
+    TEST_ASSERT_EQUAL_INT(35, atmosmesh::kMicGpio);
     TEST_ASSERT_EQUAL_INT(50, atmosmesh::kDigitalDebounceMs);
     TEST_ASSERT_EQUAL_INT(50, atmosmesh::kBeeperPulseMs);
-    // GPIO22 is not ADC1/ADC2. HC-20/DC-20 on D22 is digital DO, never analog AO.
-    TEST_ASSERT_FALSE(atmosmesh::gpio_is_adc1(atmosmesh::kMicGpio));
+    TEST_ASSERT_EQUAL_INT(750, atmosmesh::kMicRawLogIntervalMs);
+    TEST_ASSERT_EQUAL_INT(800, atmosmesh::kMicSoundRawThreshold);
+    // GPIO35 is ADC1 analog AO (input-only). GPIO22 is free — not the mic.
+    TEST_ASSERT_TRUE(atmosmesh::gpio_is_adc1(atmosmesh::kMicGpio));
+    TEST_ASSERT_TRUE(atmosmesh::gpio_is_input_only(atmosmesh::kMicGpio));
+    TEST_ASSERT_FALSE(atmosmesh::gpio_is_input_only(atmosmesh::kBeeperGpio));
     TEST_ASSERT_TRUE(atmosmesh::gpio_is_adc1(atmosmesh::kMq135AdcGpio));
 }
 
@@ -500,7 +504,16 @@ void test_pir_mic_serial_labels() {
     TEST_ASSERT_EQUAL_STRING("pir: idle", atmosmesh::format_pir_log(false).c_str());
     TEST_ASSERT_EQUAL_STRING("mic: sound", atmosmesh::format_mic_log(true).c_str());
     TEST_ASSERT_EQUAL_STRING("mic: quiet", atmosmesh::format_mic_log(false).c_str());
+    TEST_ASSERT_EQUAL_STRING("mic: raw=1234", atmosmesh::format_mic_raw_log(1234).c_str());
     TEST_ASSERT_EQUAL_STRING("beep: boot", atmosmesh::format_beep_boot_log().c_str());
+}
+
+void test_mic_sound_threshold_is_raw_800() {
+    // 800 / 4095 * 3300 mV ≈ 645 mV at ADC_11db (~3.3 V FS). Documented in pins.hpp.
+    TEST_ASSERT_FALSE(atmosmesh::mic_raw_is_sound(799));
+    TEST_ASSERT_TRUE(atmosmesh::mic_raw_is_sound(800));
+    TEST_ASSERT_TRUE(atmosmesh::mic_raw_is_sound(4095));
+    TEST_ASSERT_FALSE(atmosmesh::mic_raw_is_sound(0));
 }
 
 void test_debounce_ignores_glitch_under_50ms() {
@@ -572,6 +585,7 @@ int main() {
     RUN_TEST(test_live_page_appends_p_when_pir_motion_and_space);
     RUN_TEST(test_extra_peripheral_pins_match_live_bench);
     RUN_TEST(test_pir_mic_serial_labels);
+    RUN_TEST(test_mic_sound_threshold_is_raw_800);
     RUN_TEST(test_debounce_ignores_glitch_under_50ms);
     return UNITY_END();
 }

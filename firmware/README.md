@@ -52,7 +52,7 @@ VCC with pull-ups to VCC can kill GPIO5/4.
 | MQ135 AOUT | GPIO34 via divider | Analog, not UART. Neither RX2/TX2 nor RX0/TX0 |
 | Beeper SIG | GPIO25 | 3-pin VCC/GND/SIG. 50 ms HIGH at boot; 50 ms on PIR rising edge |
 | PIR D-SUN OUT | GPIO33 | 3-pin. Digital. Was reserved 27 — **use 33** |
-| HC-20 / DC-20 SIG | GPIO22 | 3-pin digital **DO** (sound detect). **GPIO22 is not ADC** — never analog AO |
+| Mic analog AO | GPIO35 | ADC1, 11 dB. Input-only — **no output**. VCC **3V3**; AO ≤3.3 V. GPIO22 is free |
 
 Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SDS011 only.
 **Do not wire SDS011 (d011v2) to RX0/TX0** (GPIO3/GPIO1). Those pins are the CP2102 USB-UART used
@@ -68,6 +68,10 @@ to GPIO34.** Serial also warns; do not label the reading `CO2` or `ppm`.
 GPIO5 (OLED SDA) has an internal pull-up and wants idle-high at boot; that is usually compatible
 with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 
+**Microphone is analog AO on GPIO35** (ADC1, 11 dB, input-only — never `digitalWrite`). Module VCC
+is **3V3**; AO must stay **≤3.3 V**. Serial logs `mic: raw=…` about every 750 ms. `mic: sound` /
+`mic: quiet` when raw crosses **800** (~645 mV at 3.3 V FS). GPIO22 is unused.
+
 ## Layout
 
 | Path | Role |
@@ -81,6 +85,6 @@ with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 | `src/sds011_frame.cpp` | Host-testable SDS011 `AA C0 … AB` checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
 | `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
-| `src/digital_edge.cpp` | Host-testable 50 ms debounce + `pir:` / `mic:` / `beep:` serial labels |
+| `src/digital_edge.cpp` | Host-testable PIR debounce + analog mic `raw=` / sound threshold labels |
 | `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, AM2302, SDS011 UART2, MQ135 ADC, PIR/mic/beeper |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |

@@ -33,6 +33,7 @@ constexpr unsigned long kPmStaleMs = 5000;
 constexpr unsigned long kLoopSliceMs = 10;
 atmosmesh::DebouncedLevel pir_edge{};
 atmosmesh::DebouncedLevel mic_edge{};
+unsigned long last_mic_raw_ms = 0;
 bool pir_motion = false;
 bool am_ok = false;
 float humidity = 0.0F;
@@ -107,11 +108,15 @@ void setup_extras() {
     pinMode(atmosmesh::kBeeperGpio, OUTPUT);
     digitalWrite(atmosmesh::kBeeperGpio, LOW);
     pinMode(atmosmesh::kPirGpio, INPUT_PULLDOWN);
-    pinMode(atmosmesh::kMicGpio, INPUT_PULLDOWN);
+    analogSetPinAttenuation(atmosmesh::kMicGpio, ADC_11db);
     Serial.printf("beeper: GPIO%d output, %d ms boot pulse\n", atmosmesh::kBeeperGpio,
                   atmosmesh::kBeeperPulseMs);
     Serial.printf("pir: GPIO%d digital INPUT_PULLDOWN\n", atmosmesh::kPirGpio);
-    Serial.printf("mic: GPIO%d digital DO (not ADC; GPIO22 has no ADC)\n", atmosmesh::kMicGpio);
+    Serial.printf(
+        "mic: GPIO%d ADC1 analog AO atten=11dB input-only (no output). VCC=3V3; AO must stay <=3.3V\n",
+        atmosmesh::kMicGpio);
+    Serial.printf("mic: sound if raw>=%d (~645 mV at 11dB / 3.3V FS); log raw every %d ms\n",
+                  atmosmesh::kMicSoundRawThreshold, atmosmesh::kMicRawLogIntervalMs);
     pulse_beeper();
     Serial.println(atmosmesh::format_beep_boot_log().c_str());
 }
@@ -128,7 +133,12 @@ void poll_extras() {
         }
         refresh_oled();
     }
-    const bool mic_sample = digitalRead(atmosmesh::kMicGpio) == HIGH;
+    const int mic_raw = analogRead(atmosmesh::kMicGpio);
+    if ((now - last_mic_raw_ms) >= static_cast<unsigned long>(atmosmesh::kMicRawLogIntervalMs)) {
+        last_mic_raw_ms = now;
+        Serial.println(atmosmesh::format_mic_raw_log(mic_raw).c_str());
+    }
+    const bool mic_sample = atmosmesh::mic_raw_is_sound(mic_raw);
     if (atmosmesh::update_debounced_level(mic_edge, mic_sample, now, atmosmesh::kDigitalDebounceMs)) {
         Serial.println(atmosmesh::format_mic_log(mic_edge.stable).c_str());
     }
