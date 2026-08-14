@@ -23,7 +23,8 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 - A devboard may receive 5 V only through a confirmed `USB` or `VIN/5V` input.
 - Do not infer connector orientation, voltage, or pin order from a generic product image.
 - Confirm the exact front and back markings of every module before approving wiring.
-- SDS011 and MQ135 take 5 V power; their *signals* must stay at 3.3 V (UART TTL, or a measured ADC divider).
+- SDS011 (Nova PM; board often labelled d011v2) is **UART2 only**: sensor TX → GPIO16 (RX2), GPIO17 (TX2) → sensor RX. **Never GPIO1/TX0 or GPIO3/RX0** — those are the USB-UART (CP2102) for `task flash` / `task monitor`. Do not move SDS011 firmware to UART0.
+- SDS011 and MQ135 take 5 V power; their *signals* must stay at 3.3 V (UART TTL, or a measured ADC divider). MQ135 is analog (GPIO34 via divider), not UART.
 - Protect ESP32 ADC inputs with a verified divider and measure the node before connection.
 - MQ135 is not a CO₂ sensor. Never label its output `co2`, `ppm`, or an equivalent claim.
 - Open mains PCBs, breadboard-mains, mains switching, and life-safety automation are out of scope. An enclosed, isolated AC/DC module as the station 5 V source is allowed only after the DC output is measured at ~5 V (`docs/hardware/power.md`).

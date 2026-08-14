@@ -7,7 +7,7 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | Component | Intended role | Supply | Interface | Verification status |
 | --- | --- | --- | --- | --- |
 | ESP-WROOM-32 devboard | Controller, Wi-Fi, MQTT | Station: `VIN`/`5V` from the 5 V rail. Bench: USB until PSU is enclosed and measured | 3.3-V GPIO | USB probe 2026-08-14: ESP32-D0WDQ6 rev 1.0, 4 MB flash, CP2102, MAC `ac:67:b2:37:26:78`. `VIN`/`5V` silkscreen still pending |
-| SDS011 | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART 9600 8N1, 3.3-V TTL | Datasheet pin functions known; connector/adapter order pending |
+| SDS011 (Nova; board often labelled d011v2) | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART2 9600 8N1, 3.3-V TTL | **GPIO16/17 only.** Never RX0/TX0 (GPIO3/1) |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
 | Mini OLED, 4 pins | Station local status (D-001) | **3V3** | I²C **0x3C** (fallback 0x3D) | Serial-proven 2026-08-14: SSD1306 at 0x3C, SDA=GPIO5, SCL=GPIO4 |
@@ -61,9 +61,19 @@ If VCC is 5 V and the module’s I²C pull-ups sit on VCC, SDA/SCL become 5 V an
 | I²C SDA (SSD1306 OLED) | GPIO5 / D5 | D-001; serial-proven 0x3C. Idle-high pull-up is usually OK for boot |
 | I²C SCL (SSD1306 OLED) | GPIO4 / D4 | Power OLED VCC from 3V3, never 5 V |
 | AM2302 data | GPIO18 / D18 | Operator, 2026-08-14. Idle-high OK (3.3 V flash-voltage strap) |
-| SDS011 TX | GPIO16 / RX2 | Sensor TX into ESP32 RX |
-| SDS011 RX | GPIO17 / TX2 | ESP32 TX into sensor RX |
-| MQ135 analog | GPIO34 / ADC1 | Input-only; divider required; measure before connection. **Not** RX2/TX2 |
+| SDS011 TX | GPIO16 / RX2 | Sensor TX → ESP32 RX2. **Not** RX0 / GPIO3 |
+| SDS011 RX | GPIO17 / TX2 | ESP32 TX2 → sensor RX. **Not** TX0 / GPIO1 |
+| USB console (CP2102) | GPIO1 TX0, GPIO3 RX0 | `task flash` / `task monitor` only. Leave the USB cable as the only UART0 user |
+| MQ135 analog | GPIO34 / ADC1 | Input-only; divider required; measure before connection. **Not** UART (not RX2/TX2, not RX0/TX0) |
+
+## Bench mix-up (2026-08-14) — SDS011 on RX0/TX0
+
+Operator wired **d011v2** (SDS011 v2) to **RX0/TX0** (GPIO3/GPIO1). That is the USB-UART used for
+`task flash` / `task monitor`. Firmware talks to SDS011 on **UART2 only** (`Serial2` on GPIO16/17);
+it will not be moved to UART0. Unplug the sensor from RX0/TX0 immediately. Correct: sensor TX →
+GPIO16, GPIO17 → sensor RX, **5 V on sensor VCC only**, UART **3.3 V**. USB cable stays on the
+DevKit as the only UART0 user. A live SDS011 on UART0 garbles the boot log, can stall the app
+(OLED looks “dead”), and fights the CP2102.
 
 ## Bench mix-up (2026-08-14) — MQ135 vs SDS011 on UART2
 
@@ -79,6 +89,7 @@ Photos still block construction.
 
 ## Non-negotiable limits
 
+- Never wire SDS011 (d011v2) to RX0/TX0 (GPIO3/GPIO1). Those pins are USB console only.
 - Never apply 5 V to an ESP32 GPIO or `3V3` pin. GPIO VIH max is VDD + 0.3 V. Station 5 V may enter only a confirmed `USB` or `VIN`/`5V` pad.
 - Do not trust generic diagrams for connector order.
 - Do not power the full assembly before RLS-01 approves an evidence-backed wiring table.

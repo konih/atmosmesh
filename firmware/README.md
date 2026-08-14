@@ -45,11 +45,13 @@ That is the usual fix when a 0.96" module shows pixels but drops every other lin
 | GY-BMP280 SDA | GPIO21 | VCC=3V3, CSB=3V3, SDO=GND → 0x76 |
 | GY-BMP280 SCL | GPIO19 | Not GPIO22 |
 | AM2302 DATA | GPIO18 | VDD=3V3. GPIO18 high matches the 3.3 V flash-voltage strap; keep idle-high |
-| SDS011 TX | GPIO16 / RX2 | Sensor TX → ESP32 RX. VCC=**5 V**. UART **3.3 V** only |
-| SDS011 RX | GPIO17 / TX2 | ESP32 TX → sensor RX. Do not drive 5 V into GPIO16 |
-| MQ135 AOUT | GPIO34 via divider | Analog, not UART. RX2/TX2 is the wrong connector |
+| SDS011 TX | GPIO16 / RX2 | Sensor TX → ESP32 RX2. VCC=**5 V**. UART **3.3 V** only. **Not** RX0/GPIO3 |
+| SDS011 RX | GPIO17 / TX2 | ESP32 TX2 → sensor RX. Do not drive 5 V into GPIO. **Not** TX0/GPIO1 |
+| MQ135 AOUT | GPIO34 via divider | Analog, not UART. Neither RX2/TX2 nor RX0/TX0 |
 
 Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SDS011 only.
+**Do not wire SDS011 (d011v2) to RX0/TX0** (GPIO3/GPIO1). Those pins are the CP2102 USB-UART used
+by `task flash` / `task monitor`. Firmware uses `Serial2` on GPIO16/17 and will not move to UART0.
 
 **MQ135 is not UART.** Wiring the gas board (often labelled MQ13/MQ135) to RX2/TX2 cannot produce
 `AA C0` frames and can put heater/AO **5 V** on ESP32 GPIOs. Heater power is **5 V**, never `3V3`.

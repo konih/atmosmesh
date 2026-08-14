@@ -16,7 +16,8 @@ inline constexpr int kSensorSclGpio = 19;
 // AM2302 / DHT22 data (operator 2026-08-14): GPIO18. Idle-high matches 3.3 V flash-voltage strap.
 inline constexpr int kAm2302DataGpio = 18;
 
-// SDS011 UART2: sensor TX → ESP32 RX2 (GPIO16), ESP32 TX2 (GPIO17) → sensor RX.
+// SDS011 UART2 only: sensor TX → ESP32 RX2 (GPIO16), ESP32 TX2 (GPIO17) → sensor RX.
+// Never GPIO1/TX0 or GPIO3/RX0 — those are the USB-UART (CP2102) used by flash/monitor.
 // Sensor VCC is 5 V; UART must stay 3.3 V. Do not put MQ135 analog on these pins.
 inline constexpr int kSds011RxGpio = 16;
 inline constexpr int kSds011TxGpio = 17;
