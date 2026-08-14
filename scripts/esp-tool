@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# esptool via the shared agent venv. Never `python -m esptool` with system Python.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec "${ROOT}/scripts/with-agent-python" python -m esptool "$@"

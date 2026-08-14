@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Run a command with the shared AtmosMesh agent venv first on PATH.
+# Do not use Homebrew/Xcode `python3 -m esptool` — that environment has no pyserial.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VENV="${ATMOSMESH_VENV:-/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh}"
+REQ="${ROOT}/firmware/requirements-agent.txt"
+
+if [[ ! -x "${VENV}/bin/python" ]]; then
+  echo "AtmosMesh agent venv missing: ${VENV}" >&2
+  echo "Bootstrap (Python 3.11 or 3.12; do not use Homebrew python3.14):" >&2
+  echo "  python3.12 -m venv \"${VENV}\"" >&2
+  echo "  \"${VENV}/bin/pip\" install -r \"${REQ}\"" >&2
+  exit 1
+fi
+
+export ATMOSMESH_VENV="${VENV}"
+export ATMOSMESH_PYTHON="${VENV}/bin/python"
+export PATH="${VENV}/bin:${PATH}"
+exec "$@"

@@ -5,7 +5,10 @@ and do not need the board.
 
 ## Commands
 
-From `firmware/`:
+Prefer `task` from the repository root so the shared agent venv is on `PATH` (`python` +
+`pyserial` + `esptool`). Do not use Homebrew or Xcode `python -m esptool`.
+
+From `firmware/` (only after `scripts/with-agent-python` or the venv `bin` is first on `PATH`):
 
 ```bash
 pio test -e native          # host unit tests (required)

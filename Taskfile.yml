@@ -9,6 +9,12 @@ run: once
 
 vars:
   ESP_PORT: '{{.ESP_PORT | default "/dev/cu.usbserial-0001"}}'
+  AGENT_VENV: '{{.AGENT_VENV | default "/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh"}}'
+
+env:
+  ATMOSMESH_VENV: '{{.AGENT_VENV}}'
+  ATMOSMESH_PYTHON: '{{.AGENT_VENV}}/bin/python'
+  PATH: '{{.AGENT_VENV}}/bin:{{.PATH}}'
 
 tasks:
   default:
@@ -17,29 +23,35 @@ tasks:
       - task --list
     silent: true
 
+  bootstrap-agent-python:
+    desc: Create the shared host venv and install pyserial + esptool
+    cmds:
+      - python3.12 -m venv {{.AGENT_VENV}}
+      - "{{.AGENT_VENV}}/bin/pip install -r firmware/requirements-agent.txt"
+
   test:
     desc: Host Unity tests (`pio test -e native`)
     dir: firmware
     cmds:
-      - pio test -e native
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio test -e native"
 
   build:
     desc: Build ESP32 firmware (`pio run -e esp32dev`)
     dir: firmware
     cmds:
-      - pio run -e esp32dev
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev"
 
   flash:
     desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). LCD SDA is GPIO5 (not GPIO2).
     dir: firmware
     cmds:
-      - pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}"
 
   monitor:
     desc: Serial monitor 115200 on ESP_PORT
     dir: firmware
     cmds:
-      - pio device monitor --port {{.ESP_PORT}} --baud 115200
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
 
   run:
     desc: Flash then open the serial monitor
@@ -61,4 +73,4 @@ tasks:
     desc: Clean ESP32 build artifacts
     dir: firmware
     cmds:
-      - pio run -e esp32dev -t clean
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t clean"

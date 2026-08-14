@@ -65,6 +65,7 @@ task build
 task flash          # ESP_PORT defaults to /dev/cu.usbserial-0001
 task monitor
 task run            # flash then monitor
+./scripts/esp-tool version   # not: python -m esptool
 ```
 
 LCD SDA is GPIO5 (not GPIO2). GPIO5 wants idle-high at boot; the I²C pull-up is usually compatible.

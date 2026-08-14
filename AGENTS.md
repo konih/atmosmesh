@@ -68,14 +68,36 @@ reprioritizes the roadmap.
 
 From the repository root (`Taskfile.yml`). Override the serial port with `ESP_PORT=/dev/…`.
 
+**Host Python for flash/monitor:** never run `python -m esptool` or `pip install` with Homebrew
+`python3` (currently 3.14), Xcode `/usr/bin/python3`, or a random `python`. Those interpreters
+do not provide `pyserial` (import name `serial`) or `esptool` on PATH. Use `task flash` /
+`task monitor` (they prepend the shared venv) or `scripts/esp-tool`.
+
+Shared venv (outside worktrees, reuse from every checkout):
+
+`/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh`
+
+Bootstrap if `scripts/with-agent-python` complains the venv is missing (prefer `python3.12` or
+`python3.11`, not Homebrew `python3`):
+
+```bash
+python3.12 -m venv /Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh
+/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh/bin/pip install -r firmware/requirements-agent.txt
+```
+
+Direct esptool: `./scripts/esp-tool version` (or `./scripts/with-agent-python python -m esptool …`).
+Keep using Homebrew `pio` for firmware builds; do not install a second PlatformIO into the venv.
+
 | Task | Command |
 | --- | --- |
 | List tasks | `task` |
+| Bootstrap host venv | `task bootstrap-agent-python` |
 | Host unit tests | `task test` |
 | Build ESP32 image | `task build` |
 | Flash | `task flash` (LCD SDA is GPIO5, not GPIO2; GPIO5 idle-high is usually OK) |
 | Serial monitor | `task monitor` |
 | Flash then monitor | `task run` / `task flash-monitor` |
+| Direct esptool | `./scripts/esp-tool` (not system `python -m esptool`) |
 | Check whitespace | `task check` |
 | Clean ESP32 build | `task clean` |
 | Inspect repository state | `git status --short` |

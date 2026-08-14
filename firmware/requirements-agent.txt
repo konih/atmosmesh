@@ -1,0 +1,6 @@
+# Host-side ESP32 tools for agents. Import name for pyserial is `serial`.
+# Install into the shared venv (outside git worktrees), not with system python:
+#   python3.12 -m venv /Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh
+#   /Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh/bin/pip install -r firmware/requirements-agent.txt
+pyserial==3.5
+esptool==5.3.1
