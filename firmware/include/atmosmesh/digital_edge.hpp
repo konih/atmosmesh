@@ -18,9 +18,6 @@ bool update_debounced_level(DebouncedLevel& state, bool sample, std::uint32_t no
                             int debounce_ms);
 
 std::string format_pir_log(bool motion);
-std::string format_mic_log(bool sound);
-std::string format_mic_raw_log(int raw_adc);
-bool mic_raw_is_sound(int raw_adc);
 std::string format_beep_boot_log();
 
 }  // namespace atmosmesh

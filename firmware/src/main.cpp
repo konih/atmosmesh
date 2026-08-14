@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_BMP280.h>
+#include <Adafruit_VEML7700.h>
 #include <DHT.h>
 #include <U8g2lib.h>
 #include <Wire.h>
@@ -14,11 +15,13 @@
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
 #include "atmosmesh/sds011_frame.hpp"
+#include "atmosmesh/veml7700_text.hpp"
 
 namespace {
 
 DHT am2302(atmosmesh::kAm2302DataGpio, DHT22);
 Adafruit_BMP280 bmp280(&Wire1);
+Adafruit_VEML7700 veml7700;
 U8G2* oled = nullptr;
 atmosmesh::OledProfile oled_profile{};
 bool oled_ready = false;
@@ -32,9 +35,9 @@ unsigned long last_pm_ms = 0;
 constexpr unsigned long kPmStaleMs = 5000;
 constexpr unsigned long kLoopSliceMs = 10;
 atmosmesh::DebouncedLevel pir_edge{};
-atmosmesh::DebouncedLevel mic_edge{};
-unsigned long last_mic_raw_ms = 0;
 bool pir_motion = false;
+bool veml_ok = false;
+float veml_lux = 0.0F;
 bool am_ok = false;
 float humidity = 0.0F;
 float temperature = 0.0F;
@@ -100,7 +103,7 @@ void refresh_oled() {
     const auto lines = atmosmesh::live_sensor_lines(am_hold.show, am_hold.temperature_c,
                                                     am_hold.humidity_rh, bmp_read_ok, bmp_p_hpa,
                                                     pm_ok, pm25_ug_m3, pm10_ug_m3, mq_raw,
-                                                    pir_motion);
+                                                    pir_motion, veml_ok, veml_lux);
     show_lines(lines.data(), lines.size());
 }
 
@@ -108,15 +111,9 @@ void setup_extras() {
     pinMode(atmosmesh::kBeeperGpio, OUTPUT);
     digitalWrite(atmosmesh::kBeeperGpio, LOW);
     pinMode(atmosmesh::kPirGpio, INPUT_PULLDOWN);
-    analogSetPinAttenuation(atmosmesh::kMicGpio, ADC_11db);
     Serial.printf("beeper: GPIO%d output, %d ms boot pulse\n", atmosmesh::kBeeperGpio,
                   atmosmesh::kBeeperPulseMs);
     Serial.printf("pir: GPIO%d digital INPUT_PULLDOWN\n", atmosmesh::kPirGpio);
-    Serial.printf(
-        "mic: GPIO%d ADC1 analog AO atten=11dB input-only (no output). VCC=3V3; AO must stay <=3.3V\n",
-        atmosmesh::kMicGpio);
-    Serial.printf("mic: sound if raw>=%d (~645 mV at 11dB / 3.3V FS); log raw every %d ms\n",
-                  atmosmesh::kMicSoundRawThreshold, atmosmesh::kMicRawLogIntervalMs);
     pulse_beeper();
     Serial.println(atmosmesh::format_beep_boot_log().c_str());
 }
@@ -132,15 +129,6 @@ void poll_extras() {
             pulse_beeper();
         }
         refresh_oled();
-    }
-    const int mic_raw = analogRead(atmosmesh::kMicGpio);
-    if ((now - last_mic_raw_ms) >= static_cast<unsigned long>(atmosmesh::kMicRawLogIntervalMs)) {
-        last_mic_raw_ms = now;
-        Serial.println(atmosmesh::format_mic_raw_log(mic_raw).c_str());
-    }
-    const bool mic_sample = atmosmesh::mic_raw_is_sound(mic_raw);
-    if (atmosmesh::update_debounced_level(mic_edge, mic_sample, now, atmosmesh::kDigitalDebounceMs)) {
-        Serial.println(atmosmesh::format_mic_log(mic_edge.stable).c_str());
     }
 }
 
@@ -295,6 +283,22 @@ void setup_bmp280() {
     bmp_ok = true;
 }
 
+void setup_veml7700() {
+    Serial.printf("veml7700: Wire1 SDA=GPIO%d SCL=GPIO%d addr=0x%02X VCC=3V3 (shared with BMP280)\n",
+                  atmosmesh::kSensorSdaGpio, atmosmesh::kSensorSclGpio,
+                  atmosmesh::kVeml7700Address);
+    // Adafruit_I2CDevice::begin() may call Wire1.begin() with no pins; restore 21/19.
+    veml_ok = veml7700.begin(&Wire1);
+    Wire1.begin(atmosmesh::kSensorSdaGpio, atmosmesh::kSensorSclGpio);
+    Wire1.setClock(atmosmesh::kOledI2cHz);
+    if (!veml_ok) {
+        Serial.println(atmosmesh::format_veml7700_serial(false, 0.0F).c_str());
+        return;
+    }
+    veml7700.setGain(VEML7700_GAIN_1);
+    veml7700.setIntegrationTime(VEML7700_IT_100MS);
+}
+
 void poll_sds011() {
     while (Serial2.available() > 0) {
         const auto sample = sds011.feed(static_cast<std::uint8_t>(Serial2.read()));
@@ -334,6 +338,7 @@ void setup() {
 
     setup_oled();
     setup_bmp280();
+    setup_veml7700();
     am2302.begin();
     last_env_ms = millis();
     Serial.printf("am2302: data=GPIO%d min_interval_ms=%d\n", atmosmesh::kAm2302DataGpio,
@@ -383,6 +388,11 @@ void loop() {
         } else {
             Serial.println("bmp280: read failed");
         }
+    }
+
+    if (veml_ok) {
+        veml_lux = veml7700.readLux();
+        Serial.println(atmosmesh::format_veml7700_serial(true, veml_lux).c_str());
     }
 
     refresh_oled();

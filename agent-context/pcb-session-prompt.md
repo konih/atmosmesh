@@ -5,8 +5,9 @@ memory. Live GPIOs below are occupied on the breadboard.
 
 ---
 
-You are the **AtmosMesh bench KiCad session**. Goal: add three 3-pin headers that match the **live
-breadboard**, without stealing occupied GPIOs and without a bulk schematic→PCB rewrite.
+You are the **AtmosMesh bench KiCad session**. Goal: add beeper + PIR 3-pin headers and a
+**VEML7700 1×4** on the sensor I²C bus, without stealing occupied GPIOs and without a bulk
+schematic→PCB rewrite. **No mic. No clap.**
 
 Repo: `atmosmesh`. Open `hardware/kicad/atmosmesh-bench/atmosmesh-bench.kicad_pro`.
 
@@ -17,23 +18,24 @@ Read first (gitignored, this repo):
 - `agent-context/INBOX.md` — TFT dropped; MQ135 15 k vs 20 k
 - `firmware/include/atmosmesh/pins.hpp` — GPIO map on `main`
 - If present, `.worktrees/atmosmesh-oled-u8g2/firmware/include/atmosmesh/pins.hpp` is the live
-  extras image (`kBeeperGpio=25`, `kPirGpio=33`, `kMicGpio=35` analog). If that worktree is missing,
-  use the pin table in this prompt and `extra-peripherals.md`.
+  extras image (`kBeeperGpio=25`, `kPirGpio=33`, VEML7700 0x10 on Wire1 GPIO21/19). If that
+  worktree is missing, use the pin table in this prompt and `extra-peripherals.md`.
 
 Do **not** flash, fabricate, merge, or commit from a coding session unless the operator asked.
 Do **not** edit firmware to “match” the schematic while the breadboard is still the running station.
 
 ## Goal
 
-1. Add **J_BEEP**, **J_PIR**, **J_MIC** as **1×3** headers: **VCC, GND, SIG** (pin 1 → last).
-2. Place silkscreen so a human can plug the live 3-pin cables without a datasheet.
-3. Leave existing U1 / J1–J7 pad nets alone unless a pin-by-pin netlist diff proves a mismatch.
-4. Station display stays **J1 OLED**. **No TFT. No 480×320. No `J_TFT`.** Operator dropped the LCD.
+1. Add **J_BEEP** and **J_PIR** as **1×3** headers: **VCC, GND, SIG** (pin 1 → last).
+2. Add **J_VEML** as **1×4**: **VIN, GND, SCL, SDA**, sharing `SDA_SENS` / `SCL_SENS` (GPIO21 / GPIO19).
+3. Place silkscreen so a human can plug the live cables without a datasheet.
+4. Leave existing U1 / J1–J7 pad nets alone unless a pin-by-pin netlist diff proves a mismatch.
+5. Station display stays **J1 OLED**. **No TFT. No 480×320. No `J_TFT`. No `J_MIC`.**
 
 ## Do
 
-- Add the three connectors on the schematic **and** PCB (footprints + silk). Prefer vendored
-  `Conn_01x03` / matching 2.54 mm 1×3 THT in `atmosmesh.pretty`.
+- Add the connectors on the schematic **and** PCB (footprints + silk). Prefer vendored
+  `Conn_01x03` / `Conn_01x04` / matching 2.54 mm THT in `atmosmesh.pretty`.
 - Default **VCC = 3.3 V**. Optional jumper **VCC → +5V** only on **beeper power** and **PIR power**
   if the module is a 5 V board (HC-SR501). **SIG never 5 V.** ESP32 GPIOs are 3.3 V.
 - Keep GPIO2 and UART0 (GPIO1 / GPIO3) free — USB flash/monitor only.
@@ -54,10 +56,10 @@ Do **not** edit firmware to “match” the schematic while the breadboard is st
   that those moves assumed the wrong y-axis sign (symbol lib y-up vs sheet y-down). Untouched sheet:
   ERC **0 errors / 0 warnings**; netlist vs PCB **89 pins / 0 mismatches**. Applying those moves
   produced ERC failures and was reverted. **Re-attaching “fixes” will smash a matching netlist.**
-- Do **not** steal GPIOs **4, 5, 16, 17, 18, 19, 21, 25, 33, 34, 35**. GPIO22 is **free**.
+- Do **not** steal GPIOs **4, 5, 16, 17, 18, 19, 21, 25, 33, 34**. GPIO22 and GPIO35 are **free**.
 - Do **not** use GPIO12 (flash-voltage strap). Keep GPIO0 and GPIO2 unloaded.
-- Do **not** add I2S (SCK/WS/SD) for the mic. J_MIC SIG is **GPIO35 analog AO** (ADC1, input-only).
-  GPIO22 is **not** the mic. AO must stay **≤3.3 V** (module VCC 3V3).
+- Do **not** add I2S (SCK/WS/SD). **No microphone. No clap.** Do not add `J_MIC`. VEML7700 is I²C
+  **0x10** on **Wire1 with BMP280** (SDA=GPIO21, SCL=GPIO19, VCC 3V3). **No new GPIO.**
 - Do **not** put 5 V on a GPIO pad. 5 V stays on SDS011 **sensor VCC** and MQ135 **heater** (J4 / J5
   / J6 / C1 / C4 / R6 / D1 / JP1 only, plus optional beeper/PIR **VCC jumper**).
 - Do **not** rename U1 footprint pads to “fix” nets. Do not populate U1 and J7 together.
@@ -70,41 +72,43 @@ Do **not** edit firmware to “match” the schematic while the breadboard is st
 | --- | --- | --- |
 | OLED I²C 0x3C | SDA=**GPIO5**, SCL=**GPIO4**, VCC=**3V3** | 128×64 SSD1306 **ALT0**. **Not LCD1602.** Visible glass may look 128×32; keep 3-line lower-band UI. Nets `SDA_LCD` / `SCL_LCD`. |
 | BMP280 | SDA=**21**, SCL=**19**, CSB=**3V3**, SDO=**GND**, VCC=**3V3** | Addr 0x76. Nets `SDA_SENS` / `SCL_SENS`. |
+| **VEML7700** | SDA=**21**, SCL=**19**, VCC=**3V3** | Addr **0x10**. Same Wire1 as BMP280. **Not fitted yet.** |
 | AM2302 | DATA=**GPIO18**, VDD=**3V3** | Net `DHT_DATA`. |
 | SDS011 | sensor TX → **GPIO16** (RX2), **GPIO17** → sensor RX | **5 V on sensor VCC only.** **Not UART0.** Nets `PM_TX` / `PM_RX`. |
 | MQ135 | AOUT **10 kΩ** to **GPIO34**, **20 kΩ** to GND on **breadboard** | 5 V **heater** only. **Never CO2.** ADC1 input-only. |
 | **Beeper** | SIG=**GPIO25** | 3-pin. Output. |
 | **PIR D-SUN** | SIG=**GPIO33** | 3-pin. **Not 27.** Digital in. |
-| **Mic analog AO** | SIG=**GPIO35** **analog** | ADC1, 11 dB. Input-only. VCC 3V3; AO ≤3.3 V. **Not GPIO22.** |
 | GPIO2 | free | Download strap. |
+| GPIO22 / GPIO35 | free | **Not** mic/clap. |
 | UART0 GPIO1 / GPIO3 | USB / CP2102 only | Keep NC on copper. |
 
-Occupied — do not reuse: **4, 5, 16, 17, 18, 19, 21, 25, 33, 34, 35**, plus 1 / 3 / 0 / 2.
+Occupied — do not reuse: **4, 5, 16, 17, 18, 19, 21, 25, 33, 34**, plus 1 / 3 / 0 / 2.
 
 Leftover (do not assign without a new live pin from the operator): 13, 14, 15, 22, 23, 26, 27, 32,
-36, 39. Avoid 12.
+**35**, 36, 39. Avoid 12.
 
 ## New connectors
 
-All **1×3**, pin order **VCC, GND, SIG**. Never 5 V into SIG.
+J_BEEP / J_PIR: **1×3**, pin order **VCC, GND, SIG**. Never 5 V into SIG.
+J_VEML: **1×4**, pin order **VIN, GND, SCL, SDA**.
 
 | Ref | Type | Pin 1 → last | Nets | Silkscreen |
 | --- | --- | --- | --- | --- |
 | **J_BEEP** | 1×3 | VCC, GND, SIG | `BEEP_VCC` (default **3V3**, optional jumper to **+5V** for 5 V **power** only), `GND`, `BEEP_SIG` = **U1 GPIO25** | `BEEPER` |
 | **J_PIR** | 1×3 | VCC, GND, SIG | `PIR_VCC` (default **3V3**; jumper to **+5V** only if the board is HC-SR501), `GND`, `PIR_OUT` = **U1 GPIO33** | `D-SUN PIR` |
-| **J_MIC** | 1×3 | VCC, GND, SIG | `MIC_VCC` = **3V3** (no 5 V jumper), `GND`, `MIC_SIG` = **U1 GPIO35 analog AO** | `MIC AO` |
+| **J_VEML** | 1×4 | VIN, GND, SCL, SDA | `+3V3`, `GND`, `SCL_SENS` = **GPIO19**, `SDA_SENS` = **GPIO21** | `VEML7700` |
 
-Do **not** add `J_TFT`. GPIO22 was once sketched as TFT RST, then digital mic — it is **free**.
+Do **not** add `J_TFT` or `J_MIC`. GPIO22 / GPIO35 are **free**.
 
 Identity (do not block the headers):
 
 - Beeper: active vs passive unknown; GPIO25 HIGH is enough electrically.
 - PIR: D-SUN 3-pin (AM312-class vs HC-SR501 with pots). Photo before locking the 5 V VCC jumper default.
-- Mic: analog **AO** on GPIO35. Firmware `analogRead` (ADC1 11 dB). Not digital DO.
+- VEML7700: lux I²C 0x10 on the BMP280 bus. Part may not be fitted yet.
 
 ## Power
 
-- **3.3 V** on every ESP32 GPIO and on OLED / BMP280 / AM2302 / default VCC for the three new headers.
+- **3.3 V** on every ESP32 GPIO and on OLED / BMP280 / AM2302 / VEML7700 / default VCC for J_BEEP / J_PIR.
 - **5 V only:** SDS011 sensor **VCC**, MQ135 **heater**, optional **BEEP_VCC** / **PIR_VCC** jumpers.
 - JP1 (`VIN_LINK`) stays **open on bench**, never with USB.
 
@@ -126,12 +130,12 @@ Board is still **unrouted** (ratsnest). PCB is **KiCad 10** (`20260206`). Schema
 
 | Path | Role |
 | --- | --- |
-| `hardware/kicad/atmosmesh-bench/atmosmesh-bench.kicad_sch` | Add J_BEEP / J_PIR / J_MIC, nets, jumpers |
-| `hardware/kicad/atmosmesh-bench/atmosmesh-bench.kicad_pcb` | Place 1×3 footprints, silk; **do not bulk-update from schematic** |
-| `hardware/kicad/atmosmesh-bench/atmosmesh.kicad_sym` | Only if a new symbol is required (prefer stock Conn_01x03) |
+| `hardware/kicad/atmosmesh-bench/atmosmesh-bench.kicad_sch` | Add J_BEEP / J_PIR / J_VEML, nets, jumpers |
+| `hardware/kicad/atmosmesh-bench/atmosmesh-bench.kicad_pcb` | Place footprints, silk; **do not bulk-update from schematic** |
+| `hardware/kicad/atmosmesh-bench/atmosmesh.kicad_sym` | Only if a new symbol is required (prefer stock Conn_01x03 / Conn_01x04) |
 | `hardware/kicad/atmosmesh-bench/atmosmesh.pretty/` | Only if a new footprint is required |
 | `hardware/kicad/atmosmesh-bench/atmosmesh-bench-schematic.pdf` | Re-export after the sheet is honest |
-| `hardware/kicad/README.md` | Document the three new headers + GPIO 25/33/35 |
+| `hardware/kicad/README.md` | Document J_BEEP / J_PIR / J_VEML + GPIO 25/33 + shared 21/19 |
 
 Do not edit `.kicad_sch` / `.kicad_pcb` from a firmware-only session.
 
@@ -139,9 +143,9 @@ Do not edit `.kicad_sch` / `.kicad_pcb` from a firmware-only session.
 
 - [ ] J_BEEP 1×3: VCC / GND / SIG; SIG = GPIO25; silk `BEEPER`; VCC default 3V3.
 - [ ] J_PIR 1×3: VCC / GND / SIG; SIG = GPIO33 (**not 27**); silk `D-SUN PIR`; VCC default 3V3.
-- [ ] J_MIC 1×3: VCC / GND / SIG; SIG = GPIO35 **analog AO**; silk `MIC AO`; VCC 3V3 only. **Not GPIO22.**
+- [ ] J_VEML 1×4: VIN / GND / SCL / SDA on `+3V3` / `GND` / `SCL_SENS` / `SDA_SENS` (GPIO19/21). **No new GPIO. No J_MIC.**
 - [ ] No `J_TFT`. No 480×320. J1 remains OLED 0x3C (SDA=5, SCL=4).
-- [ ] Occupied GPIOs 4, 5, 16, 17, 18, 19, 21, 25, 33, 34, 35 unused by anything new.
+- [ ] Occupied GPIOs 4, 5, 16, 17, 18, 19, 21, 25, 33, 34 unused by anything new. GPIO22/35 stay free.
 - [ ] GPIO2 and UART0 still NC. No 5 V net on a GPIO pad.
 - [ ] ERC clean. If Update PCB was used at all: pin-by-pin netlist vs **pre-update** U1/J1–J7 pad nets is empty except the **new** connector pads.
 - [ ] README lists the three headers. Schematic PDF regenerated.

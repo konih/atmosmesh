@@ -28,6 +28,7 @@ OledBanner dummy_banner();
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
-                               int mq135_raw_adc, bool pir_motion = false);
+                               int mq135_raw_adc, bool pir_motion = false, bool lux_ok = false,
+                               float lux_lx = 0.0F);
 
 }  // namespace atmosmesh

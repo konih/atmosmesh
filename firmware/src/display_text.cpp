@@ -1,5 +1,5 @@
 #include "atmosmesh/display_text.hpp"
-#include "atmosmesh/mq135_scale.hpp"
+#include "atmosmesh/veml7700_text.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -81,7 +81,8 @@ OledBanner dummy_banner() {
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
-                               int mq135_raw_adc, bool pir_motion) {
+                               int mq135_raw_adc, bool pir_motion, bool lux_ok, float lux_lx) {
+    (void)mq135_raw_adc;
     char line0[24];
     if (am_ok) {
         std::snprintf(line0, sizeof(line0), "%.1fC  %.0f%% RH", static_cast<double>(temperature_c),
@@ -91,8 +92,7 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
     }
     if (pir_motion) {
         const std::size_t used = std::strlen(line0);
-        if (used + 2 < sizeof(line0) &&
-            static_cast<int>(used) + 2 <= kOledMaxChars) {
+        if (used + 2 < sizeof(line0) && static_cast<int>(used) + 2 <= kOledMaxChars) {
             std::snprintf(line0 + used, sizeof(line0) - used, " P");
         }
     }
@@ -104,9 +104,7 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
         std::snprintf(pressure, sizeof(pressure), "-- hPa");
     }
 
-    const int gas = mq135_gas_index(mq135_raw_adc);
-    char gas_cell[16];
-    std::snprintf(gas_cell, sizeof(gas_cell), "g:%d", gas);
+    const std::string lux_cell = format_lux_oled(lux_ok, lux_lx);
 
     char pm25[16];
     char pm10[16];
@@ -120,7 +118,7 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
         std::snprintf(pm10, sizeof(pm10), "PM10 --");
     }
 
-    return {clip_oled_line(line0), two_col(pressure, gas_cell), two_col(pm25, pm10)};
+    return {clip_oled_line(line0), two_col(pressure, lux_cell), two_col(pm25, pm10)};
 }
 
 }  // namespace atmosmesh

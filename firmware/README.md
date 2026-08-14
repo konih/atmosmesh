@@ -52,7 +52,7 @@ VCC with pull-ups to VCC can kill GPIO5/4.
 | MQ135 AOUT | GPIO34 via divider | Analog, not UART. Neither RX2/TX2 nor RX0/TX0 |
 | Beeper SIG | GPIO25 | 3-pin VCC/GND/SIG. 50 ms HIGH at boot; 50 ms on PIR rising edge |
 | PIR D-SUN OUT | GPIO33 | 3-pin. Digital. Was reserved 27 — **use 33** |
-| Mic analog AO | GPIO35 | ADC1, 11 dB. Input-only — **no output**. VCC **3V3**; AO ≤3.3 V. GPIO22 is free |
+| VEML7700 lux | GPIO21/19 (Wire1) | I²C **0x10** with BMP280. VCC 3V3. **Not fitted yet.** No extra GPIO |
 
 Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SDS011 only.
 **Do not wire SDS011 (d011v2) to RX0/TX0** (GPIO3/GPIO1). Those pins are the CP2102 USB-UART used
@@ -68,9 +68,10 @@ to GPIO34.** Serial also warns; do not label the reading `CO2` or `ppm`.
 GPIO5 (OLED SDA) has an internal pull-up and wants idle-high at boot; that is usually compatible
 with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 
-**Microphone is analog AO on GPIO35** (ADC1, 11 dB, input-only — never `digitalWrite`). Module VCC
-is **3V3**; AO must stay **≤3.3 V**. Serial logs `mic: raw=…` about every 750 ms. `mic: sound` /
-`mic: quiet` when raw crosses **800** (~645 mV at 3.3 V FS). GPIO22 is unused.
+**VEML7700 lux** shares **Wire1** with BMP280 (SDA=GPIO21, SCL=GPIO19), I²C **0x10**, VCC **3V3**.
+The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)` and the OLED shows
+`-- lx` on the hPa line. When present: serial `veml7700: lux=…` and e.g. `1013 hPa   123 lx`.
+**No microphone. No clap.** GPIO22 and GPIO35 are unused.
 
 ## Layout
 
@@ -85,6 +86,7 @@ is **3V3**; AO must stay **≤3.3 V**. Serial logs `mic: raw=…` about every 75
 | `src/sds011_frame.cpp` | Host-testable SDS011 `AA C0 … AB` checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
 | `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
-| `src/digital_edge.cpp` | Host-testable PIR debounce + analog mic `raw=` / sound threshold labels |
-| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, AM2302, SDS011 UART2, MQ135 ADC, PIR/mic/beeper |
+| `src/digital_edge.cpp` | Host-testable PIR debounce + serial labels |
+| `src/veml7700_text.cpp` | Host-testable VEML7700 0x10 / lux OLED+serial formatters |
+| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, VEML7700, AM2302, SDS011 UART2, MQ135 ADC, PIR/beeper |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |

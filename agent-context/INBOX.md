@@ -4,19 +4,16 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ---
 
-## Operator note — mic SIG is GPIO35 analog (2026-08-14)
+## Operator note — no mic/clap; VEML7700 on Wire1 (2026-08-14)
 
-**Live breadboard + firmware** (`fix/oled-u8g2-sds011-listen`): microphone **AO on GPIO35**
-(ADC1, 11 dB). **Not GPIO22.** GPIO22 is free. Module VCC **3V3**; AO must stay **≤3.3 V**.
-GPIO35 is input-only — firmware never drives it as output.
+**Live firmware** (`fix/oled-u8g2-sds011-listen`): **no microphone, no clap.** GPIO22 and GPIO35
+are free. PIR GPIO33, beeper GPIO25 stay.
 
-Serial: `mic: raw=…` ~750 ms; `mic: sound` / `mic: quiet` when raw crosses **800** (~645 mV).
-PIR stays GPIO33; beeper GPIO25.
-
-**KiCad copper still has `MIC_SIG` on GPIO22** from the extras-header session. **Do not edit
-KiCad from firmware.** Next PCB session: move J_MIC SIG to **GPIO35 analog**; leave GPIO22 NC.
-Authoritative map: [`extra-peripherals.md`](extra-peripherals.md) and
-[`pcb-session-prompt.md`](pcb-session-prompt.md).
+**VEML7700 lux** (part **not fitted yet**): I²C **0x10** on **Wire1 with BMP280** (SDA=GPIO21,
+SCL=GPIO19, VCC 3V3). Serial `veml7700: not found (ok until fitted)` until the module is fitted.
+OLED line 1: `1013 hPa   -- lx` (or `123 lx` when present). **Do not edit KiCad from firmware.**
+Next PCB session: **J_VEML** 1×4 sharing `SDA_SENS`/`SCL_SENS`; drop `J_MIC`. Map:
+[`extra-peripherals.md`](extra-peripherals.md) and [`pcb-session-prompt.md`](pcb-session-prompt.md).
 
 ## ~~Operator task / PCB session — extra connectors (2026-08-14, **live pins**)~~ DONE
 

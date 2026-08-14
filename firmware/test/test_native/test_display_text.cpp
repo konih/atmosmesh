@@ -12,6 +12,7 @@
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
 #include "atmosmesh/sds011_frame.hpp"
+#include "atmosmesh/veml7700_text.hpp"
 
 void test_clip_truncates_to_oled_width() {
     const std::string clipped = atmosmesh::clip_oled_line("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -67,7 +68,7 @@ void test_live_page_is_three_rows_on_64px() {
         TEST_ASSERT_EQUAL(std::string::npos, line.find("/"));
     }
     TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   g:20", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 12   PM10 20", lines[2].c_str());
 }
 
@@ -85,12 +86,26 @@ void test_live_page_appends_p_when_pir_motion_and_space() {
     TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(motion[0].size()));
 }
 
+void test_live_page_shows_lux_on_hpa_line() {
+    const auto missing =
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
+                                     false, false, 0.0F);
+    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", missing[1].c_str());
+    const auto present =
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
+                                     false, true, 123.4F);
+    TEST_ASSERT_EQUAL_STRING("1013 hPa   123 lx", present[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", present[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM2.5 12   PM10 20", present[2].c_str());
+    TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(present[1].size()));
+}
+
 void test_live_page_fits_worst_case_six_cells() {
     const auto lines =
         atmosmesh::live_sensor_lines(true, -10.0F, 100.0F, true, 1013.2F, true, 999.4F, 999.4F,
                                      4095);
     TEST_ASSERT_EQUAL_STRING("-10.0C  100% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   g:100", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 999  PM10 999", lines[2].c_str());
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
@@ -102,7 +117,7 @@ void test_live_page_missing_sensors() {
         atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, 0.0F, false, 0.0F, 0.0F, 0);
     TEST_ASSERT_EQUAL_INT(3, static_cast<int>(lines.size()));
     TEST_ASSERT_EQUAL_STRING("--C  --% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("-- hPa     g:0", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("-- hPa     -- lx", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 --   PM10 --", lines[2].c_str());
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
@@ -133,16 +148,27 @@ void test_sds011_uart_pins_are_rx2_tx2() {
 void test_extra_peripheral_pins_match_live_bench() {
     TEST_ASSERT_EQUAL_INT(25, atmosmesh::kBeeperGpio);
     TEST_ASSERT_EQUAL_INT(33, atmosmesh::kPirGpio);
-    TEST_ASSERT_EQUAL_INT(35, atmosmesh::kMicGpio);
     TEST_ASSERT_EQUAL_INT(50, atmosmesh::kDigitalDebounceMs);
     TEST_ASSERT_EQUAL_INT(50, atmosmesh::kBeeperPulseMs);
-    TEST_ASSERT_EQUAL_INT(750, atmosmesh::kMicRawLogIntervalMs);
-    TEST_ASSERT_EQUAL_INT(800, atmosmesh::kMicSoundRawThreshold);
-    // GPIO35 is ADC1 analog AO (input-only). GPIO22 is free — not the mic.
-    TEST_ASSERT_TRUE(atmosmesh::gpio_is_adc1(atmosmesh::kMicGpio));
-    TEST_ASSERT_TRUE(atmosmesh::gpio_is_input_only(atmosmesh::kMicGpio));
+    TEST_ASSERT_EQUAL_INT(21, atmosmesh::kSensorSdaGpio);
+    TEST_ASSERT_EQUAL_INT(19, atmosmesh::kSensorSclGpio);
     TEST_ASSERT_FALSE(atmosmesh::gpio_is_input_only(atmosmesh::kBeeperGpio));
     TEST_ASSERT_TRUE(atmosmesh::gpio_is_adc1(atmosmesh::kMq135AdcGpio));
+}
+
+void test_veml7700_address_is_0x10_no_bmp_clash() {
+    TEST_ASSERT_EQUAL_HEX8(0x10, atmosmesh::kVeml7700Address);
+    TEST_ASSERT_NOT_EQUAL(static_cast<int>(atmosmesh::kBmp280AddressGnd),
+                          static_cast<int>(atmosmesh::kVeml7700Address));
+    TEST_ASSERT_NOT_EQUAL(static_cast<int>(atmosmesh::kBmp280AddressVdd),
+                          static_cast<int>(atmosmesh::kVeml7700Address));
+    TEST_ASSERT_NOT_EQUAL(static_cast<int>(atmosmesh::kOledI2cAddresses[0]),
+                          static_cast<int>(atmosmesh::kVeml7700Address));
+    const std::uint8_t found[] = {0x76, 0x10};
+    TEST_ASSERT_TRUE(atmosmesh::has_veml7700_address(found, 2));
+    const std::uint8_t bmp_only[] = {0x76};
+    TEST_ASSERT_FALSE(atmosmesh::has_veml7700_address(bmp_only, 1));
+    TEST_ASSERT_FALSE(atmosmesh::has_veml7700_address(nullptr, 0));
 }
 
 void test_oled_address_list_prefers_ssd1306_not_lcd() {
@@ -499,21 +525,19 @@ void test_sds011_stream_skips_noise_then_parses() {
     TEST_ASSERT_FLOAT_WITHIN(0.01F, 12.3F, last.pm25_ug_m3);
 }
 
-void test_pir_mic_serial_labels() {
+void test_pir_serial_labels() {
     TEST_ASSERT_EQUAL_STRING("pir: motion", atmosmesh::format_pir_log(true).c_str());
     TEST_ASSERT_EQUAL_STRING("pir: idle", atmosmesh::format_pir_log(false).c_str());
-    TEST_ASSERT_EQUAL_STRING("mic: sound", atmosmesh::format_mic_log(true).c_str());
-    TEST_ASSERT_EQUAL_STRING("mic: quiet", atmosmesh::format_mic_log(false).c_str());
-    TEST_ASSERT_EQUAL_STRING("mic: raw=1234", atmosmesh::format_mic_raw_log(1234).c_str());
     TEST_ASSERT_EQUAL_STRING("beep: boot", atmosmesh::format_beep_boot_log().c_str());
 }
 
-void test_mic_sound_threshold_is_raw_800() {
-    // 800 / 4095 * 3300 mV ≈ 645 mV at ADC_11db (~3.3 V FS). Documented in pins.hpp.
-    TEST_ASSERT_FALSE(atmosmesh::mic_raw_is_sound(799));
-    TEST_ASSERT_TRUE(atmosmesh::mic_raw_is_sound(800));
-    TEST_ASSERT_TRUE(atmosmesh::mic_raw_is_sound(4095));
-    TEST_ASSERT_FALSE(atmosmesh::mic_raw_is_sound(0));
+void test_veml7700_lux_formatter() {
+    TEST_ASSERT_EQUAL_STRING("123 lx", atmosmesh::format_lux_oled(true, 123.4F).c_str());
+    TEST_ASSERT_EQUAL_STRING("-- lx", atmosmesh::format_lux_oled(false, 123.4F).c_str());
+    TEST_ASSERT_EQUAL_STRING("veml7700: lux=123",
+                             atmosmesh::format_veml7700_serial(true, 123.4F).c_str());
+    TEST_ASSERT_EQUAL_STRING("veml7700: not found (ok until fitted)",
+                             atmosmesh::format_veml7700_serial(false, 0.0F).c_str());
 }
 
 void test_debounce_ignores_glitch_under_50ms() {
@@ -583,9 +607,11 @@ int main() {
     RUN_TEST(test_sds011_rejects_wrong_header_or_tail);
     RUN_TEST(test_sds011_stream_skips_noise_then_parses);
     RUN_TEST(test_live_page_appends_p_when_pir_motion_and_space);
+    RUN_TEST(test_live_page_shows_lux_on_hpa_line);
     RUN_TEST(test_extra_peripheral_pins_match_live_bench);
-    RUN_TEST(test_pir_mic_serial_labels);
-    RUN_TEST(test_mic_sound_threshold_is_raw_800);
+    RUN_TEST(test_veml7700_address_is_0x10_no_bmp_clash);
+    RUN_TEST(test_pir_serial_labels);
+    RUN_TEST(test_veml7700_lux_formatter);
     RUN_TEST(test_debounce_ignores_glitch_under_50ms);
     return UNITY_END();
 }

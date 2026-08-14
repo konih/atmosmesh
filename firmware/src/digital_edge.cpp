@@ -1,9 +1,5 @@
 #include "atmosmesh/digital_edge.hpp"
 
-#include "atmosmesh/pins.hpp"
-
-#include <cstdio>
-
 namespace atmosmesh {
 
 bool update_debounced_level(DebouncedLevel& state, bool sample, std::uint32_t now_ms,
@@ -35,20 +31,6 @@ bool update_debounced_level(DebouncedLevel& state, bool sample, std::uint32_t no
 
 std::string format_pir_log(bool motion) {
     return motion ? "pir: motion" : "pir: idle";
-}
-
-std::string format_mic_log(bool sound) {
-    return sound ? "mic: sound" : "mic: quiet";
-}
-
-std::string format_mic_raw_log(int raw_adc) {
-    char line[32];
-    std::snprintf(line, sizeof(line), "mic: raw=%d", raw_adc);
-    return line;
-}
-
-bool mic_raw_is_sound(int raw_adc) {
-    return raw_adc >= kMicSoundRawThreshold;
 }
 
 std::string format_beep_boot_log() {
