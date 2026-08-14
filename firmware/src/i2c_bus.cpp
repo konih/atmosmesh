@@ -1,4 +1,4 @@
-#include "atmosmesh/lcd_bus.hpp"
+#include "atmosmesh/i2c_bus.hpp"
 
 #include <Wire.h>
 

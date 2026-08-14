@@ -13,8 +13,8 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 ## Current boundary
 
 - First active story: `RLS-01` hardware identification and wiring approval.
-- Firmware bring-up for the bench I²C LCD on GPIO5/GPIO4 is in `firmware/` (D-006). Do not
-  energise SDS011/MQ135/mains until RLS-01 wiring is approved.
+- Firmware bring-up for the bench I²C SSD1306 OLED on GPIO5/GPIO4 is in `firmware/` (D-001).
+  Do not energise SDS011/MQ135/mains until RLS-01 wiring is approved.
 - Do not deploy to a Kubernetes cluster without explicit user authorization and known context.
 
 ## Mandatory electrical safety rules
@@ -94,7 +94,7 @@ Keep using Homebrew `pio` for firmware builds; do not install a second PlatformI
 | Bootstrap host venv | `task bootstrap-agent-python` |
 | Host unit tests | `task test` |
 | Build ESP32 image | `task build` |
-| Flash | `task flash` (LCD SDA is GPIO5, not GPIO2; GPIO5 idle-high is usually OK) |
+| Flash | `task flash` (OLED SDA is GPIO5 / SCL GPIO4) |
 | Serial monitor | `task monitor` |
 | Flash then monitor | `task run` / `task flash-monitor` |
 | Direct esptool | `./scripts/esp-tool` (not system `python -m esptool`) |

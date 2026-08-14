@@ -10,8 +10,8 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | SDS011 | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART 9600 8N1, 3.3-V TTL | Datasheet pin functions known; connector/adapter order pending |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
-| Mini OLED, 4 pins | Station local status (D-001) | 3.3 V planned | I²C 0x3C/0x3D expected | SSD1306 vs SH1106 and pin order pending |
-| LCD 1602 I²C | Bench dummy-text bring-up (D-006) | **3V3 only** | I²C on D5/D4 | Operator: SDA=GPIO5, SCL=GPIO4, swap retry |
+| Mini OLED, 4 pins | Station local status (D-001) | **3V3** | I²C **0x3C** (fallback 0x3D) | Serial-proven 2026-08-14: SSD1306 at 0x3C, SDA=GPIO5, SCL=GPIO4 |
+| LCD 1602 I²C | Not the product display | **3V3 only** if reused | I²C backpack 0x27/0x3F | Spare. Station firmware drives the OLED, not this panel |
 | MQ135 module | Experimental gas trend | 5 V heater | Analog through divider | Output range pending; never label as CO₂ |
 | Open AC/DC `5V07 / 12V04` | Candidate station 5 V rail | 230 V AC primary | DC output unverified | **Must measure** before use. Family is 5 V/700 mA *or* 12 V/~400 mA. Open mains PCB — enclose first. See [power.md](power.md) |
 | SANMIM SM-PLG06A / SM-104-3.3V-02 | Spare 3.3 V AC/DC | 230 V AC primary | 3.3 V | Not required for MVP; do not parallel with ESP32 `3V3`. Open mains PCB |
@@ -58,8 +58,8 @@ If VCC is 5 V and the module’s I²C pull-ups sit on VCC, SDA/SCL become 5 V an
 | I²C SCL (GY-BMP280) | GPIO19 | Operator, 2026-08-14. Not GPIO22 or GPIO18 |
 | BMP280 CSB | 3V3 | I²C mode; not an ESP32 GPIO |
 | BMP280 SDO | GND | Address 0x76; not an ESP32 GPIO |
-| I²C SDA (bench LCD) | GPIO5 / D5 | D-006; idle-high (pull-up) is usually OK for boot |
-| I²C SCL (bench LCD) | GPIO4 / D4 | Power LCD VCC from 3V3, never 5 V |
+| I²C SDA (SSD1306 OLED) | GPIO5 / D5 | D-001; serial-proven 0x3C. Idle-high pull-up is usually OK for boot |
+| I²C SCL (SSD1306 OLED) | GPIO4 / D4 | Power OLED VCC from 3V3, never 5 V |
 | AM2302 data | GPIO18 / D18 | Operator, 2026-08-14. Idle-high OK (3.3 V flash-voltage strap) |
 | SDS011 TX | GPIO16 / RX2 | Sensor TX into ESP32 RX |
 | SDS011 RX | GPIO17 / TX2 | ESP32 TX into sensor RX |

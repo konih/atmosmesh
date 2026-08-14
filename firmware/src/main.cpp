@@ -1,19 +1,20 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <DHT.h>
-#include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
 #include "atmosmesh/bmp_address.hpp"
 #include "atmosmesh/display_text.hpp"
-#include "atmosmesh/lcd_address.hpp"
-#include "atmosmesh/lcd_bus.hpp"
+#include "atmosmesh/i2c_bus.hpp"
+#include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/pins.hpp"
 
 namespace {
 
 DHT am2302(atmosmesh::kAm2302DataGpio, DHT22);
-LiquidCrystal_I2C* lcd = nullptr;
-bool lcd_ready = false;
+Adafruit_SSD1306* oled = nullptr;
+bool oled_ready = false;
 int bmp_address = -1;
 
 void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::uint8_t* found,
@@ -25,11 +26,25 @@ void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::ui
     }
 }
 
-bool try_lcd_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh::I2cDevice* out) {
+void show_lines(const std::string* lines, std::size_t count) {
+    if (!oled_ready || oled == nullptr) {
+        return;
+    }
+    oled->clearDisplay();
+    oled->setTextSize(1);
+    oled->setTextColor(SSD1306_WHITE);
+    oled->setCursor(0, 0);
+    for (std::size_t i = 0; i < count; ++i) {
+        oled->println(lines[i].c_str());
+    }
+    oled->display();
+}
+
+bool try_oled_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh::I2cDevice* out) {
     std::uint8_t found[16];
     const std::size_t count = atmosmesh::scan_i2c_bus(Wire, pins, found, sizeof(found));
     log_scan(label, pins, found, count > sizeof(found) ? sizeof(found) : count);
-    const int address = atmosmesh::pick_lcd_address(found, count);
+    const int address = atmosmesh::pick_oled_address(found, count);
     if (address < 0) {
         return false;
     }
@@ -38,32 +53,46 @@ bool try_lcd_bus(const char* label, const atmosmesh::I2cBusMap& pins, atmosmesh:
     return true;
 }
 
-void setup_lcd() {
-    atmosmesh::I2cDevice device{};
-    const atmosmesh::I2cBusMap primary{atmosmesh::kLcdSdaGpio, atmosmesh::kLcdSclGpio};
-    const atmosmesh::I2cBusMap swapped{atmosmesh::kLcdSclGpio, atmosmesh::kLcdSdaGpio};
+bool begin_oled(std::uint8_t address, int height_px) {
+    delete oled;
+    oled = new Adafruit_SSD1306(atmosmesh::kOledWidthPx, height_px, &Wire, -1);
+    if (!oled->begin(SSD1306_SWITCHCAPVCC, address)) {
+        Serial.printf("oled: init error addr=0x%02X height=%d\n", address, height_px);
+        delete oled;
+        oled = nullptr;
+        return false;
+    }
+    Serial.printf("oled: init ok addr=0x%02X height=%d sda=%d scl=%d\n", address, height_px,
+                  atmosmesh::kOledSdaGpio, atmosmesh::kOledSclGpio);
+    return true;
+}
 
-    bool found = try_lcd_bus("lcd d5=sda d4=scl", primary, &device);
+void setup_oled() {
+    atmosmesh::I2cDevice device{};
+    const atmosmesh::I2cBusMap primary{atmosmesh::kOledSdaGpio, atmosmesh::kOledSclGpio};
+    const atmosmesh::I2cBusMap swapped{atmosmesh::kOledSclGpio, atmosmesh::kOledSdaGpio};
+
+    bool found = try_oled_bus("oled d5=sda d4=scl", primary, &device);
     if (!found) {
-        found = try_lcd_bus("lcd swapped", swapped, &device);
+        found = try_oled_bus("oled swapped", swapped, &device);
     }
     if (!found) {
-        Serial.println("lcd: no i2c device on GPIO5/GPIO4");
+        Serial.println("oled: no i2c device at 0x3C/0x3D on GPIO5/GPIO4");
         return;
     }
 
-    Serial.printf("lcd address=0x%02X sda=%d scl=%d\n", device.address, device.pins.sda_gpio,
+    Serial.printf("oled address=0x%02X sda=%d scl=%d\n", device.address, device.pins.sda_gpio,
                   device.pins.scl_gpio);
-    lcd = new LiquidCrystal_I2C(device.address, atmosmesh::kLcdColumns, atmosmesh::kLcdRows);
-    lcd->init();
-    lcd->backlight();
-    lcd->clear();
+
+    if (!begin_oled(device.address, atmosmesh::kOledHeightPx) &&
+        !begin_oled(device.address, atmosmesh::kOledHeightPxAlt)) {
+        Serial.println("oled: init failed");
+        return;
+    }
+
+    oled_ready = true;
     const auto lines = atmosmesh::dummy_banner();
-    lcd->setCursor(0, 0);
-    lcd->print(lines[0].c_str());
-    lcd->setCursor(0, 1);
-    lcd->print(lines[1].c_str());
-    lcd_ready = true;
+    show_lines(lines.data(), lines.size());
 }
 
 void setup_bmp280() {
@@ -103,9 +132,9 @@ void setup() {
     Serial.begin(atmosmesh::kSerialBaud);
     delay(200);
     Serial.println("atmosmesh bench bring-up");
-    Serial.println("LCD VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO18");
+    Serial.println("OLED VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO18");
 
-    setup_lcd();
+    setup_oled();
     setup_bmp280();
     am2302.begin();
     Serial.printf("am2302: data=GPIO%d\n", atmosmesh::kAm2302DataGpio);
@@ -123,24 +152,7 @@ void loop() {
         Serial.println("am2302: read failed (need 3V3, 10k pull-up to 3V3 if the module has none)");
     }
 
-    if (!lcd_ready || lcd == nullptr) {
-        return;
-    }
-    lcd->clear();
-    lcd->setCursor(0, 0);
-    char line0[17];
-    if (am_ok) {
-        snprintf(line0, sizeof(line0), "T%5.1f H%4.1f", temperature, humidity);
-    } else {
-        snprintf(line0, sizeof(line0), "AM2302 missing");
-    }
-    lcd->print(line0);
-    lcd->setCursor(0, 1);
-    char line1[17];
-    if (bmp_address >= 0) {
-        snprintf(line1, sizeof(line1), "BMP I2C 0x%02X", static_cast<unsigned>(bmp_address) & 0xFFU);
-    } else {
-        snprintf(line1, sizeof(line1), "BMP280 missing");
-    }
-    lcd->print(line1);
+    const auto lines =
+        atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_address >= 0, bmp_address);
+    show_lines(lines.data(), lines.size());
 }

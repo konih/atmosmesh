@@ -81,6 +81,6 @@ The map in [inventory.md](inventory.md) is still **not approved**, but the sheet
 - SDS011 connector vs USB2TT004 adapter pin order (datasheet pin 1 = NC, 3 = 5 V, 6 = RX, 7 = TX).
 - DHT22 vs wired AM2302 pin/colour order.
 - GY-BMP280 6-pin: CSB→3V3 and SDO→GND for I²C 0x76. Breakout regulator / 5 V VCC still unconfirmed.
-- OLED: SSD1306 vs SH1106, VCC pin 3.3 V vs 5 V, pin order VCC-GND-SCL-SDA vs GND-VCC-SCL-SDA.
+- OLED: SSD1306 at 0x3C on GPIO5/GPIO4 proven on the bench; SH1106 still possible on a second module. VCC 3.3 V.
 - MQ135 module AO unloaded voltage (must measure; Winsen Vs is not the module AO).
 - 5 V supply rating and ripple.

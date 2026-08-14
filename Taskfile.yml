@@ -42,7 +42,7 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev"
 
   flash:
-    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). LCD SDA is GPIO5 (not GPIO2).
+    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). OLED SDA is GPIO5, SCL GPIO4.
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}"

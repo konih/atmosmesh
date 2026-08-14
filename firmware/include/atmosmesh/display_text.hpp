@@ -8,11 +8,17 @@
 
 namespace atmosmesh {
 
-using LcdLines = std::array<std::string, kLcdRows>;
+using OledBanner = std::array<std::string, 2>;
+using OledLivePage = std::array<std::string, 3>;
 
-// Truncate to the HD44780 width. Does not pad; the driver clears the row.
-std::string clip_lcd_line(std::string_view text);
+int oled_page_count(int height_px);
 
-LcdLines dummy_banner();
+// Truncate to the Adafruit 6-px glyph columns. Does not pad; the driver clears the panel.
+std::string clip_oled_line(std::string_view text);
+
+OledBanner dummy_banner();
+
+OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
+                               int bmp_address);
 
 }  // namespace atmosmesh

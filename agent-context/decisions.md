@@ -6,7 +6,9 @@
 
 - **Status:** Accepted
 - **Reason:** Low pin count, low memory use, sufficient local feedback.
-- **Consequence:** The 480×320 Raspberry Pi TFT is excluded from the MVP.
+- **Consequence:** The 480×320 Raspberry Pi TFT is excluded from the MVP. Station firmware
+  drives an SSD1306 over I²C (prefer 0x3C, then 0x3D) on GPIO5/GPIO4. The I²C 1602 LCD is not
+  the product display.
 
 ### D-002 — MQ135 is not CO₂
 
@@ -43,17 +45,18 @@
 - **Consequence:** SANMIM SM-104-3.3V-02 is spare, not paralleled with ESP32 `3V3`. Relays stay
   out of the power budget.
 
-### D-006 — Bench LCD 1602 on GPIO5/GPIO4; PlatformIO for firmware
+### D-006 — PlatformIO for firmware; GPIO5/GPIO4 is the display I²C bus
 
-- **Status:** Accepted for bring-up. Does not retire D-001 (mini OLED remains the station MVP display).
-- **Rule:** Operator wired an I²C character LCD to DevBoard **D5 (GPIO5)** and **D4 (GPIO4)**. Firmware
-  treats D5 as SDA and D4 as SCL, and will swap once if the first mapping finds no I²C device.
-- **Power:** LCD VCC must be **3.3 V** (ESP32 `3V3`), not 5 V. A 5 V backpack pull-up would put 5 V
-  on GPIOs. GPIO5 wants idle-high at boot; the I²C pull-up is usually compatible. LCD is not on GPIO2.
+- **Status:** Accepted for toolchain. Display hardware on this bus is the SSD1306 (D-001), not LCD.
+- **Rule:** Operator wired the mini I²C OLED to DevBoard **D5 (GPIO5)** and **D4 (GPIO4)**. Firmware
+  treats D5 as SDA and D4 as SCL, prefers address **0x3C** then **0x3D**, and will swap the pin
+  mapping once if the first mapping finds no OLED.
+- **Power:** OLED VCC must be **3.3 V** (ESP32 `3V3`), not 5 V. GPIO5 wants idle-high at boot; the
+  I²C pull-up is usually compatible.
 - **Toolchain:** PlatformIO + Arduino, board `esp32dev`. Host-side Unity tests run on `native`.
   ESPHome remains a later option for station YAML if we want it; we do not maintain two stacks now.
-- **Reason:** Operator asked for a tested firmware scaffold and dummy text on this LCD before RLS-01
-  photos are complete.
+- **Supersedes:** Earlier LCD 1602 dummy-text bring-up on the same pins. That panel is not the
+  station display.
 
 ## Open decisions
 

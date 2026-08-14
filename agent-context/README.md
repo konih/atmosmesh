@@ -10,12 +10,12 @@ this dashboard records what changes between sessions.
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
-LCD VCC must be **3.3 V**. LCD SDA is GPIO5 (not GPIO2); GPIO5 idle-high is usually OK for flash.
+OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
 
 - Exact ESP32 **devboard** silkscreen (`VIN`/`5V` vs `3V3`) is not confirmed (chip is ESP32-D0WDQ6).
-- OLED controller, resolution, I²C address, and pin order are not confirmed.
+- OLED: SSD1306 at **0x3C** on SDA=GPIO5 SCL=GPIO4 (serial-proven). SH1106 still possible on a second module.
 - BMP280 breakout is 6-pin (VCC GND SCL SDA CSB SDO); onboard regulator / 5 V VCC still unconfirmed.
 - Candidate 5 V AC/DC `5V07 / 12V04` is unverified (5 V/700 mA vs 12 V) and still an open mains PCB.
 - Shared-rail peak current (~650 mA) vs 700 mA module rating is unresolved.
