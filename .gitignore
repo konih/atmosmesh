@@ -1,0 +1,65 @@
+# This repository intentionally shares its agent instructions and live context.
+!AGENTS.md
+!agent-context/
+!agent-context/**
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+secrets.yaml
+secrets.yml
+*secret*.yaml
+*secret*.yml
+*.local
+*.key
+*.pem
+kubeconfig
+kubeconfig.*
+
+# Firmware build state
+.esphome/
+.pio/
+.platformio/
+firmware/.cache/
+firmware/build/
+firmware/.build/
+
+# Deployment tooling
+charts/
+deploy/rendered/
+deploy/.helm/
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Test and language caches
+.pytest_cache/
+.coverage
+htmlcov/
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+build/
+coverage/
+
+# Logs and captured device data
+*.log
+captures/
+measurements/
+serial-dumps/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*.local.json
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak

@@ -1,0 +1,39 @@
+# Delivery roadmap
+
+The MVP is complete only when RLS-01 through RLS-08 are done. Optional work does not substitute
+for an unfinished MVP story.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | [RLS-01](stories/RLS-01.md) | Ready | P0 | — | Hardware and wiring approved from evidence |
+| 2 | [RLS-02](stories/RLS-02.md) | Blocked | P0 | RLS-01 | OLED and BMP280 work on the shared I²C bus |
+| 3 | [RLS-03](stories/RLS-03.md) | Blocked | P0 | RLS-01, RLS-02 | All MVP sensors run together on the bench |
+| 4 | [RLS-04](stories/RLS-04.md) | Blocked | P1 | RLS-02, RLS-03 | Useful local display and explicit health states |
+| 5 | [RLS-05](stories/RLS-05.md) | Blocked | P0 | RLS-03 | Stable MQTT contract and reconnect behavior |
+| 6 | [RLS-06](stories/RLS-06.md) | Blocked | P1 | RLS-05, cluster context | Declarative home-automation services in Kubernetes |
+| 7 | [RLS-07](stories/RLS-07.md) | Blocked | P1 | RLS-05, RLS-06 | Dashboard, history, and first alert end to end |
+| 8 | [RLS-08](stories/RLS-08.md) | Blocked | P0 | RLS-01–RLS-07 | Safe 48-hour unattended run |
+| — | [RLS-09](stories/RLS-09.md) | Optional | P3 | Confirmed NDIR sensor, RLS-08 | True CO₂ measurement |
+| — | [RLS-10](stories/RLS-10.md) | Optional | P3 | RLS-08 | Evaluate 480×320 TFT separately |
+
+## Milestones
+
+### M1 — Hardware approved
+
+RLS-01 is done. No electrical assumption remains unresolved in the build table.
+
+### M2 — Bench station
+
+RLS-02 and RLS-03 are done. All sensors run together for at least 30 minutes.
+
+### M3 — Connected station
+
+RLS-04 and RLS-05 are done. Local UI and MQTT survive controlled failures.
+
+### M4 — Platform integration
+
+RLS-06 and RLS-07 are done. One measurement is traceable from sensor to dashboard and alert.
+
+### M5 — MVP
+
+RLS-08 is done. The station completes a safe 48-hour unattended run with documented recovery.
