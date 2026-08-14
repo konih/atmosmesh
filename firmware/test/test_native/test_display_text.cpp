@@ -47,13 +47,14 @@ void test_live_page_is_three_rows_on_64px() {
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819);
     TEST_ASSERT_EQUAL_INT(3, static_cast<int>(lines.size()));
     TEST_ASSERT_EQUAL_INT(3, atmosmesh::oled_live_line_count(64));
-    TEST_ASSERT_EQUAL_INT(20, atmosmesh::oled_line_pitch_px(64));
-    TEST_ASSERT_EQUAL_INT(4, atmosmesh::oled_live_row_y_px(0));
-    TEST_ASSERT_EQUAL_INT(24, atmosmesh::oled_live_row_y_px(1));
-    TEST_ASSERT_EQUAL_INT(44, atmosmesh::oled_live_row_y_px(2));
+    TEST_ASSERT_EQUAL_INT(12, atmosmesh::oled_line_pitch_px(64));
+    TEST_ASSERT_EQUAL_INT(34, atmosmesh::oled_live_row_y_px(0));
+    TEST_ASSERT_EQUAL_INT(46, atmosmesh::oled_live_row_y_px(1));
+    TEST_ASSERT_EQUAL_INT(58, atmosmesh::oled_live_row_y_px(2));
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(32, atmosmesh::oled_live_row_y_px(0));
+    TEST_ASSERT_LESS_OR_EQUAL_INT(62, atmosmesh::oled_live_row_y_px(2));
     TEST_ASSERT_EQUAL_INT(62, atmosmesh::oled_telltale_bar_y_px());
     TEST_ASSERT_EQUAL_INT(2, atmosmesh::oled_telltale_bar_height_px());
-    TEST_ASSERT_LESS_OR_EQUAL_INT(64, atmosmesh::oled_live_row_y_px(2) + 13);
     TEST_ASSERT_EQUAL_INT(64, atmosmesh::oled_telltale_bar_y_px() +
                                   atmosmesh::oled_telltale_bar_height_px());
     for (const auto& line : lines) {
@@ -251,6 +252,17 @@ void test_parse_oled_controller_flag() {
                           static_cast<int>(atmosmesh::parse_oled_controller_flag("SH1106")));
 }
 
+void test_oled_boot_bars_mark_eight_pixel_pages() {
+    TEST_ASSERT_EQUAL_INT(5, atmosmesh::oled_boot_bar_count());
+    TEST_ASSERT_EQUAL_INT(0, atmosmesh::oled_boot_bar_y_px(0));
+    TEST_ASSERT_EQUAL_INT(16, atmosmesh::oled_boot_bar_y_px(1));
+    TEST_ASSERT_EQUAL_INT(32, atmosmesh::oled_boot_bar_y_px(2));
+    TEST_ASSERT_EQUAL_INT(48, atmosmesh::oled_boot_bar_y_px(3));
+    TEST_ASSERT_EQUAL_INT(62, atmosmesh::oled_boot_bar_y_px(4));
+    TEST_ASSERT_EQUAL_INT(0, atmosmesh::oled_boot_bar_y_px(-1));
+    TEST_ASSERT_EQUAL_INT(1500, atmosmesh::oled_boot_bar_hold_ms());
+}
+
 void test_oled_prove_life_serial_lines() {
     TEST_ASSERT_EQUAL_STRING("oled: display on", atmosmesh::format_oled_display_on_log().c_str());
     TEST_ASSERT_EQUAL_STRING("oled: contrast 255", atmosmesh::format_oled_contrast_log().c_str());
@@ -263,6 +275,13 @@ void test_oled_prove_life_serial_lines() {
                              atmosmesh::format_oled_mux48_log().c_str());
     TEST_ASSERT_EQUAL_STRING("oled: telltale bar y=62 h=2",
                              atmosmesh::format_oled_telltale_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: bars y=0,16,32,48,62 — say which you see",
+                             atmosmesh::format_oled_boot_bars_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: flip=0", atmosmesh::format_oled_flip_log().c_str());
+}
+
+void test_compiled_oled_flip_defaults_to_off() {
+    TEST_ASSERT_EQUAL_INT(0, atmosmesh::compiled_oled_flip_mode());
 }
 
 void test_ssd1306_mux32_command_is_a8_1f() {
@@ -414,6 +433,8 @@ int main() {
     RUN_TEST(test_dummy_banner_fits_ssd1306);
     RUN_TEST(test_dummy_banner_is_identifiable);
     RUN_TEST(test_live_page_is_three_rows_on_64px);
+    RUN_TEST(test_oled_boot_bars_mark_eight_pixel_pages);
+    RUN_TEST(test_compiled_oled_flip_defaults_to_off);
     RUN_TEST(test_live_page_fits_worst_case_six_cells);
     RUN_TEST(test_live_page_missing_sensors);
     RUN_TEST(test_i2c_pins_match_operator_oled_d5_d4);

@@ -39,11 +39,16 @@ inline constexpr int kOledHeightPx = 64;
 inline constexpr int kOledHeightPx48 = 48;
 inline constexpr int kOledHeightPxAlt = 32;
 inline constexpr int kOledLiveLineCount = 3;
-inline constexpr int kOledLiveRowYPx[] = {4, 24, 44};
+// Pack three 6×10 rows into the lower 32 px (RAM y≈32–63). Upper pages were
+// blank on this module after ALT0; PM at y=44 and the bar at y=62 were visible.
+inline constexpr int kOledLiveRowYPx[] = {34, 46, 58};
 inline constexpr int kOledLinePitch48Px = 16;
-inline constexpr int kOledLinePitch64Px = 20;
+inline constexpr int kOledLinePitch64Px = 12;
 inline constexpr int kOledTelltaleBarYPx = 62;
 inline constexpr int kOledTelltaleBarHeightPx = 2;
+inline constexpr int kOledBootBarCount = 5;
+inline constexpr int kOledBootBarYPx[] = {0, 16, 32, 48, 62};
+inline constexpr int kOledBootBarHoldMs = 1500;
 inline constexpr std::uint32_t kOledI2cHz = 100000;
 inline constexpr int kOledGlyphWidthPx = 6;
 inline constexpr int kOledGlyphHeightPx = 8;

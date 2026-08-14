@@ -36,6 +36,21 @@ int oled_telltale_bar_height_px() {
     return kOledTelltaleBarHeightPx;
 }
 
+int oled_boot_bar_count() {
+    return kOledBootBarCount;
+}
+
+int oled_boot_bar_y_px(int index) {
+    if (index < 0 || index >= kOledBootBarCount) {
+        return 0;
+    }
+    return kOledBootBarYPx[index];
+}
+
+int oled_boot_bar_hold_ms() {
+    return kOledBootBarHoldMs;
+}
+
 namespace {
 
 std::string two_col(std::string_view left, std::string_view right) {

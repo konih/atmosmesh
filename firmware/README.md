@@ -28,10 +28,12 @@ Mini I²C SSD1306 on the DevBoard (serial-proven 0x3C):
 | SDA | D5 / GPIO5 (firmware retries GPIO4 if this mapping is silent) |
 | SCL | D4 / GPIO4 |
 
-Boot banner: `HI`, then a 2 px telltale bar at y=62, then a **3-row** page on 128×64
-(glyph tops at y=4/24/44): T/RH, hPa/gas index, PM2.5/PM10. Serial still prints full BMP T/P,
-AM2302, SDS011 PM, and MQ135 **raw ADC / GPIO volts** (never CO₂). Firmware prefers I²C **0x3C**,
-then **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
+Boot diagnostic: five 2 px bars at y=0, 16, 32, 48, 62 for ~1.5 s (`oled: bars y=0,16,32,48,62 —
+say which you see`), then a **3-row** live page packed into the **lower 32 px** (glyph tops at
+y=34/46/58): T/RH, hPa/gas index, PM2.5/PM10. Serial prints `oled: flip=0` (rebuild with
+`-DATMOSMESH_OLED_FLIP=1` if COM is inverted). Serial still prints full BMP T/P, AM2302, SDS011
+PM, and MQ135 **raw ADC / GPIO volts** (never CO₂). Firmware prefers I²C **0x3C**, then **0x3D**.
+LCD backpack addresses (0x27/0x3F) are not the display.
 
 **Default constructor is `U8G2_SSD1306_128X64_ALT0_F_HW_I2C` (sequential COM).** Do not send
 mux `0x2F`. Do not use `U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C` as the default — that only

@@ -65,7 +65,10 @@ void show_lines(const std::string* lines, std::size_t count) {
     oled->setFont(u8g2_font_6x10_tf);
     const int baseline_adjust = oled->getAscent();
     for (std::size_t i = 0; i < count; ++i) {
-        const int y = atmosmesh::oled_live_row_y_px(static_cast<int>(i)) + baseline_adjust;
+        int y = atmosmesh::oled_live_row_y_px(static_cast<int>(i)) + baseline_adjust;
+        if (y > oled_profile.clip_max_y) {
+            y = oled_profile.clip_max_y;
+        }
         oled->drawStr(oled_profile.column_offset_px, y, lines[i].c_str());
     }
     oled->sendBuffer();
@@ -100,6 +103,8 @@ bool begin_oled(std::uint8_t address, const atmosmesh::OledProfile& profile) {
         return false;
     }
     oled_profile = profile;
+    oled->setFlipMode(static_cast<uint8_t>(atmosmesh::compiled_oled_flip_mode()));
+    Serial.println(atmosmesh::format_oled_flip_log().c_str());
     if (atmosmesh::oled_should_set_mux(profile)) {
         oled->sendF("ca", atmosmesh::kSsd1306SetMultiplex, atmosmesh::kSsd1306MuxRatio48);
         oled->sendF("ca", atmosmesh::kSsd1306SetDisplayOffset, atmosmesh::kSsd1306DisplayOffset0);
@@ -125,19 +130,13 @@ void prove_oled_glass() {
 
     oled->clearBuffer();
     oled->setDrawColor(1);
-    oled->setFont(u8g2_font_logisoso32_tr);
-    oled->drawStr(0, oled->getAscent(), "HI");
+    for (int i = 0; i < atmosmesh::oled_boot_bar_count(); ++i) {
+        oled->drawBox(0, atmosmesh::oled_boot_bar_y_px(i), atmosmesh::kOledWidthPx,
+                      atmosmesh::oled_telltale_bar_height_px());
+    }
     oled->sendBuffer();
-    Serial.println(atmosmesh::format_oled_text_hi_log().c_str());
-    delay(200);
-
-    oled->clearBuffer();
-    oled->setDrawColor(1);
-    oled->drawBox(0, atmosmesh::oled_telltale_bar_y_px(), atmosmesh::kOledWidthPx,
-                  atmosmesh::oled_telltale_bar_height_px());
-    oled->sendBuffer();
-    Serial.println(atmosmesh::format_oled_telltale_log().c_str());
-    delay(250);
+    Serial.println(atmosmesh::format_oled_boot_bars_log().c_str());
+    delay(atmosmesh::oled_boot_bar_hold_ms());
 }
 
 void setup_oled() {

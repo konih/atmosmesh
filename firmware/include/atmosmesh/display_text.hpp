@@ -17,6 +17,9 @@ int oled_line_pitch_px(int height_px);
 int oled_live_row_y_px(int row);
 int oled_telltale_bar_y_px();
 int oled_telltale_bar_height_px();
+int oled_boot_bar_count();
+int oled_boot_bar_y_px(int index);
+int oled_boot_bar_hold_ms();
 
 // Truncate to the Adafruit 6-px glyph columns. Does not pad; the driver clears the panel.
 std::string clip_oled_line(std::string_view text);

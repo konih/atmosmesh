@@ -10,6 +10,10 @@
 #define ATMOSMESH_OLED_HEIGHT 64
 #endif
 
+#ifndef ATMOSMESH_OLED_FLIP
+#define ATMOSMESH_OLED_FLIP 0
+#endif
+
 namespace atmosmesh {
 
 OledController parse_oled_controller_flag(std::string_view name) {
@@ -116,6 +120,20 @@ std::string format_oled_mux48_log() {
 
 std::string format_oled_telltale_log() {
     return "oled: telltale bar y=62 h=2";
+}
+
+std::string format_oled_boot_bars_log() {
+    return "oled: bars y=0,16,32,48,62 — say which you see";
+}
+
+int compiled_oled_flip_mode() {
+    return ATMOSMESH_OLED_FLIP ? 1 : 0;
+}
+
+std::string format_oled_flip_log() {
+    char line[24];
+    std::snprintf(line, sizeof(line), "oled: flip=%d", compiled_oled_flip_mode());
+    return line;
 }
 
 bool oled_should_set_mux(const OledProfile& /*profile*/) {
