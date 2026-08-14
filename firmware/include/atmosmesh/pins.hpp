@@ -76,5 +76,7 @@ inline constexpr unsigned kBme280ChipId = 0x60;
 
 inline constexpr int kSerialBaud = 115200;
 inline constexpr int kAm2302MinIntervalMs = 2500;
+// Keep last good T/RH on the OLED through this many consecutive AM2302 misses.
+inline constexpr int kAm2302HoldMisses = 4;
 
 }  // namespace atmosmesh

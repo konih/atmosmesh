@@ -4,6 +4,7 @@
 #include <U8g2lib.h>
 #include <Wire.h>
 
+#include "atmosmesh/am2302_frame.hpp"
 #include "atmosmesh/bmp_address.hpp"
 #include "atmosmesh/digital_edge.hpp"
 #include "atmosmesh/display_text.hpp"
@@ -36,6 +37,7 @@ bool pir_motion = false;
 bool am_ok = false;
 float humidity = 0.0F;
 float temperature = 0.0F;
+atmosmesh::Am2302Hold am_hold{};
 float bmp_t_c = 0.0F;
 float bmp_p_hpa = 0.0F;
 bool bmp_read_ok = false;
@@ -94,9 +96,10 @@ void pulse_beeper() {
 }
 
 void refresh_oled() {
-    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_read_ok,
-                                                    bmp_p_hpa, pm_ok, pm25_ug_m3, pm10_ug_m3,
-                                                    mq_raw, pir_motion);
+    const auto lines = atmosmesh::live_sensor_lines(am_hold.show, am_hold.temperature_c,
+                                                    am_hold.humidity_rh, bmp_read_ok, bmp_p_hpa,
+                                                    pm_ok, pm25_ug_m3, pm10_ug_m3, mq_raw,
+                                                    pir_motion);
     show_lines(lines.data(), lines.size());
 }
 
@@ -322,7 +325,9 @@ void setup() {
     setup_oled();
     setup_bmp280();
     am2302.begin();
-    Serial.printf("am2302: data=GPIO%d\n", atmosmesh::kAm2302DataGpio);
+    last_env_ms = millis();
+    Serial.printf("am2302: data=GPIO%d min_interval_ms=%d\n", atmosmesh::kAm2302DataGpio,
+                  atmosmesh::kAm2302MinIntervalMs);
     Serial2.begin(atmosmesh::kSds011Baud, SERIAL_8N1, atmosmesh::kSds011RxGpio,
                   atmosmesh::kSds011TxGpio);
     Serial.printf("sds011: uart2 rx=GPIO%d tx=GPIO%d baud=%d\n", atmosmesh::kSds011RxGpio,
@@ -335,14 +340,17 @@ void loop() {
     poll_sds011();
     poll_extras();
     const unsigned long now = millis();
-    if (last_env_ms != 0 && (now - last_env_ms) < atmosmesh::kAm2302MinIntervalMs) {
+    if ((now - last_env_ms) < static_cast<unsigned long>(atmosmesh::kAm2302MinIntervalMs)) {
         delay(kLoopSliceMs);
         return;
     }
     last_env_ms = now;
+    // Adafruit DHT caches for MIN_INTERVAL (2 s): humidity does the bus read, temperature reuses it.
     humidity = am2302.readHumidity();
     temperature = am2302.readTemperature();
     am_ok = !isnan(humidity) && !isnan(temperature);
+    atmosmesh::update_am2302_hold(am_hold, am_ok, temperature, humidity,
+                                  atmosmesh::kAm2302HoldMisses);
 
     if (am_ok) {
         Serial.printf("am2302: t=%.1fC rh=%.1f%%\n", temperature, humidity);

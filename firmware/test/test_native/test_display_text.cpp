@@ -358,6 +358,50 @@ void test_am2302_bad_checksum_is_missing() {
     TEST_ASSERT_FALSE(atmosmesh::parse_am2302_frame(frame).ok);
 }
 
+void test_am2302_poll_interval_is_at_least_two_seconds() {
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(2500, atmosmesh::kAm2302MinIntervalMs);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(1, atmosmesh::kAm2302HoldMisses);
+}
+
+void test_am2302_hold_keeps_last_good_across_misses() {
+    atmosmesh::Am2302Hold hold{};
+    TEST_ASSERT_FALSE(
+        atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, atmosmesh::kAm2302HoldMisses));
+    TEST_ASSERT_FALSE(hold.show);
+
+    TEST_ASSERT_TRUE(atmosmesh::update_am2302_hold(hold, true, 23.4F, 48.1F,
+                                                    atmosmesh::kAm2302HoldMisses));
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 23.4F, hold.temperature_c);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 48.1F, hold.humidity_rh);
+
+    TEST_ASSERT_TRUE(atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F,
+                                                   atmosmesh::kAm2302HoldMisses));
+    TEST_ASSERT_TRUE(hold.show);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 23.4F, hold.temperature_c);
+    TEST_ASSERT_FLOAT_WITHIN(0.01F, 48.1F, hold.humidity_rh);
+}
+
+void test_am2302_hold_oled_does_not_flash_dash_on_one_miss() {
+    atmosmesh::Am2302Hold hold{};
+    atmosmesh::update_am2302_hold(hold, true, 32.2F, 30.0F, atmosmesh::kAm2302HoldMisses);
+    atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, atmosmesh::kAm2302HoldMisses);
+    const auto lines = atmosmesh::live_sensor_lines(hold.show, hold.temperature_c, hold.humidity_rh,
+                                                    true, 1013.2F, true, 12.3F, 20.1F, 819);
+    TEST_ASSERT_EQUAL_STRING("32.2C  30% RH", lines[0].c_str());
+}
+
+void test_am2302_hold_blanks_after_max_consecutive_misses() {
+    atmosmesh::Am2302Hold hold{};
+    atmosmesh::update_am2302_hold(hold, true, 23.4F, 48.1F, 2);
+    TEST_ASSERT_TRUE(atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, 2));
+    TEST_ASSERT_TRUE(atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, 2));
+    TEST_ASSERT_FALSE(atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, 2));
+    TEST_ASSERT_FALSE(hold.show);
+    const auto lines = atmosmesh::live_sensor_lines(hold.show, hold.temperature_c, hold.humidity_rh,
+                                                    false, 0.0F, false, 0.0F, 0.0F, 0);
+    TEST_ASSERT_EQUAL_STRING("--C  --% RH", lines[0].c_str());
+}
+
 void test_sds011_checksum_and_parse() {
     // PM2.5=12.3, PM10=20.1, id=A1B2; CRC = sum of payload bytes 2..7.
     const std::uint8_t frame[10] = {0xAA, 0xC0, 0x7B, 0x00, 0xC9, 0x00, 0xA1, 0xB2, 0x97, 0xAB};
@@ -516,6 +560,10 @@ int main() {
     RUN_TEST(test_sds011_no_frame_log_points_at_rx2);
     RUN_TEST(test_am2302_checksum_and_parse);
     RUN_TEST(test_am2302_bad_checksum_is_missing);
+    RUN_TEST(test_am2302_poll_interval_is_at_least_two_seconds);
+    RUN_TEST(test_am2302_hold_keeps_last_good_across_misses);
+    RUN_TEST(test_am2302_hold_oled_does_not_flash_dash_on_one_miss);
+    RUN_TEST(test_am2302_hold_blanks_after_max_consecutive_misses);
     RUN_TEST(test_sds011_uart_pins_are_rx2_tx2);
     RUN_TEST(test_sds011_checksum_and_parse);
     RUN_TEST(test_sds011_bad_checksum_is_missing);

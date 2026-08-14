@@ -26,4 +26,25 @@ Am2302Sample parse_am2302_frame(const std::uint8_t bytes[5]) {
     return sample;
 }
 
+bool update_am2302_hold(Am2302Hold& hold, bool read_ok, float temperature_c, float humidity_rh,
+                        int max_misses) {
+    if (read_ok) {
+        hold.temperature_c = temperature_c;
+        hold.humidity_rh = humidity_rh;
+        hold.consecutive_misses = 0;
+        hold.show = true;
+        return true;
+    }
+    if (!hold.show && hold.consecutive_misses == 0) {
+        return false;
+    }
+    hold.consecutive_misses += 1;
+    const int budget = max_misses < 0 ? 0 : max_misses;
+    if (hold.consecutive_misses > budget) {
+        hold.show = false;
+        return false;
+    }
+    return hold.show;
+}
+
 }  // namespace atmosmesh
