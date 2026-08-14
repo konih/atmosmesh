@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Adafruit_BMP280.h>
 #include <DHT.h>
 #include <U8g2lib.h>
 #include <Wire.h>
@@ -15,10 +16,12 @@
 namespace {
 
 DHT am2302(atmosmesh::kAm2302DataGpio, DHT22);
+Adafruit_BMP280 bmp280(&Wire1);
 U8G2* oled = nullptr;
 atmosmesh::OledProfile oled_profile{};
 bool oled_ready = false;
 int bmp_address = -1;
+bool bmp_ok = false;
 atmosmesh::Sds011Stream sds011{};
 bool pm_ok = false;
 float pm25_ug_m3 = 0.0F;
@@ -58,10 +61,11 @@ void show_lines(const std::string* lines, std::size_t count) {
     }
     oled->clearBuffer();
     oled->setDrawColor(1);
-    oled->setFont(u8g2_font_6x12_tf);
+    oled->setFont(u8g2_font_6x10_tf);
+    const int line_px = 12;
     const int baseline0 = oled->getAscent();
     for (std::size_t i = 0; i < count; ++i) {
-        oled->drawStr(oled_profile.column_offset_px, baseline0 + static_cast<int>(i * 12),
+        oled->drawStr(oled_profile.column_offset_px, baseline0 + static_cast<int>(i * line_px),
                       lines[i].c_str());
     }
     oled->sendBuffer();
@@ -193,7 +197,22 @@ void setup_bmp280() {
     Serial.printf("bmp280: addr=0x%02X chip_id=0x%02X\n", bmp_address, chip_id);
     if (!atmosmesh::is_bmp_family_id(chip_id)) {
         Serial.println("bmp280: unexpected chip id (0x58=BMP280, 0x60=BME280)");
+        bmp_address = -1;
+        return;
     }
+
+    // Adafruit_BMP280::begin() calls Wire1.begin() with no pins; restore GPIO21/19.
+    if (!bmp280.begin(static_cast<std::uint8_t>(bmp_address), chip_id)) {
+        Serial.printf("bmp280: begin failed at 0x%02X\n", bmp_address);
+        bmp_address = -1;
+        return;
+    }
+    Wire1.begin(atmosmesh::kSensorSdaGpio, atmosmesh::kSensorSclGpio);
+    Wire1.setClock(atmosmesh::kOledI2cHz);
+    bmp280.setSampling(Adafruit_BMP280::MODE_NORMAL, Adafruit_BMP280::SAMPLING_X2,
+                       Adafruit_BMP280::SAMPLING_X16, Adafruit_BMP280::FILTER_X16,
+                       Adafruit_BMP280::STANDBY_MS_500);
+    bmp_ok = true;
 }
 
 void poll_sds011() {
@@ -260,8 +279,22 @@ void loop() {
     const int mq_raw = analogRead(atmosmesh::kMq135AdcGpio);
     Serial.println(atmosmesh::format_mq135_serial(mq_raw).c_str());
 
-    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_address >= 0,
-                                                    bmp_address, pm_ok, pm25_ug_m3, pm10_ug_m3,
+    float bmp_t_c = 0.0F;
+    float bmp_p_hpa = 0.0F;
+    bool bmp_read_ok = false;
+    if (bmp_ok) {
+        bmp_t_c = bmp280.readTemperature();
+        bmp_p_hpa = bmp280.readPressure() / 100.0F;
+        bmp_read_ok = !isnan(bmp_t_c) && (bmp_p_hpa > 300.0F) && (bmp_p_hpa < 1100.0F);
+        if (bmp_read_ok) {
+            Serial.println(atmosmesh::format_bmp280_serial(bmp_t_c, bmp_p_hpa).c_str());
+        } else {
+            Serial.println("bmp280: read failed");
+        }
+    }
+
+    const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_read_ok,
+                                                    bmp_p_hpa, pm_ok, pm25_ug_m3, pm10_ug_m3,
                                                     mq_raw);
     show_lines(lines.data(), lines.size());
 }

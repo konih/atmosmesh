@@ -1,5 +1,7 @@
 #include "atmosmesh/bmp_address.hpp"
 
+#include <cstdio>
+
 #include "atmosmesh/pins.hpp"
 
 namespace atmosmesh {
@@ -23,6 +25,13 @@ int pick_bmp_address(const std::uint8_t* found, std::size_t found_count) {
 
 bool is_bmp_family_id(std::uint8_t chip_id) {
     return chip_id == kBmp280ChipId || chip_id == kBme280ChipId;
+}
+
+std::string format_bmp280_serial(float temperature_c, float pressure_hpa) {
+    char line[64];
+    std::snprintf(line, sizeof(line), "bmp280: t=%.1fC p=%.1f hPa",
+                  static_cast<double>(temperature_c), static_cast<double>(pressure_hpa));
+    return line;
 }
 
 }  // namespace atmosmesh

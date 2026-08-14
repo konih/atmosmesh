@@ -24,34 +24,35 @@ OledBanner dummy_banner() {
 }
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
-                               int bmp_address, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
+                               float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
                                int mq135_raw_adc) {
-    char am_line[32];
+    char climate[32];
     if (am_ok) {
-        std::snprintf(am_line, sizeof(am_line), "T %4.1fC RH %4.1f%%",
+        std::snprintf(climate, sizeof(climate), "%4.1fC  %2.0f%% RH",
                       static_cast<double>(temperature_c), static_cast<double>(humidity_rh));
     } else {
-        std::snprintf(am_line, sizeof(am_line), "AM2302 missing");
+        std::snprintf(climate, sizeof(climate), "T --  --%% RH");
     }
 
-    char bmp_line[32];
+    char pressure[32];
     if (bmp_ok) {
-        std::snprintf(bmp_line, sizeof(bmp_line), "BMP 0x%02X",
-                      static_cast<unsigned>(bmp_address) & 0xFFU);
+        std::snprintf(pressure, sizeof(pressure), "%4.0f hPa", static_cast<double>(pressure_hpa));
     } else {
-        std::snprintf(bmp_line, sizeof(bmp_line), "BMP280 missing");
+        std::snprintf(pressure, sizeof(pressure), "-- hPa");
     }
 
-    char pm_line[32];
+    char pm25[32];
+    char pm10[32];
     if (pm_ok) {
-        std::snprintf(pm_line, sizeof(pm_line), "PM %4.1f/%4.1f", static_cast<double>(pm25_ug_m3),
-                      static_cast<double>(pm10_ug_m3));
+        std::snprintf(pm25, sizeof(pm25), "PM2.5 %4.1f", static_cast<double>(pm25_ug_m3));
+        std::snprintf(pm10, sizeof(pm10), "PM10 %4.1f", static_cast<double>(pm10_ug_m3));
     } else {
-        std::snprintf(pm_line, sizeof(pm_line), "SDS011 missing");
+        std::snprintf(pm25, sizeof(pm25), "PM2.5 --");
+        std::snprintf(pm10, sizeof(pm10), "PM10 --");
     }
 
-    return {clip_oled_line("AtmosMesh"), clip_oled_line(am_line), clip_oled_line(bmp_line),
-            clip_oled_line(pm_line), clip_oled_line(format_mq135_oled_line(mq135_raw_adc))};
+    return {clip_oled_line(climate), clip_oled_line(pressure), clip_oled_line(pm25),
+            clip_oled_line(pm10), clip_oled_line(format_mq135_oled_line(mq135_raw_adc))};
 }
 
 }  // namespace atmosmesh

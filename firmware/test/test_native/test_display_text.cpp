@@ -43,7 +43,7 @@ void test_dummy_banner_is_identifiable() {
 
 void test_live_page_fits_and_shows_sensors() {
     const auto lines =
-        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 0x76, true, 12.3F, 20.1F, 2048);
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 2048);
     TEST_ASSERT_EQUAL_INT(5, static_cast<int>(lines.size()));
     TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::oled_page_count(64), static_cast<int>(lines.size()));
     for (const auto& line : lines) {
@@ -51,21 +51,29 @@ void test_live_page_fits_and_shows_sensors() {
         TEST_ASSERT_EQUAL(std::string::npos, line.find("CO2"));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("co2"));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("ppm"));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("MQ "));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("/"));
     }
-    TEST_ASSERT_EQUAL_STRING("AtmosMesh", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("T 23.4C RH 48.1%", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("BMP 0x76", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("PM 12.3/20.1", lines[3].c_str());
-    TEST_ASSERT_EQUAL_STRING("MQ 2048 1.65V", lines[4].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013 hPa", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM2.5 12.3", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM10 20.1", lines[3].c_str());
+    TEST_ASSERT_EQUAL_STRING("gas 50", lines[4].c_str());
 }
 
 void test_live_page_missing_sensors() {
     const auto lines =
-        atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, -1, false, 0.0F, 0.0F, 0);
-    TEST_ASSERT_EQUAL_STRING("AM2302 missing", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("BMP280 missing", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("SDS011 missing", lines[3].c_str());
-    TEST_ASSERT_EQUAL_STRING("MQ 0 0.00V", lines[4].c_str());
+        atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, 0.0F, false, 0.0F, 0.0F, 0);
+    TEST_ASSERT_EQUAL_STRING("T --  --% RH", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("-- hPa", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM2.5 --", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("PM10 --", lines[3].c_str());
+    TEST_ASSERT_EQUAL_STRING("gas 0", lines[4].c_str());
+    for (const auto& line : lines) {
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("SDS011 missing"));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("AM2302 missing"));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("BMP280 missing"));
+    }
 }
 
 void test_i2c_pins_match_operator_oled_d5_d4() {
@@ -321,11 +329,20 @@ void test_mq135_serial_and_oled_never_say_co2() {
     TEST_ASSERT_NOT_EQUAL(std::string::npos, serial.find("mq135: raw=2048"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, serial.find("gpio_mv=1650"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, serial.find("aout_mv=2475"));
-    TEST_ASSERT_EQUAL_STRING("MQ 2048 1.65V", oled.c_str());
+    TEST_ASSERT_EQUAL_INT(50, atmosmesh::mq135_gas_index(2048));
+    TEST_ASSERT_EQUAL_INT(0, atmosmesh::mq135_gas_index(0));
+    TEST_ASSERT_EQUAL_INT(100, atmosmesh::mq135_gas_index(4095));
+    TEST_ASSERT_EQUAL_STRING("gas 50", oled.c_str());
     TEST_ASSERT_EQUAL(std::string::npos, serial.find("CO2"));
     TEST_ASSERT_EQUAL(std::string::npos, serial.find("co2"));
     TEST_ASSERT_EQUAL(std::string::npos, serial.find("ppm"));
     TEST_ASSERT_EQUAL(std::string::npos, oled.find("CO2"));
+    TEST_ASSERT_EQUAL(std::string::npos, oled.find("V"));
+}
+
+void test_bmp280_serial_shows_celsius_and_hpa() {
+    const std::string line = atmosmesh::format_bmp280_serial(23.1F, 1013.2F);
+    TEST_ASSERT_EQUAL_STRING("bmp280: t=23.1C p=1013.2 hPa", line.c_str());
 }
 
 void test_mq135_serial_warns_when_adc_near_zero() {
@@ -376,6 +393,7 @@ int main() {
     RUN_TEST(test_mq135_millivolts_from_adc_inverts_divider);
     RUN_TEST(test_mq135_five_volt_aout_has_no_gpio_headroom);
     RUN_TEST(test_mq135_serial_and_oled_never_say_co2);
+    RUN_TEST(test_bmp280_serial_shows_celsius_and_hpa);
     RUN_TEST(test_mq135_serial_warns_when_adc_near_zero);
     RUN_TEST(test_resolve_sh1106_uses_two_pixel_column_offset);
     RUN_TEST(test_resolve_ssd1306_32px_uses_four_pages);

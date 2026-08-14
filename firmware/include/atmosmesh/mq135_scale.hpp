@@ -16,6 +16,9 @@ int mq135_aout_millivolts(int gpio_mv);
 // Forward map used to warn: 5 V AOUT → 3.33 V on GPIO34 (no ADC headroom).
 int mq135_aout_to_gpio_millivolts(int aout_mv);
 
+// Uncalibrated 0-100 index from the 12-bit ADC. Not a gas concentration.
+int mq135_gas_index(int raw_adc);
+
 std::string format_mq135_serial(int raw_adc);
 std::string format_mq135_oled_line(int raw_adc);
 

@@ -27,6 +27,14 @@ int mq135_aout_to_gpio_millivolts(int aout_mv) {
     return aout_mv * kMq135GndOhms / (kMq135SeriesOhms + kMq135GndOhms);
 }
 
+int mq135_gas_index(int raw_adc) {
+    if (raw_adc < 0) {
+        return 0;
+    }
+    const int raw = std::min(raw_adc, kMq135AdcMax);
+    return (raw * 100) / kMq135AdcMax;
+}
+
 std::string format_mq135_serial(int raw_adc) {
     const int gpio_mv = mq135_gpio_millivolts(raw_adc);
     const int aout_mv = mq135_aout_millivolts(gpio_mv);
@@ -43,10 +51,8 @@ std::string format_mq135_serial(int raw_adc) {
 }
 
 std::string format_mq135_oled_line(int raw_adc) {
-    const int gpio_mv = mq135_gpio_millivolts(raw_adc);
     char line[32];
-    std::snprintf(line, sizeof(line), "MQ %d %d.%02dV", raw_adc, gpio_mv / 1000,
-                  (gpio_mv % 1000) / 10);
+    std::snprintf(line, sizeof(line), "gas %d", mq135_gas_index(raw_adc));
     return line;
 }
 
