@@ -20,6 +20,7 @@ struct OledProfile {
     int height_px;
     OledComPins com_pins;
     int column_offset_px;
+    int clip_max_y;
 };
 
 OledController parse_oled_controller_flag(std::string_view name);
@@ -38,9 +39,13 @@ std::string format_oled_invert_off_log();
 std::string format_oled_full_white_log();
 std::string format_oled_text_hi_log();
 std::string format_oled_mux32_log();
+std::string format_oled_mux48_log();
 const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile);
 
 inline constexpr std::uint8_t kSsd1306SetMultiplex = 0xA8;
 inline constexpr std::uint8_t kSsd1306MuxRatio32 = 0x1F;
+inline constexpr std::uint8_t kSsd1306MuxRatio48 = 0x2F;
+inline constexpr std::uint8_t kSsd1306SetDisplayOffset = 0xD3;
+inline constexpr std::uint8_t kSsd1306DisplayOffset0 = 0x00;
 
 }  // namespace atmosmesh

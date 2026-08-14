@@ -52,6 +52,7 @@ U8G2* make_u8g2(const atmosmesh::OledProfile& profile) {
     if (profile.height_px == atmosmesh::kOledHeightPxAlt) {
         return new U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, scl, sda);
     }
+    // 128×48 uses 64-row full buffer then SET MUX 0x2F (U8g2 has no 128×48 ctor).
     return new U8G2_SSD1306_128X64_ALT0_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, scl, sda);
 }
 
@@ -62,7 +63,7 @@ void show_lines(const std::string* lines, std::size_t count) {
     oled->clearBuffer();
     oled->setDrawColor(1);
     oled->setFont(u8g2_font_6x10_tf);
-    const int line_px = (oled_profile.height_px <= 32) ? 16 : 12;
+    const int line_px = atmosmesh::oled_line_pitch_px(oled_profile.height_px);
     const int baseline0 = oled->getAscent();
     for (std::size_t i = 0; i < count; ++i) {
         oled->drawStr(oled_profile.column_offset_px, baseline0 + static_cast<int>(i * line_px),
@@ -100,6 +101,12 @@ bool begin_oled(std::uint8_t address, const atmosmesh::OledProfile& profile) {
         return false;
     }
     oled_profile = profile;
+    if (profile.height_px == atmosmesh::kOledHeightPx48) {
+        oled->sendF("ca", atmosmesh::kSsd1306SetMultiplex, atmosmesh::kSsd1306MuxRatio48);
+        oled->sendF("ca", atmosmesh::kSsd1306SetDisplayOffset, atmosmesh::kSsd1306DisplayOffset0);
+        oled->setClipWindow(0, 0, profile.width_px - 1, profile.clip_max_y);
+        Serial.println(atmosmesh::format_oled_mux48_log().c_str());
+    }
     Serial.println(atmosmesh::format_oled_init_log(profile, address).c_str());
     Serial.printf("oled: sda=%d scl=%d column_offset=%d vcc=3V3 (never 5V if pull-ups are on VCC)\n",
                   atmosmesh::kOledSdaGpio, atmosmesh::kOledSclGpio, profile.column_offset_px);
@@ -146,11 +153,9 @@ void setup_oled() {
     const auto compiled = atmosmesh::compiled_oled_profile();
     const atmosmesh::OledProfile candidates[] = {
         compiled,
-        atmosmesh::resolve_oled_profile(compiled.controller, compiled.height_px == 64 ? 32 : 64),
-        atmosmesh::resolve_oled_profile(compiled.controller == atmosmesh::OledController::Sh1106
-                                            ? atmosmesh::OledController::Ssd1306
-                                            : atmosmesh::OledController::Sh1106,
-                                        64),
+        atmosmesh::resolve_oled_profile(atmosmesh::OledController::Ssd1306, 32),
+        atmosmesh::resolve_oled_profile(atmosmesh::OledController::Ssd1306, 64),
+        atmosmesh::resolve_oled_profile(atmosmesh::OledController::Sh1106, 64),
     };
 
     bool started = false;

@@ -7,7 +7,7 @@
 #endif
 
 #ifndef ATMOSMESH_OLED_HEIGHT
-#define ATMOSMESH_OLED_HEIGHT 32
+#define ATMOSMESH_OLED_HEIGHT 48
 #endif
 
 namespace atmosmesh {
@@ -30,6 +30,9 @@ const char* oled_profile_name(const OledProfile& profile) {
     if (profile.height_px == kOledHeightPxAlt) {
         return "SSD1306_128X32";
     }
+    if (profile.height_px == kOledHeightPx48) {
+        return "SSD1306_128X48";
+    }
     if (profile.com_pins == OledComPins::Sequential) {
         return "SSD1306_ALT0";
     }
@@ -41,25 +44,31 @@ std::uint8_t oled_compins_arg(OledComPins com_pins) {
 }
 
 OledProfile resolve_oled_profile(OledController controller, int height_px) {
-    const int height = (height_px == kOledHeightPxAlt) ? kOledHeightPxAlt : kOledHeightPx;
+    int height = kOledHeightPx;
+    if (height_px == kOledHeightPxAlt) {
+        height = kOledHeightPxAlt;
+    } else if (height_px == kOledHeightPx48) {
+        height = kOledHeightPx48;
+    }
     OledProfile profile{};
     profile.controller = controller;
     profile.width_px = kOledWidthPx;
     profile.height_px = height;
     profile.column_offset_px = (controller == OledController::Sh1106) ? 2 : 0;
-    // 128×32 Adafruit init already uses sequential COM; 128×64 clones that miss
+    // 128×32 Adafruit init already uses sequential COM; 128×48/64 clones that miss
     // every other line also need sequential instead of Adafruit's 0x12.
     profile.com_pins = OledComPins::Sequential;
+    profile.clip_max_y = height - 1;
     return profile;
 }
 
 OledProfile default_oled_profile() {
-    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPxAlt);
+    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx48);
 }
 
 OledProfile compiled_oled_profile() {
-    // 0 (default) = SSD1306 128×32 Univision. 1 = SH1106 compile fallback.
-    // ATMOSMESH_OLED_HEIGHT=64 selects SSD1306 ALT0 128×64.
+    // 0 (default) = SSD1306. 1 = SH1106 compile fallback.
+    // Height 48 (default) uses 128×64 ALT0 RAM then mux 0x2F. 32 = Univision, 64 = ALT0.
     const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 1) ? OledController::Sh1106
                                                                 : OledController::Ssd1306;
     return resolve_oled_profile(controller, ATMOSMESH_OLED_HEIGHT);
@@ -99,6 +108,10 @@ std::string format_oled_text_hi_log() {
 
 std::string format_oled_mux32_log() {
     return "oled: mux=0x1F (128x32 attempt)";
+}
+
+std::string format_oled_mux48_log() {
+    return "oled: height=48 mux=0x2F";
 }
 
 const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile) {

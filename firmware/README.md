@@ -28,18 +28,18 @@ Mini I²C SSD1306 on the DevBoard (serial-proven 0x3C):
 | SDA | D5 / GPIO5 (firmware retries GPIO4 if this mapping is silent) |
 | SCL | D4 / GPIO4 |
 
-Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows a **2×3** page on 128×32:
-T/RH/hPa on row 1, PM2.5/PM10/gas index on row 2. Serial still prints full BMP T/P, AM2302,
+Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows a **3×2** page on 128×48:
+T/RH, hPa/gas index, PM2.5/PM10. Serial still prints full BMP T/P, AM2302,
 SDS011 PM, and MQ135 **raw ADC / GPIO volts** (never CO₂). Firmware prefers I²C **0x3C**, then
 **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
 
 The glass is driven by **one** renderer: U8g2 full-frame
-(`U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C` by default). 128×64 ALT0 sequential COM is
-`-DATMOSMESH_OLED_HEIGHT=64`. SH1106 is a compile fallback (`-DATMOSMESH_OLED_CONTROLLER_ID=1`).
-After `begin()` the firmware turns the panel on, sets contrast 255, and draws a brief **HI** so
-the live 2×3 page is readable. Serial includes
-`constructor=U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C`. I²C clock is **100 kHz**. **OLED VCC = 3V3**;
-5 V on VCC with pull-ups to VCC can kill GPIO5/4.
+(`U8G2_SSD1306_128X64_ALT0_F_HW_I2C` plus SET MUX `0xA8 0x2F` for 48 rows). Compile fallbacks:
+128×32 Univision (`-DATMOSMESH_OLED_HEIGHT=32`) and 128×64 ALT0 (`-DATMOSMESH_OLED_HEIGHT=64`).
+SH1106 is `-DATMOSMESH_OLED_CONTROLLER_ID=1`. After `begin()` the firmware turns the panel on,
+sets contrast 255, and draws a brief **HI**. Serial includes
+`constructor=U8G2_SSD1306_128X64_ALT0_F_HW_I2C` and `oled: height=48 mux=0x2F`. I²C clock is
+**100 kHz**. **OLED VCC = 3V3**; 5 V on VCC with pull-ups to VCC can kill GPIO5/4.
 
 ## Sensor wiring (operator 2026-08-14)
 

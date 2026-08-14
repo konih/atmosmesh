@@ -4,7 +4,7 @@
 
 namespace atmosmesh {
 
-// Mini I²C OLED (D-001): D5 = SDA, D4 = SCL. Default is SSD1306 128×32 Univision.
+// Mini I²C OLED (D-001): D5 = SDA, D4 = SCL. Default is SSD1306 128×48 (64-row RAM, mux 0x2F).
 // GPIO5 has an internal pull-up; idle-high is OK for boot.
 inline constexpr int kOledSdaGpio = 5;
 inline constexpr int kOledSclGpio = 4;
@@ -33,10 +33,13 @@ inline constexpr int kMq135AdcMax = 4095;
 inline constexpr int kMq135AdcFullScaleMv = 3300;
 inline constexpr int kMq135AdcNearZero = 16;
 
-// Adafruit 5×7 glyph + 1 px pad; 128 px → 21 columns. 8 px rows → 8 pages (64) or 4 (32).
+// 6×10 font, 128 px → 21 columns. Pages: 8 (64), 6 (48), 4 (32). Default glass is 48 rows.
 inline constexpr int kOledWidthPx = 128;
 inline constexpr int kOledHeightPx = 64;
+inline constexpr int kOledHeightPx48 = 48;
 inline constexpr int kOledHeightPxAlt = 32;
+inline constexpr int kOledLiveLineCount = 3;
+inline constexpr int kOledLinePitch48Px = 16;
 inline constexpr std::uint32_t kOledI2cHz = 100000;
 inline constexpr int kOledGlyphWidthPx = 6;
 inline constexpr int kOledGlyphHeightPx = 8;

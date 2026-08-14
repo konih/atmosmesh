@@ -13,6 +13,30 @@ int oled_page_count(int height_px) {
     return height_px / kOledGlyphHeightPx;
 }
 
+int oled_live_line_count(int height_px) {
+    return (height_px <= kOledHeightPxAlt) ? 2 : kOledLiveLineCount;
+}
+
+int oled_line_pitch_px(int height_px) {
+    return (height_px <= kOledHeightPx48) ? kOledLinePitch48Px : 12;
+}
+
+namespace {
+
+std::string two_col(std::string_view left, std::string_view right) {
+    constexpr std::size_t kLeftWidth = 11;
+    std::string line(left);
+    if (line.size() < kLeftWidth) {
+        line.append(kLeftWidth - line.size(), ' ');
+    } else if (line.size() > kLeftWidth) {
+        line.resize(kLeftWidth);
+    }
+    line.append(right);
+    return clip_oled_line(line);
+}
+
+}  // namespace
+
 std::string clip_oled_line(std::string_view text) {
     if (text.size() <= static_cast<std::size_t>(kOledMaxChars)) {
         return std::string(text);
@@ -27,32 +51,40 @@ OledBanner dummy_banner() {
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
                                int mq135_raw_adc) {
-    char climate[32];
-    if (am_ok && bmp_ok) {
-        std::snprintf(climate, sizeof(climate), "%.1fC %.0f%% %.0fhPa",
-                      static_cast<double>(temperature_c), static_cast<double>(humidity_rh),
-                      static_cast<double>(pressure_hpa));
-    } else if (am_ok) {
-        std::snprintf(climate, sizeof(climate), "%.1fC %.0f%% --hPa",
-                      static_cast<double>(temperature_c), static_cast<double>(humidity_rh));
-    } else if (bmp_ok) {
-        std::snprintf(climate, sizeof(climate), "--C --%% %.0fhPa",
-                      static_cast<double>(pressure_hpa));
+    char temp[16];
+    char rh[16];
+    if (am_ok) {
+        std::snprintf(temp, sizeof(temp), "%.1fC", static_cast<double>(temperature_c));
+        std::snprintf(rh, sizeof(rh), "%.0f%%", static_cast<double>(humidity_rh));
     } else {
-        std::snprintf(climate, sizeof(climate), "--C --%% --hPa");
+        std::snprintf(temp, sizeof(temp), "--C");
+        std::snprintf(rh, sizeof(rh), "--%%");
     }
 
-    char particles[32];
+    char pressure[16];
+    if (bmp_ok) {
+        std::snprintf(pressure, sizeof(pressure), "%.0f hPa", static_cast<double>(pressure_hpa));
+    } else {
+        std::snprintf(pressure, sizeof(pressure), "-- hPa");
+    }
+
     const int gas = mq135_gas_index(mq135_raw_adc);
+    char gas_cell[16];
+    std::snprintf(gas_cell, sizeof(gas_cell), "g:%d", gas);
+
+    char pm25[16];
+    char pm10[16];
     if (pm_ok) {
-        std::snprintf(particles, sizeof(particles), "2.5:%d 10:%d g:%d",
-                      static_cast<int>(std::lround(static_cast<double>(pm25_ug_m3))),
-                      static_cast<int>(std::lround(static_cast<double>(pm10_ug_m3))), gas);
+        std::snprintf(pm25, sizeof(pm25), "PM2.5 %d",
+                      static_cast<int>(std::lround(static_cast<double>(pm25_ug_m3))));
+        std::snprintf(pm10, sizeof(pm10), "PM10 %d",
+                      static_cast<int>(std::lround(static_cast<double>(pm10_ug_m3))));
     } else {
-        std::snprintf(particles, sizeof(particles), "2.5:-- 10:-- g:%d", gas);
+        std::snprintf(pm25, sizeof(pm25), "PM2.5 --");
+        std::snprintf(pm10, sizeof(pm10), "PM10 --");
     }
 
-    return {clip_oled_line(climate), clip_oled_line(particles)};
+    return {two_col(temp, rh), two_col(pressure, gas_cell), two_col(pm25, pm10)};
 }
 
 }  // namespace atmosmesh

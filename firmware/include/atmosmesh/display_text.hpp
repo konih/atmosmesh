@@ -9,9 +9,11 @@
 namespace atmosmesh {
 
 using OledBanner = std::array<std::string, 2>;
-using OledLivePage = std::array<std::string, 2>;
+using OledLivePage = std::array<std::string, 3>;
 
 int oled_page_count(int height_px);
+int oled_live_line_count(int height_px);
+int oled_line_pitch_px(int height_px);
 
 // Truncate to the Adafruit 6-px glyph columns. Does not pad; the driver clears the panel.
 std::string clip_oled_line(std::string_view text);
