@@ -2,16 +2,16 @@
 
 namespace atmosmesh {
 
-// Bench LCD (D-006): D2 = SDA, D4 = SCL. GPIO2 is a strapping pin — unplug LCD to flash.
-inline constexpr int kLcdSdaGpio = 2;
+// Bench LCD (D-006): D5 = SDA, D4 = SCL. GPIO5 has an internal pull-up; idle-high is OK for boot.
+inline constexpr int kLcdSdaGpio = 5;
 inline constexpr int kLcdSclGpio = 4;
 
-// GY-BMP280 (operator 2026-08-14): SDA = GPIO21, SCL = GPIO18.
+// GY-BMP280 (operator 2026-08-14): SDA = GPIO21, SCL = GPIO19.
 inline constexpr int kSensorSdaGpio = 21;
-inline constexpr int kSensorSclGpio = 18;
+inline constexpr int kSensorSclGpio = 19;
 
-// AM2302 / DHT22 data (operator 2026-08-14): GPIO5. Strapping pin; idle-high is OK.
-inline constexpr int kAm2302DataGpio = 5;
+// AM2302 / DHT22 data (operator 2026-08-14): GPIO18. Idle-high matches 3.3 V flash-voltage strap.
+inline constexpr int kAm2302DataGpio = 18;
 
 inline constexpr int kLcdColumns = 16;
 inline constexpr int kLcdRows = 2;

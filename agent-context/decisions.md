@@ -43,13 +43,13 @@
 - **Consequence:** SANMIM SM-104-3.3V-02 is spare, not paralleled with ESP32 `3V3`. Relays stay
   out of the power budget.
 
-### D-006 — Bench LCD 1602 on GPIO2/GPIO4; PlatformIO for firmware
+### D-006 — Bench LCD 1602 on GPIO5/GPIO4; PlatformIO for firmware
 
 - **Status:** Accepted for bring-up. Does not retire D-001 (mini OLED remains the station MVP display).
-- **Rule:** Operator wired an I²C character LCD to DevBoard **D2 (GPIO2)** and **D4 (GPIO4)**. Firmware
-  treats D2 as SDA and D4 as SCL, and will swap once if the first mapping finds no I²C device.
+- **Rule:** Operator wired an I²C character LCD to DevBoard **D5 (GPIO5)** and **D4 (GPIO4)**. Firmware
+  treats D5 as SDA and D4 as SCL, and will swap once if the first mapping finds no I²C device.
 - **Power:** LCD VCC must be **3.3 V** (ESP32 `3V3`), not 5 V. A 5 V backpack pull-up would put 5 V
-  on GPIOs. GPIO2 is a strapping pin; I²C idle-high is compatible with normal flash boot.
+  on GPIOs. GPIO5 wants idle-high at boot; the I²C pull-up is usually compatible. LCD is not on GPIO2.
 - **Toolchain:** PlatformIO + Arduino, board `esp32dev`. Host-side Unity tests run on `native`.
   ESPHome remains a later option for station YAML if we want it; we do not maintain two stacks now.
 - **Reason:** Operator asked for a tested firmware scaffold and dummy text on this LCD before RLS-01

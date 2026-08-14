@@ -51,6 +51,6 @@ electrical assumptions are either answered or explicitly block the next story.
   `docs/hardware/inventory.md` (ESP32-D0WDQ6 rev 1.0, 4 MB, CP2102, MAC `ac:67:b2:37:26:78`).
 - 2026-08-14: Station 5 V architecture recorded as D-005 / `docs/hardware/power.md`. Candidate PSU
   is the open `5V07 / 12V04` AC/DC; DC voltage and current capability not yet measured.
-- 2026-08-14: GY-BMP280 SDA=GPIO21, SCL=GPIO18. AM2302 data=GPIO5. Firmware pin map in
-  `firmware/include/atmosmesh/pins.hpp`.
+- 2026-08-14: GY-BMP280 SDA=GPIO21, SCL=GPIO19. AM2302 data=GPIO18. LCD SDA=GPIO5, SCL=GPIO4.
+  Firmware pin map in `firmware/include/atmosmesh/pins.hpp`.
 - Still awaiting: front/back photographs, 5 V output measurement, MQ135 AO measurement.

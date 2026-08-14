@@ -70,10 +70,10 @@ A scan that shows 0x3C plus 0x76/0x77 is the expected bench result once wiring i
 
 The map in [inventory.md](inventory.md) is still **not approved**, but the sheets support these electrical choices:
 
-- GPIO21/22 for I²C: valid default I²C pins; 3.3 V only.
+- GPIO21/19 for GY-BMP280 I²C (operator bench; GPIO21/22 are also valid defaults); 3.3 V only.
 - GPIO16/17 (U2RXD/U2TXD) for SDS011: matches the WROOM-32 pin mux; keep SDS011 on **5 V power**, UART on **3.3 V**.
 - GPIO34 (ADC1_CH6, input-only) for MQ135: correct domain while Wi-Fi is on (avoid ADC2). Espressif notes ADC accuracy degrades above ~2.45 V at atten=3, so the divider should target **well below 2.5 V**, not merely below 3.3 V.
-- GPIO27 for DHT22: valid GPIO; pull-up to 3.3 V. Sample slower than 0.5 Hz.
+- GPIO18 for AM2302 data (operator bench; GPIO27 is also a valid GPIO). Pull-up to 3.3 V. Sample slower than 0.5 Hz.
 
 ## Still blocked without photos / measurement
 

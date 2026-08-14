@@ -43,12 +43,12 @@ void setup_lcd() {
     const atmosmesh::I2cBusMap primary{atmosmesh::kLcdSdaGpio, atmosmesh::kLcdSclGpio};
     const atmosmesh::I2cBusMap swapped{atmosmesh::kLcdSclGpio, atmosmesh::kLcdSdaGpio};
 
-    bool found = try_lcd_bus("lcd d2=sda d4=scl", primary, &device);
+    bool found = try_lcd_bus("lcd d5=sda d4=scl", primary, &device);
     if (!found) {
         found = try_lcd_bus("lcd swapped", swapped, &device);
     }
     if (!found) {
-        Serial.println("lcd: no i2c device on GPIO2/GPIO4");
+        Serial.println("lcd: no i2c device on GPIO5/GPIO4");
         return;
     }
 
@@ -70,10 +70,10 @@ void setup_bmp280() {
     const atmosmesh::I2cBusMap pins{atmosmesh::kSensorSdaGpio, atmosmesh::kSensorSclGpio};
     std::uint8_t found[16];
     const std::size_t count = atmosmesh::scan_i2c_bus(Wire1, pins, found, sizeof(found));
-    log_scan("bmp sda=21 scl=18", pins, found, count > sizeof(found) ? sizeof(found) : count);
+    log_scan("bmp sda=21 scl=19", pins, found, count > sizeof(found) ? sizeof(found) : count);
     bmp_address = atmosmesh::pick_bmp_address(found, count);
     if (bmp_address < 0) {
-        Serial.println("bmp280: no i2c device on GPIO21/GPIO18");
+        Serial.println("bmp280: no i2c device on GPIO21/GPIO19");
         Serial.println("bmp280: CSB must be 3V3, SDO to GND for 0x76, VCC to 3V3");
         return;
     }
@@ -103,7 +103,7 @@ void setup() {
     Serial.begin(atmosmesh::kSerialBaud);
     delay(200);
     Serial.println("atmosmesh bench bring-up");
-    Serial.println("LCD VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO5");
+    Serial.println("LCD VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO18");
 
     setup_lcd();
     setup_bmp280();

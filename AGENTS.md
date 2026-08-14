@@ -13,7 +13,7 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 ## Current boundary
 
 - First active story: `RLS-01` hardware identification and wiring approval.
-- Firmware bring-up for the bench I²C LCD on GPIO2/GPIO4 is in `firmware/` (D-006). Do not
+- Firmware bring-up for the bench I²C LCD on GPIO5/GPIO4 is in `firmware/` (D-006). Do not
   energise SDS011/MQ135/mains until RLS-01 wiring is approved.
 - Do not deploy to a Kubernetes cluster without explicit user authorization and known context.
 
@@ -73,7 +73,7 @@ From the repository root (`Taskfile.yml`). Override the serial port with `ESP_PO
 | List tasks | `task` |
 | Host unit tests | `task test` |
 | Build ESP32 image | `task build` |
-| Flash | `task flash` (unplug LCD from GPIO2/D2 if boot mode `0xf`) |
+| Flash | `task flash` (LCD SDA is GPIO5, not GPIO2; GPIO5 idle-high is usually OK) |
 | Serial monitor | `task monitor` |
 | Flash then monitor | `task run` / `task flash-monitor` |
 | Check whitespace | `task check` |

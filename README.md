@@ -22,7 +22,7 @@ sensor and its value must never be labelled as CO₂ or ppm.
 ## Current status
 
 Firmware lives in `firmware/` (PlatformIO, D-006). Host tests: `task test`. Bench LCD
-bring-up writes dummy text on the I²C 1602 wired to D2/D4. RLS-01 photos and 5 V PSU measurement
+bring-up writes dummy text on the I²C 1602 wired to D5/D4. RLS-01 photos and 5 V PSU measurement
 are still required before SDS011/MQ135/mains.
 
 Start at [agent-context/README.md](agent-context/README.md) and [firmware/README.md](firmware/README.md).
@@ -67,7 +67,7 @@ task monitor
 task run            # flash then monitor
 ```
 
-If `esptool` reports boot mode `0xf`, unplug the LCD from GPIO2/D2, flash, then reconnect.
+LCD SDA is GPIO5 (not GPIO2). GPIO5 wants idle-high at boot; the I²C pull-up is usually compatible.
 
 ## Working agreement
 

@@ -32,15 +32,15 @@ void test_dummy_banner_is_identifiable() {
     TEST_ASSERT_EQUAL_STRING("hello, LCD", lines[1].c_str());
 }
 
-void test_i2c_pins_match_operator_lcd_d2_d4() {
-    TEST_ASSERT_EQUAL_INT(2, atmosmesh::kLcdSdaGpio);
+void test_i2c_pins_match_operator_lcd_d5_d4() {
+    TEST_ASSERT_EQUAL_INT(5, atmosmesh::kLcdSdaGpio);
     TEST_ASSERT_EQUAL_INT(4, atmosmesh::kLcdSclGpio);
 }
 
 void test_sensor_pins_match_operator_bmp_am2302() {
     TEST_ASSERT_EQUAL_INT(21, atmosmesh::kSensorSdaGpio);
-    TEST_ASSERT_EQUAL_INT(18, atmosmesh::kSensorSclGpio);
-    TEST_ASSERT_EQUAL_INT(5, atmosmesh::kAm2302DataGpio);
+    TEST_ASSERT_EQUAL_INT(19, atmosmesh::kSensorSclGpio);
+    TEST_ASSERT_EQUAL_INT(18, atmosmesh::kAm2302DataGpio);
 }
 
 void test_lcd_address_list_includes_common_backpacks() {
@@ -105,7 +105,7 @@ int main() {
     RUN_TEST(test_clip_keeps_short_text);
     RUN_TEST(test_dummy_banner_fits_1602);
     RUN_TEST(test_dummy_banner_is_identifiable);
-    RUN_TEST(test_i2c_pins_match_operator_lcd_d2_d4);
+    RUN_TEST(test_i2c_pins_match_operator_lcd_d5_d4);
     RUN_TEST(test_sensor_pins_match_operator_bmp_am2302);
     RUN_TEST(test_lcd_address_list_includes_common_backpacks);
     RUN_TEST(test_pick_lcd_address_prefers_known_backpack);

@@ -6,7 +6,7 @@ Host-side firmware tests live next to the code they protect:
 pio test -e native
 ```
 
-Run that from `firmware/`. PlatformIO Unity covers LCD banner clipping, D2/D4 pin constants,
+Run that from `firmware/`. PlatformIO Unity covers LCD banner clipping, D5/D4 pin constants,
 and I²C backpack address selection. These tests must fail if that behaviour is removed.
 
 Still required later (not yet automated):

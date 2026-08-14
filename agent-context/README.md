@@ -10,7 +10,7 @@ this dashboard records what changes between sessions.
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
-LCD VCC must be **3.3 V**. Unplug D2 while flashing (GPIO2 blocks download mode).
+LCD VCC must be **3.3 V**. LCD SDA is GPIO5 (not GPIO2); GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
 

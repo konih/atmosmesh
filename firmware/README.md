@@ -22,7 +22,7 @@ I²C 1602 (or similar backpack) on the DevBoard:
 | --- | --- |
 | VCC | **3V3 only** — never 5 V (backpack pull-ups would drive GPIOs to 5 V) |
 | GND | GND |
-| SDA | D2 / GPIO2 (firmware retries GPIO4 if this mapping is silent) |
+| SDA | D5 / GPIO5 (firmware retries GPIO4 if this mapping is silent) |
 | SCL | D4 / GPIO4 |
 
 Dummy text on boot: line 1 `AtmosMesh`, line 2 `hello, LCD`. Then the loop shows AM2302 and BMP280 status.
@@ -32,14 +32,13 @@ Dummy text on boot: line 1 `AtmosMesh`, line 2 `hello, LCD`. Then the loop shows
 | Device | ESP32 | Notes |
 | --- | --- | --- |
 | GY-BMP280 SDA | GPIO21 | VCC=3V3, CSB=3V3, SDO=GND → 0x76 |
-| GY-BMP280 SCL | GPIO18 | Not GPIO22 |
-| AM2302 DATA | GPIO5 | VDD=3V3. GPIO5 is a strapping pin; keep idle-high (pull-up to 3V3) |
+| GY-BMP280 SCL | GPIO19 | Not GPIO22 |
+| AM2302 DATA | GPIO18 | VDD=3V3. GPIO18 high matches the 3.3 V flash-voltage strap; keep idle-high |
 
-Two I²C buses: LCD on Wire (GPIO2/4), BMP280 on Wire1 (GPIO21/18).
+Two I²C buses: LCD on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19).
 
-If `esptool` reports flash IO errors or boot mode `0xf`, **unplug the LCD from D2/GPIO2**,
-flash, then reconnect. GPIO2 is a strapping pin; an I²C pull-up holds it high and blocks
-download mode.
+GPIO5 (LCD SDA) has an internal pull-up and wants idle-high at boot; that is usually compatible
+with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage). LCD is **not** on GPIO2.
 
 ## Layout
 

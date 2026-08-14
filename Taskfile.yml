@@ -30,7 +30,7 @@ tasks:
       - pio run -e esp32dev
 
   flash:
-    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). Unplug LCD from GPIO2/D2 if boot mode 0xf.
+    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). LCD SDA is GPIO5 (not GPIO2).
     dir: firmware
     cmds:
       - pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}
