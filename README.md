@@ -21,12 +21,11 @@ sensor and its value must never be labelled as CO₂ or ppm.
 
 ## Current status
 
-The repository is scaffolded and **RLS-01 — Hardware identification and wiring approval** is the
-first active story. No firmware or deployment implementation is approved until the actual module
-variants, pin labels, power requirements, and logic levels have been verified from photos and,
-where needed, measurements.
+Firmware lives in `firmware/` (PlatformIO, D-006). Host tests: `task test`. Bench LCD
+bring-up writes dummy text on the I²C 1602 wired to D2/D4. RLS-01 photos and 5 V PSU measurement
+are still required before SDS011/MQ135/mains.
 
-Start at [agent-context/README.md](agent-context/README.md).
+Start at [agent-context/README.md](agent-context/README.md) and [firmware/README.md](firmware/README.md).
 
 ## Planned system
 
@@ -38,9 +37,8 @@ MQ135  ─┤       │                         └─> metrics bridge ─> Prom
 OLED   <┘       └─ local display and health state
 ```
 
-The final firmware framework and Kubernetes packaging approach are intentionally undecided. They
-will be recorded in `agent-context/decisions.md` once the hardware and cluster constraints are
-known.
+The firmware toolchain is PlatformIO + Arduino (`esp32dev`). Kubernetes packaging is still open
+(OQ-002).
 
 ## Repository layout
 
@@ -52,10 +50,24 @@ known.
 | `agent-context/stories/` | One implementation contract per story |
 | `agent-context/decisions.md` | Accepted decisions and open technical questions |
 | `docs/architecture.md` | Intended system boundaries and data flow |
-| `docs/hardware/` | Verified hardware facts and, later, approved wiring |
+| `docs/hardware/` | Verified hardware facts, power architecture, datasheets, spec comparison, later approved wiring |
 | `firmware/` | ESP32 firmware after the framework decision |
 | `deploy/` | Kubernetes and home-automation configuration |
 | `tests/` | Host-side, configuration, and end-to-end validation |
+
+## Firmware
+
+See [firmware/README.md](firmware/README.md). From the repository root:
+
+```bash
+task test
+task build
+task flash          # ESP_PORT defaults to /dev/cu.usbserial-0001
+task monitor
+task run            # flash then monitor
+```
+
+If `esptool` reports boot mode `0xf`, unplug the LCD from GPIO2/D2, flash, then reconnect.
 
 ## Working agreement
 
@@ -68,10 +80,11 @@ known.
 ## Safety
 
 - ESP32 GPIOs are 3.3-V signals and are **not 5-V tolerant**.
-- External 5 V may power SDS011 and MQ135 only after their exact pins are confirmed.
-- All grounds must be common when signals cross supplies; positive supply rails must not be tied
-  together casually.
-- Mains voltage and mains relay work are outside this project.
+- Station 5 V may enter the DevBoard only through a confirmed `USB` or `VIN`/`5V` input, never `3V3`.
+- SDS011 and MQ135 take 5 V power; UART/ADC signals stay at 3.3 V (divider on MQ135 AO).
+- All grounds must be common when signals cross supplies; do not tie 5 V to 3.3 V.
+- Open mains PCBs stay off the breadboard and must be enclosed before they are energised.
+- Mains *switching* and relays are outside this project (D-004).
 - The station is experimental and is not a certified health, fire, gas, or life-safety instrument.
 
 ## Local planning source

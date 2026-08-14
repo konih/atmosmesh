@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+---
+version: "3"
+
+set:
+  - pipefail
+
+run: once
+
+vars:
+  ESP_PORT: '{{.ESP_PORT | default "/dev/cu.usbserial-0001"}}'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  test:
+    desc: Host Unity tests (`pio test -e native`)
+    dir: firmware
+    cmds:
+      - pio test -e native
+
+  build:
+    desc: Build ESP32 firmware (`pio run -e esp32dev`)
+    dir: firmware
+    cmds:
+      - pio run -e esp32dev
+
+  flash:
+    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). Unplug LCD from GPIO2/D2 if boot mode 0xf.
+    dir: firmware
+    cmds:
+      - pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}
+
+  monitor:
+    desc: Serial monitor 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - pio device monitor --port {{.ESP_PORT}} --baud 115200
+
+  run:
+    desc: Flash then open the serial monitor
+    cmds:
+      - task: flash
+      - task: monitor
+
+  flash-monitor:
+    desc: Flash then open the serial monitor
+    cmds:
+      - task: run
+
+  check:
+    desc: Whitespace and conflict-marker check (`git diff --check`)
+    cmds:
+      - git diff --check
+
+  clean:
+    desc: Clean ESP32 build artifacts
+    dir: firmware
+    cmds:
+      - pio run -e esp32dev -t clean

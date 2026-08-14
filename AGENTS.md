@@ -13,9 +13,9 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 ## Current boundary
 
 - First active story: `RLS-01` hardware identification and wiring approval.
-- Do not implement firmware or energize a proposed circuit until RLS-01 is complete.
+- Firmware bring-up for the bench I²C LCD on GPIO2/GPIO4 is in `firmware/` (D-006). Do not
+  energise SDS011/MQ135/mains until RLS-01 wiring is approved.
 - Do not deploy to a Kubernetes cluster without explicit user authorization and known context.
-- Firmware framework and deployment packaging are pending decisions, not assumptions.
 
 ## Mandatory electrical safety rules
 
@@ -23,10 +23,10 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 - A devboard may receive 5 V only through a confirmed `USB` or `VIN/5V` input.
 - Do not infer connector orientation, voltage, or pin order from a generic product image.
 - Confirm the exact front and back markings of every module before approving wiring.
-- SDS011 and MQ135 may use a separate regulated 5-V supply; signal grounds must be common.
+- SDS011 and MQ135 take 5 V power; their *signals* must stay at 3.3 V (UART TTL, or a measured ADC divider).
 - Protect ESP32 ADC inputs with a verified divider and measure the node before connection.
 - MQ135 is not a CO₂ sensor. Never label its output `co2`, `ppm`, or an equivalent claim.
-- Mains voltage, open mains relays, and life-safety automation are out of scope.
+- Open mains PCBs, breadboard-mains, mains switching, and life-safety automation are out of scope. An enclosed, isolated AC/DC module as the station 5 V source is allowed only after the DC output is measured at ~5 V (`docs/hardware/power.md`).
 
 ## Sources of truth
 
@@ -37,6 +37,8 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 | Acceptance contract | `agent-context/stories/RLS-*.md` |
 | Decisions and open questions | `agent-context/decisions.md` |
 | Confirmed hardware facts | `docs/hardware/inventory.md` |
+| Power architecture | `docs/hardware/power.md` |
+| Manufacturer datasheets / spec comparison | `docs/hardware/datasheets/`, `docs/hardware/spec-comparison.md` |
 | System boundaries | `docs/architecture.md` |
 
 If documents disagree, stop and reconcile them. Electrical safety rules above always win.
@@ -64,16 +66,19 @@ reprioritizes the roadmap.
 
 ## Commands
 
-The implementation toolchain is not selected yet. Until that decision:
+From the repository root (`Taskfile.yml`). Override the serial port with `ESP_PORT=/dev/…`.
 
 | Task | Command |
 | --- | --- |
-| Check whitespace and patch integrity | `git diff --check` |
+| List tasks | `task` |
+| Host unit tests | `task test` |
+| Build ESP32 image | `task build` |
+| Flash | `task flash` (unplug LCD from GPIO2/D2 if boot mode `0xf`) |
+| Serial monitor | `task monitor` |
+| Flash then monitor | `task run` / `task flash-monitor` |
+| Check whitespace | `task check` |
+| Clean ESP32 build | `task clean` |
 | Inspect repository state | `git status --short` |
-| Review planned work | `sed -n '1,240p' agent-context/README.md` |
-
-When a firmware or deployment toolchain is chosen, add reproducible install, build, lint, test,
-and validation commands here and in the root README in the same change.
 
 ## Conventions
 
