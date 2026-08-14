@@ -17,6 +17,13 @@ Sensors -> validation -> device state -> OLED
                                                     └-> metrics bridge -> Prometheus -> Grafana
 ```
 
+## Device power (station target)
+
+See `docs/hardware/power.md` and decision D-005. One enclosed isolated 5 V rail feeds ESP32 `VIN`/`5V`
+and 5 V sensors. The DevBoard LDO feeds 3.3 V logic and small 3.3 V loads. GPIOs are 3.3 V; 5 V
+signals are not connected directly. Bench flashing stays on USB until that rail is enclosed and
+measured.
+
 ## Device responsibilities
 
 - Sample sensors independently; one failed sensor must not block the others.
@@ -49,7 +56,7 @@ from any future NDIR CO₂ measurement.
 
 ## Out of scope for the MVP
 
-- Mains control or safety automation.
+- Mains control, open mains on the bench, or safety automation.
 - Certified environmental or health monitoring.
 - Battery optimization.
 - Custom PCB.

@@ -16,23 +16,52 @@
 
 ### D-003 — Separate power domains during the bench phase
 
-- **Status:** Accepted in principle; exact wiring awaits RLS-01.
-- **Rule:** ESP32 is powered through its confirmed USB input. SDS011 and MQ135 use a regulated
-  external 5-V supply. Grounds are common; positive rails are not joined.
+- **Status:** Superseded for the *station* by D-005. Still binding on the *bench* until the 5 V
+  AC/DC module is enclosed and measured.
+- **Rule (bench):** ESP32 stays on its confirmed USB input. 5 V sensors stay off that USB 5 V rail.
+  Grounds are common; positive rails are not joined until D-005 measurement gates pass.
 
 ### D-004 — No mains control
 
 - **Status:** Accepted
 - **Reason:** The project is a measurement station, not a mains automation device.
+- **Clarification:** An *enclosed, isolated* AC/DC module as the station 5 V source is power, not
+  control. Open mains PCBs, breadboard-mains, and switching mains loads/relays remain forbidden.
+
+### D-005 — Station 5 V rail feeds VIN and 5 V sensors
+
+- **Status:** Accepted as the station target; not yet energised.
+- **Rule:** 230 V AC → enclosed isolated 5 V AC/DC → one 5 V rail → ESP32 `VIN`/`5V` and the
+  devices that actually need 5 V (SDS011, MQ135). The DevBoard LDO makes 3.3 V for the ESP32 and
+  small 3.3 V loads (OLED, BMP280, DHT22). GPIOs remain 3.3 V; 5 V *signals* need level shifting
+  or a divider. Details: `docs/hardware/power.md`.
+- **Candidate PSU:** open module marked `5V07 / 12V04`. Measure DC out before any ESP32
+  connection. Same silkscreen family is sold as 5 V / 700 mA *and* 12 V / ~400 mA.
+- **Counterpoints (kept):** (1) 700 mA is tight if ESP32 Wi-Fi TX, SDS011 and MQ135 heater coincide
+  (~650 mA planning). (2) Vendor ripple ~60 mV vs SDS011 < 20 mV. (3) USB+VIN together can
+  back-feed until this DevBoard is identified. (4) Open 230 V boards must be enclosed first.
+- **Consequence:** SANMIM SM-104-3.3V-02 is spare, not paralleled with ESP32 `3V3`. Relays stay
+  out of the power budget.
+
+### D-006 — Bench LCD 1602 on GPIO2/GPIO4; PlatformIO for firmware
+
+- **Status:** Accepted for bring-up. Does not retire D-001 (mini OLED remains the station MVP display).
+- **Rule:** Operator wired an I²C character LCD to DevBoard **D2 (GPIO2)** and **D4 (GPIO4)**. Firmware
+  treats D2 as SDA and D4 as SCL, and will swap once if the first mapping finds no I²C device.
+- **Power:** LCD VCC must be **3.3 V** (ESP32 `3V3`), not 5 V. A 5 V backpack pull-up would put 5 V
+  on GPIOs. GPIO2 is a strapping pin; I²C idle-high is compatible with normal flash boot.
+- **Toolchain:** PlatformIO + Arduino, board `esp32dev`. Host-side Unity tests run on `native`.
+  ESPHome remains a later option for station YAML if we want it; we do not maintain two stacks now.
+- **Reason:** Operator asked for a tested firmware scaffold and dummy text on this LCD before RLS-01
+  photos are complete.
 
 ## Open decisions
 
 ### OQ-001 — Firmware framework
 
-- **Options:** ESPHome; PlatformIO with Arduino framework; ESP-IDF.
-- **Decision trigger:** Complete RLS-01 and confirm sensor/display support and desired test depth.
-- **Current leaning:** ESPHome for speed unless custom display/recovery behavior or testing needs
-  justify PlatformIO.
+- **Status:** Resolved by D-006 — PlatformIO + Arduino (`esp32dev`), native Unity tests.
+- **Revisit if:** ESPHome would materially simplify the full station (MQTT, HA discovery) after the
+  bench sensors work.
 
 ### OQ-002 — Kubernetes packaging
 
