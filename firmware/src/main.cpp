@@ -8,6 +8,7 @@
 #include "atmosmesh/bmp_address.hpp"
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/i2c_bus.hpp"
+#include "atmosmesh/mq135_scale.hpp"
 #include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
@@ -236,7 +237,11 @@ void setup() {
     Serial.println("atmosmesh bench bring-up");
     Serial.println("OLED VCC=3V3; BMP280 VCC=3V3 CSB=3V3 SDO=GND; AM2302 VDD=3V3 data=GPIO18");
     Serial.println("sds011: VCC=5V only; UART 3.3V; sensor TX -> GPIO16 RX2; ESP TX2 GPIO17 -> sensor RX");
-    Serial.println("mq135: analog via divider to GPIO34, not UART. Do not put 5V on GPIO16/17");
+    Serial.println("mq135: analog GPIO34 ADC1 atten~11dB. Divider 10k series + 20k to GND.");
+    Serial.println("mq135: GPIO sees 2/3 of AOUT. 5V AOUT => 3.33V on GPIO34 (no headroom). Never apply 5V to GPIO.");
+
+    analogReadResolution(12);
+    analogSetPinAttenuation(atmosmesh::kMq135AdcGpio, ADC_11db);
 
     setup_oled();
     setup_bmp280();
@@ -261,7 +266,11 @@ void loop() {
         Serial.println("am2302: read failed (need 3V3, 10k pull-up to 3V3 if the module has none)");
     }
 
+    const int mq_raw = analogRead(atmosmesh::kMq135AdcGpio);
+    Serial.println(atmosmesh::format_mq135_serial(mq_raw).c_str());
+
     const auto lines = atmosmesh::live_sensor_lines(am_ok, temperature, humidity, bmp_address >= 0,
-                                                    bmp_address, pm_ok, pm25_ug_m3, pm10_ug_m3);
+                                                    bmp_address, pm_ok, pm25_ug_m3, pm10_ug_m3,
+                                                    mq_raw);
     show_lines(lines.data(), lines.size());
 }

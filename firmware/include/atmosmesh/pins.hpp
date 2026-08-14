@@ -4,7 +4,7 @@
 
 namespace atmosmesh {
 
-// Mini I²C SSD1306 (D-001, serial-proven 2026-08-14): D5 = SDA, D4 = SCL.
+// Mini I²C OLED (D-001): D5 = SDA, D4 = SCL. Default programming is SH1106.
 // GPIO5 has an internal pull-up; idle-high is OK for boot.
 inline constexpr int kOledSdaGpio = 5;
 inline constexpr int kOledSclGpio = 4;
@@ -23,8 +23,15 @@ inline constexpr int kSds011RxGpio = 16;
 inline constexpr int kSds011TxGpio = 17;
 inline constexpr int kSds011Baud = 9600;
 
-// MQ135 analog (KiCad J5 divider) — ADC1 input-only. Never UART, never 5 V into the pin.
+// MQ135 analog — ADC1 input-only. Never UART, never 5 V into the pin.
+// Bench divider (operator 2026-08-14): 10 kΩ series AOUT→GPIO34, 20 kΩ GPIO34→GND.
+// GPIO sees 2/3 of AOUT. At 5 V AOUT → 3.33 V on GPIO34: no headroom vs 3.3 V max.
 inline constexpr int kMq135AdcGpio = 34;
+inline constexpr int kMq135SeriesOhms = 10000;
+inline constexpr int kMq135GndOhms = 20000;
+inline constexpr int kMq135AdcMax = 4095;
+inline constexpr int kMq135AdcFullScaleMv = 3300;
+inline constexpr int kMq135AdcNearZero = 16;
 
 // Adafruit 5×7 glyph + 1 px pad; 128 px → 21 columns. 8 px rows → 8 pages (64) or 4 (32).
 inline constexpr int kOledWidthPx = 128;

@@ -1,4 +1,5 @@
 #include "atmosmesh/display_text.hpp"
+#include "atmosmesh/mq135_scale.hpp"
 
 #include <cstdio>
 
@@ -23,7 +24,8 @@ OledBanner dummy_banner() {
 }
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
-                               int bmp_address, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3) {
+                               int bmp_address, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
+                               int mq135_raw_adc) {
     char am_line[32];
     if (am_ok) {
         std::snprintf(am_line, sizeof(am_line), "T %4.1fC RH %4.1f%%",
@@ -49,7 +51,7 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
     }
 
     return {clip_oled_line("AtmosMesh"), clip_oled_line(am_line), clip_oled_line(bmp_line),
-            clip_oled_line(pm_line)};
+            clip_oled_line(pm_line), clip_oled_line(format_mq135_oled_line(mq135_raw_adc))};
 }
 
 }  // namespace atmosmesh

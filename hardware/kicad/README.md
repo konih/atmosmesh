@@ -88,8 +88,9 @@ differ from the assumption below. **Populate U1 or J7, never both.**
    USB** — USB/VIN coexistence on this board is unverified.
 4. The 5 V block is fenced off on the silkscreen (`5V DOMAIN - NEVER TO A GPIO`) and sits in the
    bottom-right corner, physically away from the 3.3 V connectors.
-5. `MQ135` reaches GPIO34 only through the `R2`/`R3` divider (10 k / 15 k → 3.0 V at 5.0 V in).
-   **Re-measure on the real module before trusting it**, and never label MQ135 as a CO₂ sensor.
+5. `MQ135` on the schematic still shows `R2`/`R3` as 10 k / 15 k (3.0 V at 5.0 V in). The **live
+   bench** (2026-08-14) is **10 kΩ series + 20 kΩ to GND** → 3.33 V at 5.0 V AOUT, **no GPIO
+   headroom**. Firmware logs that warning. Never put 5 V on GPIO34, and never label MQ135 as CO₂.
 
 ### GPIO2
 

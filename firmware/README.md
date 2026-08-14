@@ -28,15 +28,15 @@ Mini I²C SSD1306 on the DevBoard (serial-proven 0x3C):
 | SDA | D5 / GPIO5 (firmware retries GPIO4 if this mapping is silent) |
 | SCL | D4 / GPIO4 |
 
-Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows AM2302 T/RH, BMP280 address, and
-SDS011 PM2.5/PM10 when UART2 frames parse. Firmware prefers I²C **0x3C**, then **0x3D**. LCD
-backpack addresses (0x27/0x3F) are not the display.
+Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows AM2302 T/RH, BMP280 address,
+SDS011 PM2.5/PM10 when UART2 frames parse, and MQ135 **raw ADC / GPIO volts** (never CO₂). Firmware
+prefers I²C **0x3C**, then **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
 
-Default panel programming is **SSD1306 128×64** at **100 kHz** with **sequential COM** (`0xDA 0x02`).
-That is the usual fix when a 0.96" module shows pixels but drops every other line (Adafruit's
-128×64 default uses alternate COM `0x12`). If the glass is still shifted, rebuild with
-`-DATMOSMESH_OLED_CONTROLLER_ID=1` (SH1106, 2-pixel column offset). If only the top half is used,
-`-DATMOSMESH_OLED_HEIGHT=32`. Serial logs `oled: init ok controller=… width=… height=… addr=…`.
+Default panel programming is **SH1106 128×64** at **100 kHz** (2-pixel column offset). Cheap
+modules sold as SSD1306 are often SH1106: sequential-COM SSD1306 can ACK and still leave the
+glass blank. Rebuild with `-DATMOSMESH_OLED_CONTROLLER_ID=0` for SSD1306 sequential COM (`0xDA
+0x02`). If only the top half is used, `-DATMOSMESH_OLED_HEIGHT=32`. Serial logs
+`oled: init ok controller=… width=… height=… addr=…`.
 
 ## Sensor wiring (operator 2026-08-14)
 
@@ -53,9 +53,12 @@ Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SD
 **Do not wire SDS011 (d011v2) to RX0/TX0** (GPIO3/GPIO1). Those pins are the CP2102 USB-UART used
 by `task flash` / `task monitor`. Firmware uses `Serial2` on GPIO16/17 and will not move to UART0.
 
-**MQ135 is not UART.** Wiring the gas board (often labelled MQ13/MQ135) to RX2/TX2 cannot produce
-`AA C0` frames and can put heater/AO **5 V** on ESP32 GPIOs. Heater power is **5 V**, never `3V3`.
-Analog belongs on GPIO34 after a measured divider (KiCad J5).
+**MQ135 is analog, not UART, and not a CO₂ sensor.** Heater power is **5 V**, never `3V3`. Analog
+belongs on GPIO34 after the divider. Operator bench (2026-08-14): **10 kΩ series** AOUT→GPIO34,
+**20 kΩ** GPIO34→GND. GPIO sees **2/3** of AOUT. At 5 V AOUT the pin sits at **3.33 V** — at the
+ESP32 3.3 V max there is **no headroom**. Firmware logs `mq135: raw=… gpio_mv=… aout_mv=…` (estimated
+AOUT from the inverse ratio). If raw stays ~0, check AOUT/GND/5 V heater wiring. **Never apply 5 V
+to GPIO34.** Serial also warns; do not label the reading `CO2` or `ppm`.
 
 GPIO5 (OLED SDA) has an internal pull-up and wants idle-high at boot; that is usually compatible
 with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
@@ -72,5 +75,6 @@ with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 | `src/am2302_frame.cpp` | Host-testable AM2302 checksum/parse |
 | `src/sds011_frame.cpp` | Host-testable SDS011 `AA C0 … AB` checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
-| `src/main.cpp` | Bring-up: OLED, BMP280 chip-id, AM2302, SDS011 UART2 |
+| `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
+| `src/main.cpp` | Bring-up: OLED SH1106, BMP280 chip-id, AM2302, SDS011 UART2, MQ135 ADC |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |

@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #ifndef ATMOSMESH_OLED_CONTROLLER_ID
-#define ATMOSMESH_OLED_CONTROLLER_ID 0
+#define ATMOSMESH_OLED_CONTROLLER_ID 1
 #endif
 
 #ifndef ATMOSMESH_OLED_HEIGHT
@@ -41,12 +41,13 @@ OledProfile resolve_oled_profile(OledController controller, int height_px) {
 }
 
 OledProfile default_oled_profile() {
-    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx);
+    return resolve_oled_profile(OledController::Sh1106, kOledHeightPx);
 }
 
 OledProfile compiled_oled_profile() {
-    const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 1) ? OledController::Sh1106
-                                                                : OledController::Ssd1306;
+    // 1 (default) = SH1106. 0 = SSD1306 sequential COM compile fallback.
+    const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 0) ? OledController::Ssd1306
+                                                                : OledController::Sh1106;
     return resolve_oled_profile(controller, ATMOSMESH_OLED_HEIGHT);
 }
 
