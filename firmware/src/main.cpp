@@ -62,7 +62,7 @@ void show_lines(const std::string* lines, std::size_t count) {
     oled->clearBuffer();
     oled->setDrawColor(1);
     oled->setFont(u8g2_font_6x10_tf);
-    const int line_px = 12;
+    const int line_px = (oled_profile.height_px <= 32) ? 16 : 12;
     const int baseline0 = oled->getAscent();
     for (std::size_t i = 0; i < count; ++i) {
         oled->drawStr(oled_profile.column_offset_px, baseline0 + static_cast<int>(i * line_px),

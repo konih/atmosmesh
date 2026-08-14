@@ -1,6 +1,7 @@
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/mq135_scale.hpp"
 
+#include <cmath>
 #include <cstdio>
 
 namespace atmosmesh {
@@ -27,32 +28,31 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
                                int mq135_raw_adc) {
     char climate[32];
-    if (am_ok) {
-        std::snprintf(climate, sizeof(climate), "%4.1fC  %2.0f%% RH",
+    if (am_ok && bmp_ok) {
+        std::snprintf(climate, sizeof(climate), "%.1fC %.0f%% %.0fhPa",
+                      static_cast<double>(temperature_c), static_cast<double>(humidity_rh),
+                      static_cast<double>(pressure_hpa));
+    } else if (am_ok) {
+        std::snprintf(climate, sizeof(climate), "%.1fC %.0f%% --hPa",
                       static_cast<double>(temperature_c), static_cast<double>(humidity_rh));
+    } else if (bmp_ok) {
+        std::snprintf(climate, sizeof(climate), "--C --%% %.0fhPa",
+                      static_cast<double>(pressure_hpa));
     } else {
-        std::snprintf(climate, sizeof(climate), "T --  --%% RH");
+        std::snprintf(climate, sizeof(climate), "--C --%% --hPa");
     }
 
-    char pressure[32];
-    if (bmp_ok) {
-        std::snprintf(pressure, sizeof(pressure), "%4.0f hPa", static_cast<double>(pressure_hpa));
-    } else {
-        std::snprintf(pressure, sizeof(pressure), "-- hPa");
-    }
-
-    char pm25[32];
-    char pm10[32];
+    char particles[32];
+    const int gas = mq135_gas_index(mq135_raw_adc);
     if (pm_ok) {
-        std::snprintf(pm25, sizeof(pm25), "PM2.5 %4.1f", static_cast<double>(pm25_ug_m3));
-        std::snprintf(pm10, sizeof(pm10), "PM10 %4.1f", static_cast<double>(pm10_ug_m3));
+        std::snprintf(particles, sizeof(particles), "2.5:%d 10:%d g:%d",
+                      static_cast<int>(std::lround(static_cast<double>(pm25_ug_m3))),
+                      static_cast<int>(std::lround(static_cast<double>(pm10_ug_m3))), gas);
     } else {
-        std::snprintf(pm25, sizeof(pm25), "PM2.5 --");
-        std::snprintf(pm10, sizeof(pm10), "PM10 --");
+        std::snprintf(particles, sizeof(particles), "2.5:-- 10:-- g:%d", gas);
     }
 
-    return {clip_oled_line(climate), clip_oled_line(pressure), clip_oled_line(pm25),
-            clip_oled_line(pm10), clip_oled_line(format_mq135_oled_line(mq135_raw_adc))};
+    return {clip_oled_line(climate), clip_oled_line(particles)};
 }
 
 }  // namespace atmosmesh

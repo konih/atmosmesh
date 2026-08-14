@@ -9,7 +9,7 @@
 namespace atmosmesh {
 
 using OledBanner = std::array<std::string, 2>;
-using OledLivePage = std::array<std::string, 5>;
+using OledLivePage = std::array<std::string, 2>;
 
 int oled_page_count(int height_px);
 

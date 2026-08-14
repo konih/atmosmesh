@@ -7,7 +7,7 @@
 #endif
 
 #ifndef ATMOSMESH_OLED_HEIGHT
-#define ATMOSMESH_OLED_HEIGHT 64
+#define ATMOSMESH_OLED_HEIGHT 32
 #endif
 
 namespace atmosmesh {
@@ -54,11 +54,12 @@ OledProfile resolve_oled_profile(OledController controller, int height_px) {
 }
 
 OledProfile default_oled_profile() {
-    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx);
+    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPxAlt);
 }
 
 OledProfile compiled_oled_profile() {
-    // 0 (default) = SSD1306 ALT0 sequential COM 0x02. 1 = SH1106 compile fallback.
+    // 0 (default) = SSD1306 128×32 Univision. 1 = SH1106 compile fallback.
+    // ATMOSMESH_OLED_HEIGHT=64 selects SSD1306 ALT0 128×64.
     const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 1) ? OledController::Sh1106
                                                                 : OledController::Ssd1306;
     return resolve_oled_profile(controller, ATMOSMESH_OLED_HEIGHT);

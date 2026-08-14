@@ -4,7 +4,7 @@
 
 namespace atmosmesh {
 
-// Mini I²C OLED (D-001): D5 = SDA, D4 = SCL. Default is SSD1306 ALT0 (COM 0x02).
+// Mini I²C OLED (D-001): D5 = SDA, D4 = SCL. Default is SSD1306 128×32 Univision.
 // GPIO5 has an internal pull-up; idle-high is OK for boot.
 inline constexpr int kOledSdaGpio = 5;
 inline constexpr int kOledSclGpio = 4;

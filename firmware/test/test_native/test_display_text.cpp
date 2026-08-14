@@ -41,11 +41,10 @@ void test_dummy_banner_is_identifiable() {
     TEST_ASSERT_EQUAL_STRING("OLED bring-up", lines[1].c_str());
 }
 
-void test_live_page_fits_and_shows_sensors() {
+void test_live_page_is_two_by_three_matrix() {
     const auto lines =
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 2048);
-    TEST_ASSERT_EQUAL_INT(5, static_cast<int>(lines.size()));
-    TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::oled_page_count(64), static_cast<int>(lines.size()));
+    TEST_ASSERT_EQUAL_INT(2, static_cast<int>(lines.size()));
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("CO2"));
@@ -54,22 +53,28 @@ void test_live_page_fits_and_shows_sensors() {
         TEST_ASSERT_EQUAL(std::string::npos, line.find("MQ "));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("/"));
     }
-    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("1013 hPa", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("PM2.5 12.3", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("PM10 20.1", lines[3].c_str());
-    TEST_ASSERT_EQUAL_STRING("gas 50", lines[4].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C 48% 1013hPa", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("2.5:12 10:20 g:50", lines[1].c_str());
+}
+
+void test_live_page_fits_worst_case_six_cells() {
+    const auto lines =
+        atmosmesh::live_sensor_lines(true, -10.0F, 100.0F, true, 1013.2F, true, 999.4F, 999.4F,
+                                     4095);
+    TEST_ASSERT_EQUAL_STRING("-10.0C 100% 1013hPa", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("2.5:999 10:999 g:100", lines[1].c_str());
+    TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(lines[0].size()));
+    TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(lines[1].size()));
 }
 
 void test_live_page_missing_sensors() {
     const auto lines =
         atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, 0.0F, false, 0.0F, 0.0F, 0);
-    TEST_ASSERT_EQUAL_STRING("T --  --% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("-- hPa", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("PM2.5 --", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("PM10 --", lines[3].c_str());
-    TEST_ASSERT_EQUAL_STRING("gas 0", lines[4].c_str());
+    TEST_ASSERT_EQUAL_INT(2, static_cast<int>(lines.size()));
+    TEST_ASSERT_EQUAL_STRING("--C --% --hPa", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("2.5:-- 10:-- g:0", lines[1].c_str());
     for (const auto& line : lines) {
+        TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("SDS011 missing"));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("AM2302 missing"));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("BMP280 missing"));
@@ -151,18 +156,20 @@ void test_oled_i2c_clock_is_100khz_for_cheap_modules() {
     TEST_ASSERT_EQUAL_UINT32(100000U, atmosmesh::kOledI2cHz);
 }
 
-void test_default_oled_profile_is_ssd1306_alt0() {
+void test_default_oled_profile_is_ssd1306_128x32() {
     const auto profile = atmosmesh::default_oled_profile();
     TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Ssd1306),
                           static_cast<int>(profile.controller));
     TEST_ASSERT_EQUAL_INT(128, profile.width_px);
-    TEST_ASSERT_EQUAL_INT(64, profile.height_px);
+    TEST_ASSERT_EQUAL_INT(32, profile.height_px);
     TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledComPins::Sequential),
                           static_cast<int>(profile.com_pins));
     TEST_ASSERT_EQUAL_HEX8(0x02, atmosmesh::oled_compins_arg(profile.com_pins));
     TEST_ASSERT_EQUAL_INT(0, profile.column_offset_px);
-    TEST_ASSERT_EQUAL_STRING("SSD1306_ALT0", atmosmesh::oled_profile_name(profile));
+    TEST_ASSERT_EQUAL_STRING("SSD1306_128X32", atmosmesh::oled_profile_name(profile));
     TEST_ASSERT_EQUAL_STRING("SSD1306", atmosmesh::oled_controller_name(profile.controller));
+    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C",
+                             atmosmesh::u8g2_hw_i2c_constructor_name(profile));
 }
 
 void test_sh1106_compile_fallback_is_controller_id_one() {
@@ -174,16 +181,17 @@ void test_sh1106_compile_fallback_is_controller_id_one() {
                              atmosmesh::u8g2_hw_i2c_constructor_name(profile));
 }
 
-void test_compiled_oled_profile_defaults_to_ssd1306_alt0() {
+void test_compiled_oled_profile_defaults_to_ssd1306_128x32() {
     const auto profile = atmosmesh::compiled_oled_profile();
     TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledController::Ssd1306),
                           static_cast<int>(profile.controller));
+    TEST_ASSERT_EQUAL_INT(32, profile.height_px);
     TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledComPins::Sequential),
                           static_cast<int>(profile.com_pins));
     TEST_ASSERT_EQUAL_HEX8(0x02, atmosmesh::oled_compins_arg(profile.com_pins));
     TEST_ASSERT_EQUAL_INT(0, profile.column_offset_px);
-    TEST_ASSERT_EQUAL_STRING("SSD1306_ALT0", atmosmesh::oled_profile_name(profile));
-    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X64_ALT0_F_HW_I2C",
+    TEST_ASSERT_EQUAL_STRING("SSD1306_128X32", atmosmesh::oled_profile_name(profile));
+    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C",
                              atmosmesh::u8g2_hw_i2c_constructor_name(profile));
 }
 
@@ -211,9 +219,9 @@ void test_oled_init_log_includes_controller_geometry_and_addr() {
     const auto profile = atmosmesh::default_oled_profile();
     const std::string line = atmosmesh::format_oled_init_log(profile, 0x3C);
     TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("controller=SSD1306"));
-    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("profile=SSD1306_ALT0"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("profile=SSD1306_128X32"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("width=128"));
-    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("height=64"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("height=32"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("addr=0x3C"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("com=sequential"));
 }
@@ -242,14 +250,14 @@ void test_ssd1306_mux32_command_is_a8_1f() {
 
 void test_u8g2_constructor_names_match_profile() {
     TEST_ASSERT_EQUAL_STRING(
-        "U8G2_SSD1306_128X64_ALT0_F_HW_I2C",
+        "U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C",
         atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::default_oled_profile()));
     TEST_ASSERT_EQUAL_STRING("U8G2_SH1106_128X64_NONAME_F_HW_I2C",
                              atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::resolve_oled_profile(
                                  atmosmesh::OledController::Sh1106, 64)));
-    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C",
+    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X64_ALT0_F_HW_I2C",
                              atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::resolve_oled_profile(
-                                 atmosmesh::OledController::Ssd1306, 32)));
+                                 atmosmesh::OledController::Ssd1306, 64)));
 }
 
 void test_sds011_listen_log_names_gpio16_not_tx2() {
@@ -373,7 +381,8 @@ int main() {
     RUN_TEST(test_oled_page_counts_for_64_and_32);
     RUN_TEST(test_dummy_banner_fits_ssd1306);
     RUN_TEST(test_dummy_banner_is_identifiable);
-    RUN_TEST(test_live_page_fits_and_shows_sensors);
+    RUN_TEST(test_live_page_is_two_by_three_matrix);
+    RUN_TEST(test_live_page_fits_worst_case_six_cells);
     RUN_TEST(test_live_page_missing_sensors);
     RUN_TEST(test_i2c_pins_match_operator_oled_d5_d4);
     RUN_TEST(test_sensor_pins_match_operator_bmp_am2302);
@@ -386,9 +395,9 @@ int main() {
     RUN_TEST(test_pick_bmp_address_accepts_0x77);
     RUN_TEST(test_bmp_family_ids);
     RUN_TEST(test_oled_i2c_clock_is_100khz_for_cheap_modules);
-    RUN_TEST(test_default_oled_profile_is_ssd1306_alt0);
+    RUN_TEST(test_default_oled_profile_is_ssd1306_128x32);
     RUN_TEST(test_sh1106_compile_fallback_is_controller_id_one);
-    RUN_TEST(test_compiled_oled_profile_defaults_to_ssd1306_alt0);
+    RUN_TEST(test_compiled_oled_profile_defaults_to_ssd1306_128x32);
     RUN_TEST(test_mq135_divider_is_two_thirds_ten_k_twenty_k);
     RUN_TEST(test_mq135_millivolts_from_adc_inverts_divider);
     RUN_TEST(test_mq135_five_volt_aout_has_no_gpio_headroom);
