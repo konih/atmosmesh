@@ -53,4 +53,12 @@ Sds011Sample Sds011Stream::feed(std::uint8_t byte) {
     return parse_sds011_frame(buf_);
 }
 
+std::string format_sds011_listen_log() {
+    return "sds011: listen GPIO16 (RX2); TX2=GPIO17 is ESP output — sensor TX goes to RX2";
+}
+
+std::string format_sds011_no_frame_log() {
+    return "sds011: no AA C0 frame (listening GPIO16/RX2; sensor TX must not sit on TX2/GPIO17)";
+}
+
 }  // namespace atmosmesh

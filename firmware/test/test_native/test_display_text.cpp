@@ -207,6 +207,48 @@ void test_parse_oled_controller_flag() {
                           static_cast<int>(atmosmesh::parse_oled_controller_flag("SH1106")));
 }
 
+void test_oled_prove_life_serial_lines() {
+    TEST_ASSERT_EQUAL_STRING("oled: display on", atmosmesh::format_oled_display_on_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: contrast 255", atmosmesh::format_oled_contrast_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: invert off", atmosmesh::format_oled_invert_off_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: full white", atmosmesh::format_oled_full_white_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: text HI", atmosmesh::format_oled_text_hi_log().c_str());
+    TEST_ASSERT_EQUAL_STRING("oled: mux=0x1F (128x32 attempt)",
+                             atmosmesh::format_oled_mux32_log().c_str());
+}
+
+void test_ssd1306_mux32_command_is_a8_1f() {
+    TEST_ASSERT_EQUAL_HEX8(0xA8, atmosmesh::kSsd1306SetMultiplex);
+    TEST_ASSERT_EQUAL_HEX8(0x1F, atmosmesh::kSsd1306MuxRatio32);
+}
+
+void test_u8g2_constructor_names_match_profile() {
+    TEST_ASSERT_EQUAL_STRING(
+        "U8G2_SH1106_128X64_NONAME_F_HW_I2C",
+        atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::default_oled_profile()));
+    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X64_NONAME_F_HW_I2C",
+                             atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::resolve_oled_profile(
+                                 atmosmesh::OledController::Ssd1306, 64)));
+    TEST_ASSERT_EQUAL_STRING("U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C",
+                             atmosmesh::u8g2_hw_i2c_constructor_name(atmosmesh::resolve_oled_profile(
+                                 atmosmesh::OledController::Ssd1306, 32)));
+}
+
+void test_sds011_listen_log_names_gpio16_not_tx2() {
+    const std::string line = atmosmesh::format_sds011_listen_log();
+    TEST_ASSERT_EQUAL_STRING(
+        "sds011: listen GPIO16 (RX2); TX2=GPIO17 is ESP output — sensor TX goes to RX2",
+        line.c_str());
+    TEST_ASSERT_EQUAL(std::string::npos, line.find("GPIO17 as RX"));
+}
+
+void test_sds011_no_frame_log_points_at_rx2() {
+    const std::string line = atmosmesh::format_sds011_no_frame_log();
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("no AA C0 frame"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("GPIO16"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, line.find("TX2"));
+}
+
 void test_am2302_bad_checksum_is_missing() {
     const std::uint8_t frame[5] = {0x02, 0x92, 0x01, 0x0B, 0x00};
     TEST_ASSERT_FALSE(atmosmesh::am2302_checksum_ok(frame));
@@ -329,6 +371,11 @@ int main() {
     RUN_TEST(test_resolve_ssd1306_32px_uses_four_pages);
     RUN_TEST(test_oled_init_log_includes_controller_geometry_and_addr);
     RUN_TEST(test_parse_oled_controller_flag);
+    RUN_TEST(test_oled_prove_life_serial_lines);
+    RUN_TEST(test_ssd1306_mux32_command_is_a8_1f);
+    RUN_TEST(test_u8g2_constructor_names_match_profile);
+    RUN_TEST(test_sds011_listen_log_names_gpio16_not_tx2);
+    RUN_TEST(test_sds011_no_frame_log_points_at_rx2);
     RUN_TEST(test_am2302_checksum_and_parse);
     RUN_TEST(test_am2302_bad_checksum_is_missing);
     RUN_TEST(test_sds011_uart_pins_are_rx2_tx2);

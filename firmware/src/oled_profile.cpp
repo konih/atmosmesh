@@ -62,4 +62,38 @@ std::string format_oled_init_log(const OledProfile& profile, unsigned address) {
     return line;
 }
 
+std::string format_oled_display_on_log() {
+    return "oled: display on";
+}
+
+std::string format_oled_contrast_log() {
+    return "oled: contrast 255";
+}
+
+std::string format_oled_invert_off_log() {
+    return "oled: invert off";
+}
+
+std::string format_oled_full_white_log() {
+    return "oled: full white";
+}
+
+std::string format_oled_text_hi_log() {
+    return "oled: text HI";
+}
+
+std::string format_oled_mux32_log() {
+    return "oled: mux=0x1F (128x32 attempt)";
+}
+
+const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile) {
+    if (profile.controller == OledController::Sh1106) {
+        return "U8G2_SH1106_128X64_NONAME_F_HW_I2C";
+    }
+    if (profile.height_px == kOledHeightPxAlt) {
+        return "U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C";
+    }
+    return "U8G2_SSD1306_128X64_NONAME_F_HW_I2C";
+}
+
 }  // namespace atmosmesh

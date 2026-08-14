@@ -31,5 +31,15 @@ OledProfile default_oled_profile();
 OledProfile compiled_oled_profile();
 
 std::string format_oled_init_log(const OledProfile& profile, unsigned address);
+std::string format_oled_display_on_log();
+std::string format_oled_contrast_log();
+std::string format_oled_invert_off_log();
+std::string format_oled_full_white_log();
+std::string format_oled_text_hi_log();
+std::string format_oled_mux32_log();
+const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile);
+
+inline constexpr std::uint8_t kSsd1306SetMultiplex = 0xA8;
+inline constexpr std::uint8_t kSsd1306MuxRatio32 = 0x1F;
 
 }  // namespace atmosmesh

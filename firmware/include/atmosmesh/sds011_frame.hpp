@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace atmosmesh {
 
@@ -31,5 +32,8 @@ private:
     std::uint8_t buf_[kSds011FrameSize]{};
     std::size_t filled_{0};
 };
+
+std::string format_sds011_listen_log();
+std::string format_sds011_no_frame_log();
 
 }  // namespace atmosmesh

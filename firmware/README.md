@@ -32,11 +32,12 @@ Boot banner: `AtmosMesh` / `OLED bring-up`. The loop then shows AM2302 T/RH, BMP
 SDS011 PM2.5/PM10 when UART2 frames parse, and MQ135 **raw ADC / GPIO volts** (never CO₂). Firmware
 prefers I²C **0x3C**, then **0x3D**. LCD backpack addresses (0x27/0x3F) are not the display.
 
-Default panel programming is **SH1106 128×64** at **100 kHz** (2-pixel column offset). Cheap
-modules sold as SSD1306 are often SH1106: sequential-COM SSD1306 can ACK and still leave the
-glass blank. Rebuild with `-DATMOSMESH_OLED_CONTROLLER_ID=0` for SSD1306 sequential COM (`0xDA
-0x02`). If only the top half is used, `-DATMOSMESH_OLED_HEIGHT=32`. Serial logs
-`oled: init ok controller=… width=… height=… addr=…`.
+The glass is driven by **one** renderer: U8g2 full-frame
+(`U8G2_SH1106_128X64_NONAME_F_HW_I2C` by default; SSD1306 128×64 / 128×32 constructors when
+`-DATMOSMESH_OLED_CONTROLLER_ID=0` and/or `-DATMOSMESH_OLED_HEIGHT=32`). After `begin()` the
+firmware turns the panel on, sets contrast 255, fills **white**, then draws large **HI**, then
+sends SSD1306 multiplex `0xA8 0x1F` as a 128×32 attempt. Serial: `oled: full white` then
+`oled: text HI`. **OLED VCC = 3V3**; 5 V on VCC with pull-ups to VCC can kill GPIO5/4.
 
 ## Sensor wiring (operator 2026-08-14)
 
@@ -45,8 +46,8 @@ glass blank. Rebuild with `-DATMOSMESH_OLED_CONTROLLER_ID=0` for SSD1306 sequent
 | GY-BMP280 SDA | GPIO21 | VCC=3V3, CSB=3V3, SDO=GND → 0x76 |
 | GY-BMP280 SCL | GPIO19 | Not GPIO22 |
 | AM2302 DATA | GPIO18 | VDD=3V3. GPIO18 high matches the 3.3 V flash-voltage strap; keep idle-high |
-| SDS011 TX | GPIO16 / RX2 | Sensor TX → ESP32 RX2. VCC=**5 V**. UART **3.3 V** only. **Not** RX0/GPIO3 |
-| SDS011 RX | GPIO17 / TX2 | ESP32 TX2 → sensor RX. Do not drive 5 V into GPIO. **Not** TX0/GPIO1 |
+| SDS011 TX | GPIO16 / RX2 | Sensor TX → **D16/RX2**. VCC=**5 V**. UART **3.3 V**. **Not** TX2, **not** RX0/GPIO3 |
+| SDS011 RX | GPIO17 / TX2 | ESP32 TX2 → sensor RX (commands). Do not put sensor TX on TX2. **Not** TX0/GPIO1 |
 | MQ135 AOUT | GPIO34 via divider | Analog, not UART. Neither RX2/TX2 nor RX0/TX0 |
 
 Two I²C buses: OLED on Wire (GPIO5/4), BMP280 on Wire1 (GPIO21/19). UART2 is SDS011 only.
@@ -76,5 +77,5 @@ with I²C. GPIO18 (AM2302) idle-high is OK (3.3 V flash voltage).
 | `src/sds011_frame.cpp` | Host-testable SDS011 `AA C0 … AB` checksum/parse |
 | `src/i2c_bus.cpp` | ESP32 I²C scan |
 | `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
-| `src/main.cpp` | Bring-up: OLED SH1106, BMP280 chip-id, AM2302, SDS011 UART2, MQ135 ADC |
+| `src/main.cpp` | Bring-up: U8g2 OLED prove-life, BMP280 chip-id, AM2302, SDS011 UART2 RX2, MQ135 ADC |
 | `test/test_native/` | Unity tests compiled with `pio test -e native` |
