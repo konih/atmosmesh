@@ -7,7 +7,7 @@
 #endif
 
 #ifndef ATMOSMESH_OLED_HEIGHT
-#define ATMOSMESH_OLED_HEIGHT 48
+#define ATMOSMESH_OLED_HEIGHT 64
 #endif
 
 namespace atmosmesh {
@@ -63,12 +63,12 @@ OledProfile resolve_oled_profile(OledController controller, int height_px) {
 }
 
 OledProfile default_oled_profile() {
-    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx48);
+    return resolve_oled_profile(OledController::Ssd1306, kOledHeightPx);
 }
 
 OledProfile compiled_oled_profile() {
     // 0 (default) = SSD1306. 1 = SH1106 compile fallback.
-    // Height 48 (default) uses 128×64 ALT0 RAM then mux 0x2F. 32 = Univision, 64 = ALT0.
+    // Height 64 (default) is sequential COM ALT0. Do not send mux 0x2F.
     const auto controller = (ATMOSMESH_OLED_CONTROLLER_ID == 1) ? OledController::Sh1106
                                                                 : OledController::Ssd1306;
     return resolve_oled_profile(controller, ATMOSMESH_OLED_HEIGHT);
@@ -112,6 +112,14 @@ std::string format_oled_mux32_log() {
 
 std::string format_oled_mux48_log() {
     return "oled: height=48 mux=0x2F";
+}
+
+std::string format_oled_telltale_log() {
+    return "oled: telltale bar y=62 h=2";
+}
+
+bool oled_should_set_mux(const OledProfile& /*profile*/) {
+    return false;
 }
 
 const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile) {

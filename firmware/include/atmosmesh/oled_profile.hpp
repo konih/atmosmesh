@@ -40,6 +40,8 @@ std::string format_oled_full_white_log();
 std::string format_oled_text_hi_log();
 std::string format_oled_mux32_log();
 std::string format_oled_mux48_log();
+std::string format_oled_telltale_log();
+bool oled_should_set_mux(const OledProfile& profile);
 const char* u8g2_hw_i2c_constructor_name(const OledProfile& profile);
 
 inline constexpr std::uint8_t kSsd1306SetMultiplex = 0xA8;

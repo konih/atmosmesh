@@ -18,7 +18,22 @@ int oled_live_line_count(int height_px) {
 }
 
 int oled_line_pitch_px(int height_px) {
-    return (height_px <= kOledHeightPx48) ? kOledLinePitch48Px : 12;
+    return (height_px <= kOledHeightPx48) ? kOledLinePitch48Px : kOledLinePitch64Px;
+}
+
+int oled_live_row_y_px(int row) {
+    if (row < 0 || row >= kOledLiveLineCount) {
+        return 0;
+    }
+    return kOledLiveRowYPx[row];
+}
+
+int oled_telltale_bar_y_px() {
+    return kOledTelltaleBarYPx;
+}
+
+int oled_telltale_bar_height_px() {
+    return kOledTelltaleBarHeightPx;
 }
 
 namespace {
@@ -51,14 +66,12 @@ OledBanner dummy_banner() {
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
                                int mq135_raw_adc) {
-    char temp[16];
-    char rh[16];
+    char line0[24];
     if (am_ok) {
-        std::snprintf(temp, sizeof(temp), "%.1fC", static_cast<double>(temperature_c));
-        std::snprintf(rh, sizeof(rh), "%.0f%%", static_cast<double>(humidity_rh));
+        std::snprintf(line0, sizeof(line0), "%.1fC  %.0f%% RH", static_cast<double>(temperature_c),
+                      static_cast<double>(humidity_rh));
     } else {
-        std::snprintf(temp, sizeof(temp), "--C");
-        std::snprintf(rh, sizeof(rh), "--%%");
+        std::snprintf(line0, sizeof(line0), "--C  --%% RH");
     }
 
     char pressure[16];
@@ -84,7 +97,7 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
         std::snprintf(pm10, sizeof(pm10), "PM10 --");
     }
 
-    return {two_col(temp, rh), two_col(pressure, gas_cell), two_col(pm25, pm10)};
+    return {clip_oled_line(line0), two_col(pressure, gas_cell), two_col(pm25, pm10)};
 }
 
 }  // namespace atmosmesh
