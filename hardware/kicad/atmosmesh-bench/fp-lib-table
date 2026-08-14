@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "atmosmesh")(type "KiCad")(uri "${KIPRJMOD}/atmosmesh.pretty")(options "")(descr "AtmosMesh project footprints"))
+)
