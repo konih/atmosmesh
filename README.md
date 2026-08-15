@@ -8,7 +8,9 @@
 
 <p align="center">
   <a href="https://github.com/konih/atmosmesh/actions/workflows/firmware.yml"><img src="https://github.com/konih/atmosmesh/actions/workflows/firmware.yml/badge.svg" alt="Firmware CI"></a>
+  <a href="https://github.com/konih/atmosmesh/security/code-scanning"><img src="https://img.shields.io/badge/CodeQL-enabled-2ea44f" alt="CodeQL"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/konih/atmosmesh" alt="License: MIT"></a>
+  <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-policy-blue" alt="Security policy"></a>
   <img src="https://img.shields.io/badge/ESP32-WROOM--32-000000?logo=espressif&logoColor=white" alt="ESP32">
   <img src="https://img.shields.io/badge/PlatformIO-Arduino-orange" alt="PlatformIO">
   <img src="https://img.shields.io/badge/MQTT-planned-41BDF5?logo=homeassistant&logoColor=white" alt="MQTT planned">
@@ -107,4 +109,5 @@ path are still ahead ([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors
 
-[MIT](LICENSE). People: [CONTRIBUTORS.md](CONTRIBUTORS.md).
+[MIT](LICENSE). People: [CONTRIBUTORS.md](CONTRIBUTORS.md). Security:
+[SECURITY.md](SECURITY.md).
