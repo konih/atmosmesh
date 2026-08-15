@@ -6,27 +6,29 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ## Operator note — no mic/clap; VEML7700 on Wire1 (2026-08-14)
 
-**Live firmware** (`fix/oled-u8g2-sds011-listen`): **no microphone, no clap.** GPIO22 and GPIO35
-are free. PIR GPIO33, beeper GPIO25 stay.
+**Live firmware is `main`:** **no microphone, no clap.** GPIO22 and GPIO35 are free. PIR GPIO33,
+beeper GPIO25 stay. VEML7700 lux (part **not fitted yet**) is I²C **0x10** on **Wire1 with BMP280**
+(SDA=GPIO21, SCL=GPIO19, VCC 3V3). Serial `veml7700: not found (ok until fitted)` until fitted.
+OLED line 1: `1013 hPa   -- lx` (or `123 lx` when present).
 
-**VEML7700 lux** (part **not fitted yet**): I²C **0x10** on **Wire1 with BMP280** (SDA=GPIO21,
-SCL=GPIO19, VCC 3V3). Serial `veml7700: not found (ok until fitted)` until the module is fitted.
-OLED line 1: `1013 hPa   -- lx` (or `123 lx` when present). **Do not edit KiCad from firmware.**
-Next PCB session: **J_VEML** 1×4 sharing `SDA_SENS`/`SCL_SENS`; drop `J_MIC`. Map:
-[`extra-peripherals.md`](extra-peripherals.md) and [`pcb-session-prompt.md`](pcb-session-prompt.md).
+A leftover concept-wiring SVG from `codex/add-wiring-image` was **not** merged: it still showed
+OLED on GPIO21/22 and DHT on GPIO27, which contradicts the live map. Do not treat that drawing as
+a construction aid.
 
 ## ~~Operator task / PCB session — extra connectors (2026-08-14, **live pins**)~~ DONE
 
-**Outcome (PCB session, 2026-08-14):** J_BEEP (SIG=GPIO25), J_PIR (SIG=GPIO33), J_MIC
-(SIG=**GPIO35** digital — operator rewired the mic from GPIO22 to D35 mid-session; U1.17/GPIO22
-is NC and free again; **firmware `kMicGpio` on `fix/oled-u8g2-sds011-listen` still says 22 and
-needs a firmware-session update to 35**) added to schematic **and** PCB as 1×3 VCC/GND/SIG headers, plus 3-pin
-VCC-select jumpers JP_BEEP / JP_PIR (1=+3V3 default, 3=+5V; J_MIC 3V3-only). No J_TFT. Added
-by hand — **no Update-PCB-from-Schematic was run**. Board widened 115→139 mm for the labeled
-EXTRAS strip; U1 pads 7/8/17 carry `PIR_OUT`/`BEEP_SIG`/`MIC_SIG` (were NC). Verification:
-ERC 0/0, DRC 0 violations, **0 schematic-parity issues**, netlist↔PCB **104 pins / 0
-mismatches**. GPIO2/UART0 still NC; no 5 V on any GPIO pad; R3 still 15 k. README + schematic
-PDF regenerated. Photos still owed: OLED pin order, PIR module class (before locking copper).
+**Outcome (PCB session, 2026-08-14, final; landed on `main` 2026-08-15):** J_BEEP (SIG=GPIO25),
+J_PIR (SIG=GPIO33), and J_VEML (VEML7700 lux on the **shared sensor I²C bus** SDA=GPIO21/SCL=GPIO19,
+addr 0x10, 3V3-only 1×4 VCC/GND/SCL/SDA) added. **The HC-20/DC-20 mic was removed by the operator**
+(GPIO22→D35, then out entirely): no J_MIC, GPIO22 **and** GPIO35 are free, U1 pads 5/17 NC.
+Firmware on `main` matches (no mic, `kVeml7700Address=0x10` on Wire1). Headers on schematic **and**
+PCB as 1×3 VCC/GND/SIG (`J_BEEP`, `J_PIR`) plus 3-pin VCC-select jumpers JP_BEEP / JP_PIR
+(1=+3V3 default, 3=+5V). No J_TFT. Added by hand — **no Update-PCB-from-Schematic was run**.
+Board widened 115→139 mm for the labeled EXTRAS strip; U1 pads 7/8 carry `PIR_OUT`/`BEEP_SIG`
+(were NC). Verification: ERC 0/0, DRC 0 violations, **0 schematic-parity issues**, netlist↔PCB
+**104 pins / 0 mismatches**. GPIO2/UART0 still NC; no 5 V on any GPIO pad; R3 still 15 k. README +
+schematic PDF regenerated. Photos still owed: OLED pin order, PIR module class (before locking
+copper).
 
 ### Superseded original entry
 

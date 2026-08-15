@@ -5,7 +5,7 @@ connectors only. Live breadboard GPIOs below are **occupied** — do not reuse.
 
 OLED mux-48 did **not** fill the glass; operator still sees **two rows** of live text (plus the
 lower-band packing). Treat the module as **128×32 visible**. Keep the 3-line lower-band UI.
-Firmware on `fix/oled-u8g2-sds011-listen` is the live image.
+Firmware on `main` is the live image.
 
 **TFT dropped.** Do not add `J_TFT`. **GPIO22 is free.**
 
@@ -84,7 +84,6 @@ GPIO leftover after this map: **12** (avoid), **14 / 13 / 15 / 23 / 22 / 26 / 27
 
 ## Firmware (this session)
 
-Implemented on `fix/oled-u8g2-sds011-listen` (worktree `atmosmesh-oled-u8g2`): `kBeeperGpio=25`,
-`kPirGpio=33`, `kVeml7700Address=0x10` on Wire1 GPIO21/19. No clap, no mic, GPIO22/35 unused.
-Flash `/dev/cu.usbserial-0001`. Do not merge to `main` from this extras change.
+On `main`: `kBeeperGpio=25`, `kPirGpio=33`, `kVeml7700Address=0x10` on Wire1 GPIO21/19. No clap,
+no mic, GPIO22/35 unused. Flash `/dev/cu.usbserial-0001`.
 **Do not edit KiCad from firmware.**
