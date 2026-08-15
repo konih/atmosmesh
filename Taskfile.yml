@@ -9,12 +9,9 @@ run: once
 
 vars:
   ESP_PORT: '{{.ESP_PORT | default "/dev/cu.usbserial-0001"}}'
-  AGENT_VENV: '{{.AGENT_VENV | default "/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh"}}'
 
 env:
-  ATMOSMESH_VENV: '{{.AGENT_VENV}}'
-  ATMOSMESH_PYTHON: '{{.AGENT_VENV}}/bin/python'
-  PATH: '{{.AGENT_VENV}}/bin:{{.PATH}}'
+  ATMOSMESH_VENV: '{{.AGENT_VENV | default ""}}'
 
 tasks:
   default:
@@ -24,10 +21,9 @@ tasks:
     silent: true
 
   bootstrap-agent-python:
-    desc: Create the shared host venv and install pyserial + esptool
+    desc: Create a host venv and install pyserial + esptool
     cmds:
-      - python3.12 -m venv {{.AGENT_VENV}}
-      - "{{.AGENT_VENV}}/bin/pip install -r firmware/requirements-agent.txt"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python --bootstrap"
 
   test:
     desc: Host Unity tests (`pio test -e native`)

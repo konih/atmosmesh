@@ -74,16 +74,13 @@ From the repository root (`Taskfile.yml`). Override the serial port with `ESP_PO
 do not provide `pyserial` (import name `serial`) or `esptool` on PATH. Use `task flash` /
 `task monitor` (they prepend the shared venv) or `scripts/esp-tool`.
 
-Shared venv (outside worktrees, reuse from every checkout):
-
-`/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh`
-
-Bootstrap if `scripts/with-agent-python` complains the venv is missing (prefer `python3.12` or
-`python3.11`, not Homebrew `python3`):
+Host venv resolution (`scripts/with-agent-python`): `ATMOSMESH_VENV` if it exists, else
+`<clone>/.venv`, else a workspace `.tooling/python/atmosmesh` found by walking parents.
+Prefer `python3.12` or `python3.11`, not Homebrew `python3`.
 
 ```bash
-python3.12 -m venv /Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh
-/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh/bin/pip install -r firmware/requirements-agent.txt
+task bootstrap-agent-python
+# or: python3.12 -m venv .venv && .venv/bin/pip install -r firmware/requirements-agent.txt
 ```
 
 Direct esptool: `./scripts/esp-tool version` (or `./scripts/with-agent-python python -m esptool …`).

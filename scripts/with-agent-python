@@ -1,17 +1,66 @@
 #!/usr/bin/env bash
-# Run a command with the shared AtmosMesh agent venv first on PATH.
+# Run a command with the AtmosMesh host venv first on PATH.
 # Do not use Homebrew/Xcode `python3 -m esptool` — that environment has no pyserial.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VENV="${ATMOSMESH_VENV:-/Users/A242168/Projects/PlatformRelay/.tooling/python/atmosmesh}"
 REQ="${ROOT}/firmware/requirements-agent.txt"
 
+resolve_venv() {
+  if [[ -n "${ATMOSMESH_VENV:-}" && -x "${ATMOSMESH_VENV}/bin/python" ]]; then
+    printf '%s\n' "${ATMOSMESH_VENV}"
+    return 0
+  fi
+  if [[ -x "${ROOT}/.venv/bin/python" ]]; then
+    printf '%s\n' "${ROOT}/.venv"
+    return 0
+  fi
+  local dir="$ROOT"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -x "${dir}/.tooling/python/atmosmesh/bin/python" ]]; then
+      printf '%s\n' "${dir}/.tooling/python/atmosmesh"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  if [[ -n "${ATMOSMESH_VENV:-}" ]]; then
+    printf '%s\n' "${ATMOSMESH_VENV}"
+    return 0
+  fi
+  printf '%s\n' "${ROOT}/.venv"
+}
+
+bootstrap_venv() {
+  local venv="${ATMOSMESH_VENV:-${ROOT}/.venv}"
+  local py=""
+  for candidate in python3.12 python3.11 python3; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      py="$candidate"
+      break
+    fi
+  done
+  if [[ -z "$py" ]]; then
+    echo "Need python3.12 or python3.11 to create ${venv}" >&2
+    exit 1
+  fi
+  "$py" -m venv "$venv"
+  "${venv}/bin/pip" install -r "$REQ"
+  echo "AtmosMesh host venv ready: ${venv}"
+}
+
+if [[ "${1:-}" == "--bootstrap" ]]; then
+  bootstrap_venv
+  exit 0
+fi
+
+VENV="$(resolve_venv)"
+
 if [[ ! -x "${VENV}/bin/python" ]]; then
-  echo "AtmosMesh agent venv missing: ${VENV}" >&2
+  echo "AtmosMesh host venv missing: ${VENV}" >&2
   echo "Bootstrap (Python 3.11 or 3.12; do not use Homebrew python3.14):" >&2
-  echo "  python3.12 -m venv \"${VENV}\"" >&2
-  echo "  \"${VENV}/bin/pip\" install -r \"${REQ}\"" >&2
+  echo "  task bootstrap-agent-python" >&2
+  echo "  # or: python3.12 -m venv \"${ROOT}/.venv\" && \"${ROOT}/.venv/bin/pip\" install -r \"${REQ}\"" >&2
+  echo "Override the path with ATMOSMESH_VENV=… if you keep a shared venv outside the clone." >&2
   exit 1
 fi
 

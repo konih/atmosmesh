@@ -17,6 +17,9 @@ secrets.yml
 kubeconfig
 kubeconfig.*
 
+# Local Python venv (default bootstrap target)
+.venv/
+
 # Firmware build state
 .esphome/
 .pio/

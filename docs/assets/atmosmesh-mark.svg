@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="amTitle amDesc">
+  <title id="amTitle">AtmosMesh</title>
+  <desc id="amDesc">Hexagonal mesh cell with a central air-quality station node</desc>
+  <defs>
+    <linearGradient id="amTile" x1="18" y1="8" x2="110" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14535c"/>
+      <stop offset="100%" stop-color="#0b2f36"/>
+    </linearGradient>
+    <radialGradient id="amGlow" cx="64" cy="62" r="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5eead4" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#5eead4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#amTile)"/>
+  <circle cx="64" cy="62" r="38" fill="url(#amGlow)"/>
+  <g fill="none" stroke="#99f6e4" stroke-width="2.2" stroke-linecap="round" opacity="0.35">
+    <path d="M28 78c12-10 24-10 36 0s24 10 36 0"/>
+    <path d="M32 88c10-8 21-8 32 0s22 8 32 0"/>
+  </g>
+  <g fill="none" stroke="#5eead4" stroke-width="2.4" stroke-linejoin="round">
+    <path d="M64 24 96.3 42.5v37L64 98 31.7 79.5v-37Z"/>
+  </g>
+  <g stroke="#99f6e4" stroke-width="1.7" stroke-linecap="round" opacity="0.85">
+    <path d="M64 24v74"/>
+    <path d="M31.7 42.5 96.3 79.5"/>
+    <path d="M96.3 42.5 31.7 79.5"/>
+  </g>
+  <g fill="#ecfeff">
+    <circle cx="64" cy="24" r="4.2"/>
+    <circle cx="96.3" cy="42.5" r="4.2"/>
+    <circle cx="96.3" cy="79.5" r="4.2"/>
+    <circle cx="64" cy="98" r="4.2"/>
+    <circle cx="31.7" cy="79.5" r="4.2"/>
+    <circle cx="31.7" cy="42.5" r="4.2"/>
+  </g>
+  <circle cx="64" cy="61.5" r="9.5" fill="#042f36" stroke="#5eead4" stroke-width="2.4"/>
+  <circle cx="64" cy="61.5" r="4.2" fill="#5eead4"/>
+  <g fill="#99f6e4" opacity="0.9">
+    <circle cx="22" cy="30" r="1.6"/>
+    <circle cx="108" cy="36" r="1.4"/>
+    <circle cx="18" cy="96" r="1.5"/>
+    <circle cx="112" cy="92" r="1.7"/>
+  </g>
+</svg>
