@@ -5,7 +5,7 @@ in two 1×15 sockets, the three 3.3 V sensors get proper connectors, and the fut
 connectors in a visually and electrically separated block. **No mains on this board** — the AC/DC
 module stays off-board and enclosed ([`docs/hardware/power.md`](../../docs/hardware/power.md)).
 
-Board outline is **115 × 58 mm**, 1.6 mm, 2 copper layers, GND poured on both.
+Board outline is **139 × 58 mm**, 1.6 mm, 2 copper layers, GND poured on both.
 
 ## Files
 
@@ -39,9 +39,9 @@ This is the **rewired bench** map. It supersedes every earlier D2/GPIO18 arrange
 
 | Function | ESP32 pin | Net | Socket pin | Connector |
 | --- | --- | --- | --- | --- |
-| LCD 1602 I²C **SDA** | **GPIO5** (D5) | `SDA_LCD` | U1.23 | J1.3 |
-| LCD 1602 I²C **SCL** | **GPIO4** (D4) | `SCL_LCD` | U1.26 | J1.4 |
-| LCD VCC / GND | — | `+3V3` / `GND` | U1.30 / U1.29 | J1.2 / J1.1 |
+| OLED 0x3C I²C **SDA** (D-001) | **GPIO5** (D5) | `SDA_LCD` | U1.23 | J1.3 |
+| OLED 0x3C I²C **SCL** (D-001) | **GPIO4** (D4) | `SCL_LCD` | U1.26 | J1.4 |
+| OLED VCC / GND | — | `+3V3` / `GND` | U1.30 / U1.29 | J1.2 / J1.1 |
 | BMP280 **SDA** | **GPIO21** | `SDA_SENS` | U1.20 | J2.4 |
 | BMP280 **SCL** | **GPIO19** (D19) | `SCL_SENS` | U1.21 | J2.3 |
 | BMP280 **CSB** → 3V3 (I²C mode) | — | `+3V3` | — | J2.5 |
@@ -54,6 +54,13 @@ This is the **rewired bench** map. It supersedes every earlier D2/GPIO18 arrange
 | MQ135 analog out | — | `MQ_AOUT` | — | J5.3 → R2 |
 | MQ135 divider output | GPIO34 (ADC1, input-only) | `MQ_ADC` | U1.4 | R2/R3 |
 | DevKit `VIN`, through JP1 | — | `ESP_VIN` | U1.15 | JP1.2 |
+| Beeper **SIG** | **GPIO25** | `BEEP_SIG` | U1.8 | J_BEEP.3 |
+| Beeper VCC (3V3 default, JP_BEEP → +5V) | — | `BEEP_VCC` | — | J_BEEP.1 / JP_BEEP.2 |
+| PIR D-SUN **SIG** (digital in, **not 27**) | **GPIO33** | `PIR_OUT` | U1.7 | J_PIR.3 |
+| PIR VCC (3V3 default, JP_PIR → +5V for HC-SR501) | — | `PIR_VCC` | — | J_PIR.1 / JP_PIR.2 |
+| VEML7700 lux **SCL** (shared sensor bus) | **GPIO19** | `SCL_SENS` | U1.21 | J_VEML.3 |
+| VEML7700 lux **SDA** (shared sensor bus, addr 0x10) | **GPIO21** | `SDA_SENS` | U1.20 | J_VEML.4 |
+| VEML7700 VCC / GND (3V3 only) | — | `+3V3` / `GND` | — | J_VEML.1 / J_VEML.2 |
 | **GPIO2** | **GPIO2** | *no-connect* | U1.27 | — |
 
 `R1` is the **10 kΩ pull-up from `DHT_DATA` to `+3V3`**. `R4`/`R5` are optional 4k7 pull-ups on the
@@ -62,7 +69,8 @@ sensor I²C bus, fitted as **DNP** because the GY-BMP280 breakout already carrie
 ### Named nets
 
 `+3V3` `+5V` `GND` `ESP_VIN` · `SDA_LCD` `SCL_LCD` · `SDA_SENS` `SCL_SENS` · `DHT_DATA` ·
-`PM_TX` `PM_RX` · `MQ_AOUT` `MQ_ADC` · `LED_A`
+`PM_TX` `PM_RX` · `MQ_AOUT` `MQ_ADC` · `LED_A` ·
+`BEEP_VCC` `BEEP_SIG` · `PIR_VCC` `PIR_OUT`
 
 Signals use **global labels**, so the board net names match the sheet exactly (no `/` prefix).
 Deliberately unused pins carry no-connect flags and therefore appear as KiCad's
@@ -77,10 +85,23 @@ differ from the assumption below. **Populate U1 or J7, never both.**
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | +3V3 | GND | GPIO4 | GPIO5 | GPIO18 | GPIO19 | GPIO21 | GPIO16 | GPIO17 | GPIO34 | GND | +3V3 |
 
+### Extras strip — J_BEEP / J_PIR / J_VEML (2026-08-14)
+
+Live extras from the breadboard (`agent-context/extra-peripherals.md`), placed in their own silk
+box at the right board edge. `J_BEEP` and `J_PIR` are **1×3, pin order VCC / GND / SIG**; SIG is
+always 3.3 V. `J_BEEP` (silk `BEEPER`, SIG=GPIO25) and `J_PIR` (silk `D-SUN PIR`, SIG=GPIO33 —
+**not 27**) get a 3-pin VCC-select jumper (`JP_BEEP` / `JP_PIR`: 1=+3V3 default, 2=VCC out,
+3=+5V — 5 V position only for 5 V-powered modules). `J_VEML` (silk `VEML7700 LUX`) is a 1×4
+VCC/GND/SCL/SDA header on the **shared sensor I²C bus** (GPIO21/GPIO19, same bus as the BMP280;
+VEML7700 addr 0x10, BMP280 0x76 — no clash), 3V3-only. The HC-20/DC-20 mic was removed from the
+bench (2026-08-14); GPIO22 and GPIO35 are free. **No J_TFT** — the colour TFT was dropped.
+
 ## Electrical rules built into the board
 
 1. **No 5 V on any ESP32 GPIO or on `+3V3`.** The 5 V nets touch only J6 (input), J4/J5 (future
-   sensors), C1/C4, R6/D1 and JP1. **Common GND only** — the two domains share nothing else.
+   sensors), C1/C4, R6/D1, JP1, and pin 3 of the VCC-select jumpers JP_BEEP / JP_PIR. **Common GND
+   only** — the two domains share nothing else. The jumpers feed module **power** only; SIG pins
+   are always 3.3 V.
 2. `+3V3` is an **output** of the DevKit's onboard LDO (U1.30). Nothing back-feeds it; the 3.3 V AC/DC
    spare must not be paralleled onto it.
 3. **`JP1` stays OPEN on the bench.** It is the only path from the 5 V rail to the DevKit `VIN`.
@@ -95,9 +116,9 @@ differ from the assumption below. **Populate U1 or J7, never both.**
 ### GPIO2
 
 **GPIO2 is left free and unconnected** — it is a download strap and must stay unloaded so USB
-flashing works without unplugging anything. There is no LCD jumper any more: the LCD moved to
-GPIO5/GPIO4, so the old "unplug the LCD to flash" workaround is gone. GPIO5 is also a strap, but the
-LCD backpack's I²C pull-up keeps it idle-high, which is the correct boot level.
+flashing works without unplugging anything. There is no display jumper any more: the display (OLED,
+D-001) moved to GPIO5/GPIO4, so the old "unplug to flash" workaround is gone. GPIO5 is also a
+strap, but the module's I²C pull-up keeps it idle-high, which is the correct boot level.
 
 ## Before you fabricate: verify the DevKit pin order
 
@@ -116,21 +137,22 @@ only the symbol mapping changes) — or ignore the socket and wire through **J7*
 provided: `ESP32_DevKit_1x15x2_P25.40mm` (placed) and `ESP32_DevKit_1x15x2_P22.86mm` (0.9 in
 variants).
 
-## State of the board — placement, not routing
+## State of the board — placed AND routed
 
-The board is **placed, netlisted, outlined and poured; the signal traces are not routed.**
+The board is **fully routed**: all signal and power nets are on copper, GND is carried by the
+poured zones on `F.Cu` and `B.Cu` (fills are saved in the file). Routing was generated
+programmatically (grid router, 0.25/0.32 mm clearance, 0.4 mm signals / 0.6 mm power per the
+netclasses) and verified with KiCad DRC: **0 violations at all severities, 0 unconnected items,
+0 schematic parity issues**. 27 vias total; B.Cu carries short crossings only, so the ground
+plane stays largely intact.
 
-- Edge cuts, four M3 mounting holes, and a `User.Drawings` keepout marking the DevKit body plus the
-  USB cable exit (the module deliberately overhangs the bottom edge so the cable clears the PCB).
-- GND is poured on `F.Cu` and `B.Cu`, so every GND pad is already connected.
-- The remaining 13 nets show as **40 unconnected items** in DRC — that is the ratsnest waiting to be
-  routed in Pcbnew, not a rule violation.
-- Netclasses are set up: `Default` 0.30 mm tracks / 0.25 mm clearance, `Power` (`GND`, `+3V3`, `+5V`,
-  `ESP_VIN`) 0.60 mm.
-
-Routing was left to the operator on purpose: with only one free signal layer above the ground pour,
-trace assignment is a hand-editing job, and it is cheaper to do it once the DevKit pin order is
-confirmed than to redo it afterwards.
+- Edge cuts, four M3 mounting holes, and a `User.Drawings` keepout marking the DevKit body plus
+  the USB cable exit (the module deliberately overhangs the bottom edge so the cable clears the
+  PCB).
+- Every footprint carries a `path` link to its schematic symbol, so **Update PCB from
+  Schematic** matches existing footprints instead of re-adding them.
+- Review the routes in pcbnew before fabricating — they are machine-generated; eyeball the
+  5 V / 3V3 domain boundaries and re-run DRC after any manual edit.
 
 ## Validation with kicad-cli
 
@@ -156,8 +178,8 @@ cd hardware/kicad/atmosmesh-bench
 "$KCLI" sch export pdf -o atmosmesh-bench-schematic.pdf atmosmesh-bench.kicad_sch
 ```
 
-Do **not** add `--save-board` to the DRC command: it rewrites `.kicad_pcb` in KiCad 10 format and
-drops this project's KiCad 9 compatibility. Zones are refilled on load anyway.
+The PCB file is KiCad 10 format (the schematic still opens in KiCad 9 and 10). Zone fills are
+saved in the file; refill with `B` in pcbnew after moving anything.
 
 ### Results — KiCad 10.0.5, 2026-08-14
 
@@ -165,23 +187,21 @@ drops this project's KiCad 9 compatibility. Zones are refilled on load anyway.
 | --- | --- |
 | `sch erc --severity-all` | **0 violations** (0 errors, 0 warnings) |
 | `pcb drc --severity-all` | **0 violations** |
+| Netlist ↔ PCB pad diff | **104 pins, 0 mismatches** |
 | `pcb drc --schematic-parity` | **0 parity issues** |
-| Unconnected items | **40** — the unrouted signal nets, see above |
+| Unconnected items | **0** — fully routed |
 
-## Follow-up: firmware still carries the old pin map
+## Follow-up: firmware matches — except the MQ135 divider constant
 
-[`firmware/include/atmosmesh/pins.hpp`](../../firmware/include/atmosmesh/pins.hpp) has **not** been
-updated to the rewired bench and currently contradicts this board. It needs:
+[`firmware/include/atmosmesh/pins.hpp`](../../firmware/include/atmosmesh/pins.hpp) now matches this
+board's GPIO map (`kOledSdaGpio = 5`, `kOledSclGpio = 4`, `kSensorSclGpio = 19`,
+`kAm2302DataGpio = 18`, SDS011 on GPIO16/17, MQ135 on GPIO34). J1 is the **OLED** header
+(D-001); the historical `SDA_LCD`/`SCL_LCD` net names were kept to avoid churning the netlist.
 
-| Constant | In firmware now | Must become |
-| --- | --- | --- |
-| `kLcdSdaGpio` | `2` | **`5`** |
-| `kLcdSclGpio` | `4` | `4` (unchanged) |
-| `kSensorSdaGpio` | `21` | `21` (unchanged) |
-| `kSensorSclGpio` | `18` | **`19`** |
-| `kAm2302DataGpio` | `5` | **`18`** |
-
-The comment on the LCD constants ("unplug LCD to flash") is also obsolete now that GPIO2 is free.
+One deliberate divergence remains: **R3 is 15 kΩ on this board** (10 k/15 k divider → 3.0 V max on
+GPIO34), while firmware `kMq135GndOhms = 20000` matches the **live breadboard's** 10 k/20 k
+divider (3.33 V at 5 V AOUT — no headroom). When this carrier board replaces the breadboard, set
+`kMq135GndOhms = 15000` in the same change — see `agent-context/INBOX.md`.
 
 ## Provenance
 

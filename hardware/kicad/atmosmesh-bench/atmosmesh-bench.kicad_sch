@@ -4222,20 +4222,8 @@
 		(uuid "a7c0de00-0000-403d-af74-12bc39cdfc1f")
 	)
 	(no_connect
-		(at 77.47 121.92)
-		(uuid "a7c0de00-0000-403f-8a1a-7fe8b7ad705e")
-	)
-	(no_connect
 		(at 77.47 124.46)
 		(uuid "a7c0de00-0000-4040-a851-f9a236f7ec73")
-	)
-	(no_connect
-		(at 77.47 127)
-		(uuid "a7c0de00-0000-4040-8689-735bb6426888")
-	)
-	(no_connect
-		(at 77.47 129.54)
-		(uuid "a7c0de00-0000-4041-a4c0-ed15358ce49d")
 	)
 	(no_connect
 		(at 77.47 132.08)
@@ -4260,10 +4248,6 @@
 	(no_connect
 		(at 113.03 111.76)
 		(uuid "a7c0de00-0000-4048-b123-280dadc03984")
-	)
-	(no_connect
-		(at 113.03 114.3)
-		(uuid "a7c0de00-0000-4048-8f5a-a1c72d0ab599")
 	)
 	(no_connect
 		(at 113.03 116.84)
@@ -5327,7 +5311,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "LCD1602_I2C"
+		(property "Value" "OLED_I2C"
 			(at 187.96 44.45 0)
 			(effects
 				(font
@@ -9101,7 +9085,7 @@
 			)
 		)
 	)
-	(text "AtmosMesh bench station - rev A\n\nConfirmed bench wiring (operator, 2026-08-14):\n  LCD 1602 I2C   SDA = GPIO5   SCL = GPIO4    VCC = 3V3\n  GY-BMP280      SDA = GPIO21  SCL = GPIO19   VCC = 3V3\n                 CSB = 3V3 (I2C)  SDO = GND (addr 0x76)\n  AM2302/DHT22   DATA = GPIO18 (10k pull-up R1)  VDD = 3V3\n  GPIO2          LEFT FREE - download strap, do not load\n\nFuture 5 V sensors (connectors only, off-board enclosed PSU):\n  SDS011  5 V supply, 3.3 V TTL UART on GPIO16/GPIO17\n  MQ135   5 V heater, analog out through R2/R3 to GPIO34\n\nRULES\n  1. No 5 V on any ESP32 GPIO or on the 3V3 rail. Common GND only.\n  2. 3V3 comes from the DevKit onboard LDO. Do not back-feed it.\n  3. JP1 (5V -> DevKit VIN) stays OPEN on the bench. USB powers the DevKit.\n  4. No mains on this board. The AC/DC module is off-board and enclosed.\n\nU1 PIN ORDER IS PROVISIONAL. The DevKit silkscreen has not been\nphotographed yet. Verify every pin against the physical board before\nfabrication; J7 is the flying-lead fallback if the order differs."
+	(text "AtmosMesh bench station - rev A\n\nConfirmed bench wiring (operator, 2026-08-14):\n  OLED 0x3C      SDA = GPIO5   SCL = GPIO4    VCC = 3V3\n  GY-BMP280      SDA = GPIO21  SCL = GPIO19   VCC = 3V3\n                 CSB = 3V3 (I2C)  SDO = GND (addr 0x76)\n  AM2302/DHT22   DATA = GPIO18 (10k pull-up R1)  VDD = 3V3\n  BEEPER SIG     GPIO25   PIR D-SUN SIG GPIO33\n  VEML7700 lux   SDA = GPIO21  SCL = GPIO19 (shared bus, 0x10)\n  GPIO2          LEFT FREE - download strap, do not load\n\nFuture 5 V sensors (connectors only, off-board enclosed PSU):\n  SDS011  5 V supply, 3.3 V TTL UART on GPIO16/GPIO17\n  MQ135   5 V heater, analog out through R2/R3 to GPIO34\n\nRULES\n  1. No 5 V on any ESP32 GPIO or on the 3V3 rail. Common GND only.\n  2. 3V3 comes from the DevKit onboard LDO. Do not back-feed it.\n  3. JP1 (5V -> DevKit VIN) stays OPEN on the bench. USB powers the DevKit.\n  4. No mains on this board. The AC/DC module is off-board and enclosed.\n\nU1 PIN ORDER IS PROVISIONAL. The DevKit silkscreen has not been\nphotographed yet. Verify every pin against the physical board before\nfabrication; J7 is the flying-lead fallback if the order differs."
 		(exclude_from_sim no)
 		(at 16.51 25.4 0)
 		(effects
@@ -9111,6 +9095,1232 @@
 			(justify left top)
 		)
 		(uuid "a7c0de00-0000-40f0-8c14-7d24ece40fd4")
+	)
+	(symbol
+		(lib_id "atmosmesh:Conn_01x03")
+		(at 355.6 64.77 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "92d858c1-02da-411b-8abe-9659560d3868")
+		(property "Reference" "J_BEEP1"
+			(at 353.06 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "BEEPER"
+			(at 358.14 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "atmosmesh:PinHeader_1x03_P2.54mm_Vertical"
+			(at 355.6 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 355.6 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Beeper: VCC (3V3 default, JP_BEEP to 5V), GND, SIG=GPIO25"
+			(at 355.6 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f7ad3f70-0f3c-419c-8956-97f69cbdce63")
+		)
+		(pin "2"
+			(uuid "84b6a24b-723c-4450-9638-14565d3a08bc")
+		)
+		(pin "3"
+			(uuid "d75cf4cc-bdfd-4ce9-a201-b195d009a3ec")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "J_BEEP1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:Conn_01x03")
+		(at 327.66 64.77 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "98fab7fd-3785-4575-9bd5-453dbdfd06f0")
+		(property "Reference" "JP_BEEP1"
+			(at 325.12 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "3V3_5V_SEL"
+			(at 330.2 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "atmosmesh:PinHeader_1x03_P2.54mm_Vertical"
+			(at 327.66 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 327.66 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Beeper VCC select: 1=+3V3 (default), 2=BEEP_VCC, 3=+5V. Never both."
+			(at 327.66 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b793d64b-e149-4678-b262-ce4ffb262066")
+		)
+		(pin "2"
+			(uuid "18523c97-8788-4a11-b5cf-e4d0ab29f184")
+		)
+		(pin "3"
+			(uuid "85094c50-7323-4de8-96f7-985988fb588d")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "JP_BEEP1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:Conn_01x03")
+		(at 355.6 90.17 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "3e0111f9-7fce-46fc-8f01-72cbe325abae")
+		(property "Reference" "J_PIR1"
+			(at 353.06 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "D-SUN_PIR"
+			(at 358.14 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "atmosmesh:PinHeader_1x03_P2.54mm_Vertical"
+			(at 355.6 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 355.6 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "PIR D-SUN: VCC (3V3 default, JP_PIR to 5V if HC-SR501), GND, SIG=GPIO33"
+			(at 355.6 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a29e7522-9170-45d0-b7e2-d0d469478604")
+		)
+		(pin "2"
+			(uuid "800b98e1-43dd-4113-9210-a868765ee025")
+		)
+		(pin "3"
+			(uuid "c3d47534-0ebe-46db-845f-02a54c71ee4e")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "J_PIR1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:Conn_01x03")
+		(at 327.66 90.17 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "16fcd695-f968-4649-98f9-59c8b714f45d")
+		(property "Reference" "JP_PIR1"
+			(at 325.12 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "3V3_5V_SEL"
+			(at 330.2 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "atmosmesh:PinHeader_1x03_P2.54mm_Vertical"
+			(at 327.66 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 327.66 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "PIR VCC select: 1=+3V3 (default), 2=PIR_VCC, 3=+5V. Never both."
+			(at 327.66 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d088944e-9a9a-4b42-a86c-92426065fbe7")
+		)
+		(pin "2"
+			(uuid "e84819a8-1e52-4d2d-93f3-5f50728b14d1")
+		)
+		(pin "3"
+			(uuid "68779d00-6b6f-4eb9-b359-8a839efdbd08")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "JP_PIR1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:GND")
+		(at 345.44 64.77 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "0295d84f-fd0c-4083-82ac-188cfd77b6f4")
+		(property "Reference" "#PWR042"
+			(at 345.44 68.326 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 345.44 70.4596 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 345.44 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 345.44 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6bd8cf62-06bf-4841-a264-d57075b0d983")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR042")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:GND")
+		(at 345.44 90.17 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a25aa87f-2884-4380-a25f-d12509e36450")
+		(property "Reference" "#PWR043"
+			(at 345.44 93.726 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 345.44 95.8596 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 345.44 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 345.44 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8a1fe679-2483-4cff-97ae-54cf8d5aaff7")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR043")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:+3V3")
+		(at 317.5 62.23 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c5952f33-7aa2-4d20-856d-bae4416bec1f")
+		(property "Reference" "#PWR045"
+			(at 317.5 58.674 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 317.5 56.5404 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 317.5 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 317.5 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ad5ee439-5ec5-42dc-b57e-059151b029df")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR045")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:+3V3")
+		(at 317.5 87.63 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "25231c5e-712e-423b-8fe6-94bc38cf3ca2")
+		(property "Reference" "#PWR046"
+			(at 317.5 84.074 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 317.5 81.9404 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 317.5 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 317.5 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "c0429b2e-a9da-4110-8bdc-1e021be2a958")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR046")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:+5V")
+		(at 317.5 67.31 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8476de55-b28e-4b9c-93da-e705c8593b89")
+		(property "Reference" "#PWR048"
+			(at 317.5 63.754 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 317.5 61.6204 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 317.5 67.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 317.5 67.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "53b15a7c-deb1-4fdd-a6e2-7994cd448576")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR048")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:+5V")
+		(at 317.5 92.71 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3c71e716-e18d-4f02-b755-f214c5bc550d")
+		(property "Reference" "#PWR049"
+			(at 317.5 89.154 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 317.5 87.0204 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 317.5 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 317.5 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5598163c-c4d4-4a76-b4a6-13f8976c20d8")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR049")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 350.52 62.23)
+			(xy 345.44 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cd4b4800-6027-45d4-a8e0-f32bef1f7745")
+	)
+	(wire
+		(pts
+			(xy 350.52 64.77)
+			(xy 345.44 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0d62fdf6-f90e-4a09-ba67-e776a23d7222")
+	)
+	(wire
+		(pts
+			(xy 350.52 67.31)
+			(xy 345.44 67.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ebd2993c-5dfe-4433-b129-6d55c2c05e80")
+	)
+	(wire
+		(pts
+			(xy 322.58 62.23)
+			(xy 317.5 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "758dfb32-493d-4177-9ce0-842364ab3d8b")
+	)
+	(wire
+		(pts
+			(xy 322.58 64.77)
+			(xy 317.5 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4b5cb84f-9597-4114-b4ce-c5dd5737e8a0")
+	)
+	(wire
+		(pts
+			(xy 322.58 67.31)
+			(xy 317.5 67.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c7a2033c-ebca-4725-be94-c739accdcaaa")
+	)
+	(wire
+		(pts
+			(xy 350.52 87.63)
+			(xy 345.44 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6ad0a701-2372-4874-8935-18de131ee66e")
+	)
+	(wire
+		(pts
+			(xy 350.52 90.17)
+			(xy 345.44 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f96c0975-477b-4a51-ba61-66a38cfd5b43")
+	)
+	(wire
+		(pts
+			(xy 350.52 92.71)
+			(xy 345.44 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52acb144-b726-4696-9235-f0e695fd6504")
+	)
+	(wire
+		(pts
+			(xy 322.58 87.63)
+			(xy 317.5 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4fa43e06-2bad-45c8-8609-a73b1f4b3c61")
+	)
+	(wire
+		(pts
+			(xy 322.58 90.17)
+			(xy 317.5 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d528d913-4f10-4262-b073-ef884402ad78")
+	)
+	(wire
+		(pts
+			(xy 322.58 92.71)
+			(xy 317.5 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a85cb268-6e0f-489c-a0d7-5f98d25965f5")
+	)
+	(wire
+		(pts
+			(xy 77.47 129.54)
+			(xy 72.39 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "499a5a10-fcd2-46b6-885d-19d743ccb0fb")
+	)
+	(wire
+		(pts
+			(xy 77.47 127)
+			(xy 72.39 127)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a15de139-92ff-4072-a181-4afcc0d4e214")
+	)
+	(global_label "BEEP_VCC"
+		(shape bidirectional)
+		(at 345.44 62.23 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "126aeada-77ea-40b0-b66d-9b9427863324")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "BEEP_SIG"
+		(shape bidirectional)
+		(at 345.44 67.31 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "46fe7c85-26fb-4f46-9e62-c917d9665717")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 67.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "BEEP_VCC"
+		(shape bidirectional)
+		(at 317.5 64.77 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "1d761f59-e3ce-4a00-ab5b-6b3dd5776631")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 317.5 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "PIR_VCC"
+		(shape bidirectional)
+		(at 345.44 87.63 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d02f7deb-4e46-480e-a369-862c48d394b8")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "PIR_OUT"
+		(shape bidirectional)
+		(at 345.44 92.71 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8e08d52e-aa9a-4f37-8b02-00238bd15c92")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "PIR_VCC"
+		(shape bidirectional)
+		(at 317.5 90.17 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "66439f34-2880-4657-9682-9df181ce326c")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 317.5 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "BEEP_SIG"
+		(shape bidirectional)
+		(at 72.39 129.54 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d4565318-1fbb-459b-9993-20cafd5660df")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 72.39 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "PIR_OUT"
+		(shape bidirectional)
+		(at 72.39 127 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "e1448e2f-3b85-46b0-9570-74376ae7755a")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 72.39 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(no_connect
+		(at 113.03 114.3)
+		(uuid "22ce3b70-fe5d-4eb6-80c1-b0c65453402d")
+	)
+
+	(no_connect
+		(at 77.47 121.92)
+		(uuid "06a1f09c-dc34-487e-9914-63fd9c905b74")
+	)
+	(symbol
+		(lib_id "atmosmesh:Conn_01x04")
+		(at 355.6 118.11 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b409eb71-424d-47a3-84d1-c828d960bff2")
+		(property "Reference" "J_VEML1"
+			(at 353.06 113.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "VEML7700"
+			(at 358.14 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "atmosmesh:PinHeader_1x04_P2.54mm_Vertical"
+			(at 355.6 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 355.6 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "VEML7700 lux: VCC=3V3, GND, SCL=GPIO19, SDA=GPIO21 - shared bus with BMP280, addr 0x10"
+			(at 355.6 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d41b5a7f-fb9a-4827-a61e-d6f8265fe6e7")
+		)
+		(pin "2"
+			(uuid "43fa8d41-aa7d-4525-bfe4-0e595daa6658")
+		)
+		(pin "3"
+			(uuid "005bccd0-fec8-4efa-a40f-8c82a3dcb8be")
+		)
+		(pin "4"
+			(uuid "bfd39195-87f1-4318-82d5-00b26f72c117")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "J_VEML1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:GND")
+		(at 345.44 118.11 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5ab1ca55-5ebd-4ff8-ad64-bd509e4abec1")
+		(property "Reference" "#PWR050"
+			(at 345.44 121.666 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 345.44 123.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 345.44 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 345.44 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "24adf117-d868-4a0a-b284-176c76af7c73")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR050")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "atmosmesh:+3V3")
+		(at 345.44 115.57 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "127450e9-6729-422f-944a-f14cbef5226b")
+		(property "Reference" "#PWR051"
+			(at 345.44 112.014 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 345.44 109.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 345.44 115.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 345.44 115.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ed077514-aece-4648-98b6-db73d37ea2c7")
+		)
+		(instances
+			(project "atmosmesh-bench"
+				(path "/a7c0de00-0000-4001-9e37-79b97f4a7c15"
+					(reference "#PWR051")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 350.52 115.57)
+			(xy 345.44 115.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2d2e33cd-41b2-48ce-bc3a-cbb694d197cf")
+	)
+	(wire
+		(pts
+			(xy 350.52 118.11)
+			(xy 345.44 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "785c85f3-f9f1-43d9-9bc6-bcca98f3dd86")
+	)
+	(wire
+		(pts
+			(xy 350.52 120.65)
+			(xy 345.44 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b728dc3b-960f-4a01-b69f-7efed3a20920")
+	)
+	(wire
+		(pts
+			(xy 350.52 123.19)
+			(xy 345.44 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "101d1ac4-2f70-4ff6-bbd5-7449073a4e3f")
+	)
+	(global_label "SCL_SENS"
+		(shape bidirectional)
+		(at 345.44 120.65 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "be935b12-dcf4-432b-96a4-e831b38b46ca")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SDA_SENS"
+		(shape bidirectional)
+		(at 345.44 123.19 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "40cfc9cb-d0e6-449e-9a0d-c03ee578c74e")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 345.44 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 	)
 	(sheet_instances
 		(path "/"
