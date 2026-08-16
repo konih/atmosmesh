@@ -181,6 +181,57 @@ cd hardware/kicad/atmosmesh-bench
 The PCB file is KiCad 10 format (the schematic still opens in KiCad 9 and 10). Zone fills are
 saved in the file; refill with `B` in pcbnew after moving anything.
 
+## Fabrication output — gerbers **and drill**
+
+A gerber set without drill files is a board with **no holes**: JLCPCB's viewer shows a bare outline
+and the order is rejected. `pcb export gerbers` never emits drill data — `pcb export drill` is a
+**separate command** and is the step that is easy to forget. Always run both, and always upload the
+zip that this recipe builds rather than hand-picking files.
+
+```sh
+export KCLI=/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli
+cd hardware/kicad/atmosmesh-bench
+rm -rf gerbers && mkdir gerbers
+
+# 1. Copper / mask / silk / paste / outline. Protel extensions are what JLCPCB expects.
+"$KCLI" pcb export gerbers --check-zones \
+  -l F.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts \
+  -o gerbers atmosmesh-bench.kicad_pcb
+
+# 2. Excellon drill — separate PTH/NPTH, plus a drill map and a hit report to review.
+"$KCLI" pcb export drill --format excellon --drill-origin absolute \
+  --excellon-units mm --excellon-zeros-format decimal --excellon-separate-th \
+  --generate-map --map-format pdf \
+  --generate-report --report-path gerbers/atmosmesh-bench-drill-report.rpt \
+  -o gerbers atmosmesh-bench.kicad_pcb
+
+# 3. One zip — this is the file to upload.
+(cd gerbers && zip -j atmosmesh-bench-jlcpcb.zip \
+  *.gtl *.gbl *.gts *.gbs *.gto *.gbo *.gtp *.gbp *.gm1 *.drl *.gbrjob)
+```
+
+Pass **no origin flags to either command**. Both default to the absolute page origin, so leaving
+them alone is what keeps holes aligned to pads; `--use-drill-file-origin` on the gerber side would
+plot copper against a different datum and produce the classic "holes offset from pads" rejection.
+
+`gerbers/` is gitignored — it is regenerated output, not source.
+
+### Verify before uploading
+
+Existence of a `.drl` is not enough. Check all three:
+
+1. **Hole counts** — read `atmosmesh-bench-drill-report.rpt`. Expect **132 plated** holes
+   (including 27 × 0.4 mm, the vias) and **4 unplated** at **3.2 mm** — the M3 mounting holes. A
+   missing NPTH file passes a naive existence check and still ships a board you cannot bolt down.
+2. **Alignment** — the drill coordinates must sit inside the `Edge_Cuts` outline. Edge cuts span
+   X `100.0 … 239.0`, Y `-118.0 … -60.0` mm; the four M3 holes sit at X `104.0`/`235.0`,
+   Y `-64.0`/`-114.0` — 4 mm in from each edge. Drill near zero while the outline sits at an
+   offset (or vice versa) means the origins diverged — see the flag warning above.
+3. **File count** — the zip must hold **12** files: 9 gerbers, `PTH.drl`, `NPTH.drl`, `.gbrjob`.
+
+Note that `.gbrjob` lists only the gerber layers; it never references the drill files, so it cannot
+be used to confirm step 1.
+
 ### Results — KiCad 10.0.5, 2026-08-14
 
 | Check | Result |
