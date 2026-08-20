@@ -8,12 +8,12 @@
 .env.*
 .envrc
 !.env.example
+!.envrc.example
 firmware/include/atmosmesh/secrets.hpp
 secrets.yaml
 secrets.yml
 *secret*.yaml
 *secret*.yml
-firmware/include/atmosmesh/secrets.hpp
 *.local
 *.key
 *.pem

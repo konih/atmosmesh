@@ -96,9 +96,24 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |
 
-## MQTT (optional at compile time)
+## MQTT / Wi-Fi credentials
 
-Copy `include/atmosmesh/secrets.hpp.example` to `include/atmosmesh/secrets.hpp` and set
-`ATMOSMESH_WIFI_*` plus `ATMOSMESH_MQTT_*` (broker = kum3 LAN `:1883`, user `homeassistant`).
-Without `secrets.hpp`, the image still samples sensors and drives the OLED; networking is skipped.
-Topics and HA discovery are documented in `docs/architecture.md` (D-007).
+Preferred: put secrets in a **gitignored** `.envrc` at the main checkout (see `.envrc.example`):
+
+```bash
+export WIFI_SSID="your-ssid"
+export WIFI_PASSWORD="your-wifi-password"
+export MQTT_HOST="kum3-lan-address"
+export MQTT_PORT="1883"
+export MQTT_USER="homeassistant"
+export MQTT_PASSWORD="from-kumulus-sops"
+```
+
+Then `direnv allow` and `task build` / `task flash`. Those tasks run
+`scripts/gen-secrets-from-env`, which writes gitignored
+`firmware/include/atmosmesh/secrets.hpp` (also works from a git worktree by reading the
+main-checkout `.envrc`).
+
+Alternative: copy `include/atmosmesh/secrets.hpp.example` → `secrets.hpp` by hand.
+Without Wi-Fi + MQTT credentials, the image still samples sensors and drives the OLED;
+networking is skipped. Topics and HA discovery are in `docs/architecture.md` (D-007).
