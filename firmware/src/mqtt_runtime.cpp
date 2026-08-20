@@ -69,18 +69,17 @@ void ensure_mqtt_client() {
     char uri[128];
     std::snprintf(uri, sizeof(uri), "mqtt://%s:%d", ATMOSMESH_MQTT_HOST, ATMOSMESH_MQTT_PORT);
 
+    // Arduino-ESP32 on this board uses the IDF 4.x flat mqtt config (not IDF 5 nested).
     esp_mqtt_client_config_t cfg = {};
-    cfg.broker.address.uri = uri;
-    cfg.credentials.username = ATMOSMESH_MQTT_USER;
-    cfg.credentials.authentication.password = ATMOSMESH_MQTT_PASSWORD;
-    cfg.session.keepalive = kMqttKeepaliveSec;
-    cfg.session.last_will.topic = kMqttAvailabilityTopic;
-    cfg.session.last_will.msg = kMqttAvailabilityOffline;
-    cfg.session.last_will.msg_len = static_cast<int>(strlen(kMqttAvailabilityOffline));
-    cfg.session.last_will.qos = 0;
-    cfg.session.last_will.retain = 1;
-    // esp_mqtt reconnects itself; our session still republishes discovery on CONNECT.
-    cfg.network.disable_auto_reconnect = false;
+    cfg.uri = uri;
+    cfg.username = ATMOSMESH_MQTT_USER;
+    cfg.password = ATMOSMESH_MQTT_PASSWORD;
+    cfg.keepalive = kMqttKeepaliveSec;
+    cfg.lwt_topic = kMqttAvailabilityTopic;
+    cfg.lwt_msg = kMqttAvailabilityOffline;
+    cfg.lwt_msg_len = static_cast<int>(strlen(kMqttAvailabilityOffline));
+    cfg.lwt_qos = 0;
+    cfg.lwt_retain = 1;
 
     g_client = esp_mqtt_client_init(&cfg);
     if (g_client == nullptr) {

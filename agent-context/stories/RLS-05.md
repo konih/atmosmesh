@@ -52,4 +52,7 @@ blocking local measurement or display.
 
 - Host Unity: MQTT contract + session tests in `firmware/test/test_mqtt/`.
 - Contract frozen in `docs/architecture.md` and D-007.
-- Manual broker/Wi-Fi interrupt transcript: pending operator flash.
+- Manual (2026-08-20): flashed with `.envrc` → `secrets.hpp`; serial showed Wi-Fi connect and
+  `mqtt: connected` to kum3 LAN `192.168.178.82:1883`; subscriber received
+  `home/air/atmosmesh-0001/availability` (`online`), eight HA discovery `/config` topics, and
+  `home/air/atmosmesh-0001/state` JSON.
