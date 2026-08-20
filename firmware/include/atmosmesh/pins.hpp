@@ -72,6 +72,11 @@ inline constexpr std::uint32_t kOledI2cHz = 100000;
 inline constexpr int kOledGlyphWidthPx = 6;
 inline constexpr int kOledGlyphHeightPx = 8;
 inline constexpr int kOledMaxChars = kOledWidthPx / kOledGlyphWidthPx;
+// The hPa row's right cell alternates lux / MQ135: 21 columns cannot hold both.
+inline constexpr unsigned long kOledRightCellPeriodMs = 4000UL;
+// Left column of the hPa row carries "<press>hPa <bmpT>C"; worst case "1013hPa -10.0C" = 14.
+// Width 15 keeps at least one space before the right cell, and 15 + "MQ4095" = 21 exactly.
+inline constexpr int kOledHpaLeftWidth = 15;
 
 inline constexpr unsigned kOledI2cAddresses[] = {0x3C, 0x3D};
 

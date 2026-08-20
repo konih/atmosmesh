@@ -100,10 +100,10 @@ void pulse_beeper() {
 }
 
 void refresh_oled() {
-    const auto lines = atmosmesh::live_sensor_lines(am_hold.show, am_hold.temperature_c,
-                                                    am_hold.humidity_rh, bmp_read_ok, bmp_p_hpa,
-                                                    pm_ok, pm25_ug_m3, pm10_ug_m3, mq_raw,
-                                                    pir_motion, veml_ok, veml_lux);
+    const auto lines = atmosmesh::live_sensor_lines(
+        am_hold.show, am_hold.temperature_c, am_hold.humidity_rh, bmp_read_ok, bmp_p_hpa, pm_ok,
+        pm25_ug_m3, pm10_ug_m3, mq_raw, pir_motion, veml_ok, veml_lux, bmp_t_c,
+        atmosmesh::oled_right_cell_for_ms(millis()));
     show_lines(lines.data(), lines.size());
 }
 

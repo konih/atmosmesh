@@ -67,45 +67,102 @@ void test_live_page_is_three_rows_on_64px() {
         TEST_ASSERT_EQUAL(std::string::npos, line.find("MQ "));
         TEST_ASSERT_EQUAL(std::string::npos, line.find("/"));
     }
-    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH idle", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013hPa 0.0C   -- lx", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 12   PM10 20", lines[2].c_str());
 }
 
-void test_live_page_appends_p_when_pir_motion_and_space() {
+void test_live_page_labels_pir_state_not_bare_flag() {
     const auto idle =
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
                                      false);
-    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", idle[0].c_str());
+    // Idle is spelled out: a blank cell must never be mistaken for "no reading".
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH idle", idle[0].c_str());
     const auto motion =
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
                                      true);
-    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH P", motion[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH MOT", motion[0].c_str());
     TEST_ASSERT_EQUAL_STRING(idle[1].c_str(), motion[1].c_str());
     TEST_ASSERT_EQUAL_STRING(idle[2].c_str(), motion[2].c_str());
     TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(motion[0].size()));
+    TEST_ASSERT_EQUAL_STRING("MOT", atmosmesh::format_pir_oled(true).c_str());
+    TEST_ASSERT_EQUAL_STRING("idle", atmosmesh::format_pir_oled(false).c_str());
 }
 
 void test_live_page_shows_lux_on_hpa_line() {
     const auto missing =
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
-                                     false, false, 0.0F);
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", missing[1].c_str());
+                                     false, false, 0.0F, 21.5F);
+    TEST_ASSERT_EQUAL_STRING("1013hPa 21.5C  -- lx", missing[1].c_str());
     const auto present =
         atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
-                                     false, true, 123.4F);
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   123 lx", present[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH", present[0].c_str());
+                                     false, true, 123.4F, 21.5F);
+    TEST_ASSERT_EQUAL_STRING("1013hPa 21.5C  123 lx", present[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH idle", present[0].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 12   PM10 20", present[2].c_str());
     TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(present[1].size()));
 }
 
-void test_live_page_fits_worst_case_six_cells() {
+void test_live_page_shows_bmp_temperature_beside_pressure() {
     const auto lines =
-        atmosmesh::live_sensor_lines(true, -10.0F, 100.0F, true, 1013.2F, true, 999.4F, 999.4F,
-                                     4095);
-    TEST_ASSERT_EQUAL_STRING("-10.0C  100% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("1013 hPa   -- lx", lines[1].c_str());
+        atmosmesh::live_sensor_lines(true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 819,
+                                     false, true, 123.4F, 29.7F);
+    // BMP280 temperature was read and logged but never displayed before 2026-08-17.
+    TEST_ASSERT_EQUAL_STRING("1013hPa 29.7C  123 lx", lines[1].c_str());
+    // AM2302 temperature stays on its own row so the two are comparable, not conflated.
+    TEST_ASSERT_EQUAL_STRING("23.4C  48% RH idle", lines[0].c_str());
+}
+
+void test_right_cell_alternates_lux_and_mq_over_time() {
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledRightCell::Lux),
+                          static_cast<int>(atmosmesh::oled_right_cell_for_ms(0UL)));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledRightCell::Lux),
+                          static_cast<int>(atmosmesh::oled_right_cell_for_ms(3999UL)));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledRightCell::Mq),
+                          static_cast<int>(atmosmesh::oled_right_cell_for_ms(4000UL)));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledRightCell::Mq),
+                          static_cast<int>(atmosmesh::oled_right_cell_for_ms(7999UL)));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(atmosmesh::OledRightCell::Lux),
+                          static_cast<int>(atmosmesh::oled_right_cell_for_ms(8000UL)));
+    // Default phase is Lux, so a caller that passes no phase keeps the pre-rotation layout.
+    TEST_ASSERT_EQUAL_INT(0, static_cast<int>(atmosmesh::OledRightCell::Lux));
+}
+
+void test_mq135_cell_shows_raw_count_and_err_on_zero() {
+    TEST_ASSERT_EQUAL_STRING("MQ724", atmosmesh::format_mq135_oled(724).c_str());
+    TEST_ASSERT_EQUAL_STRING("MQ4095", atmosmesh::format_mq135_oled(4095).c_str());
+    // raw=0 is the firmware's existing "check AOUT/GND/5V heater" fault, not a real reading.
+    TEST_ASSERT_EQUAL_STRING("MQ ERR", atmosmesh::format_mq135_oled(0).c_str());
+    TEST_ASSERT_EQUAL_STRING("MQ ERR", atmosmesh::format_mq135_oled(-1).c_str());
+    // The bench MQ135 is uncalibrated: raw counts only, never a gas concentration.
+    for (const int raw : {0, 1, 724, 4095}) {
+        const std::string cell = atmosmesh::format_mq135_oled(raw);
+        TEST_ASSERT_EQUAL(std::string::npos, cell.find("ppm"));
+        TEST_ASSERT_EQUAL(std::string::npos, cell.find("CO2"));
+    }
+}
+
+void test_live_page_mq_phase_replaces_lux_cell() {
+    const auto lux_phase = atmosmesh::live_sensor_lines(
+        true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 724, false, true, 123.4F, 29.7F,
+        atmosmesh::OledRightCell::Lux);
+    const auto mq_phase = atmosmesh::live_sensor_lines(
+        true, 23.4F, 48.1F, true, 1013.2F, true, 12.3F, 20.1F, 724, false, true, 123.4F, 29.7F,
+        atmosmesh::OledRightCell::Mq);
+    TEST_ASSERT_EQUAL_STRING("1013hPa 29.7C  123 lx", lux_phase[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013hPa 29.7C  MQ724", mq_phase[1].c_str());
+    // Only the hPa row's right cell moves; the other two rows are stable across the swap.
+    TEST_ASSERT_EQUAL_STRING(lux_phase[0].c_str(), mq_phase[0].c_str());
+    TEST_ASSERT_EQUAL_STRING(lux_phase[2].c_str(), mq_phase[2].c_str());
+}
+
+void test_live_page_fits_worst_case_six_cells() {
+    // Widest possible row: negative BMP temp and a full-scale MQ count in the rotating cell.
+    const auto lines = atmosmesh::live_sensor_lines(
+        true, -10.0F, 100.0F, true, 1013.2F, true, 999.4F, 999.4F, 4095, false, false, 0.0F,
+        -10.0F, atmosmesh::OledRightCell::Mq);
+    TEST_ASSERT_EQUAL_STRING("-10.0C  100% RH idle", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("1013hPa -10.0C MQ4095", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 999  PM10 999", lines[2].c_str());
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
@@ -116,8 +173,8 @@ void test_live_page_missing_sensors() {
     const auto lines =
         atmosmesh::live_sensor_lines(false, 0.0F, 0.0F, false, 0.0F, false, 0.0F, 0.0F, 0);
     TEST_ASSERT_EQUAL_INT(3, static_cast<int>(lines.size()));
-    TEST_ASSERT_EQUAL_STRING("--C  --% RH", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("-- hPa     -- lx", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("--C  --% RH idle", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("--hPa --C      -- lx", lines[1].c_str());
     TEST_ASSERT_EQUAL_STRING("PM2.5 --   PM10 --", lines[2].c_str());
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(atmosmesh::kOledMaxChars, static_cast<int>(line.size()));
@@ -417,7 +474,7 @@ void test_am2302_hold_oled_does_not_flash_dash_on_one_miss() {
     atmosmesh::update_am2302_hold(hold, false, 0.0F, 0.0F, atmosmesh::kAm2302HoldMisses);
     const auto lines = atmosmesh::live_sensor_lines(hold.show, hold.temperature_c, hold.humidity_rh,
                                                     true, 1013.2F, true, 12.3F, 20.1F, 819);
-    TEST_ASSERT_EQUAL_STRING("32.2C  30% RH", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("32.2C  30% RH idle", lines[0].c_str());
 }
 
 void test_am2302_hold_blanks_after_max_consecutive_misses() {
@@ -429,7 +486,7 @@ void test_am2302_hold_blanks_after_max_consecutive_misses() {
     TEST_ASSERT_FALSE(hold.show);
     const auto lines = atmosmesh::live_sensor_lines(hold.show, hold.temperature_c, hold.humidity_rh,
                                                     false, 0.0F, false, 0.0F, 0.0F, 0);
-    TEST_ASSERT_EQUAL_STRING("--C  --% RH", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("--C  --% RH idle", lines[0].c_str());
 }
 
 void test_sds011_checksum_and_parse() {
@@ -606,8 +663,12 @@ int main() {
     RUN_TEST(test_sds011_bad_checksum_is_missing);
     RUN_TEST(test_sds011_rejects_wrong_header_or_tail);
     RUN_TEST(test_sds011_stream_skips_noise_then_parses);
-    RUN_TEST(test_live_page_appends_p_when_pir_motion_and_space);
+    RUN_TEST(test_live_page_labels_pir_state_not_bare_flag);
     RUN_TEST(test_live_page_shows_lux_on_hpa_line);
+    RUN_TEST(test_live_page_shows_bmp_temperature_beside_pressure);
+    RUN_TEST(test_right_cell_alternates_lux_and_mq_over_time);
+    RUN_TEST(test_mq135_cell_shows_raw_count_and_err_on_zero);
+    RUN_TEST(test_live_page_mq_phase_replaces_lux_cell);
     RUN_TEST(test_extra_peripheral_pins_match_live_bench);
     RUN_TEST(test_veml7700_address_is_0x10_no_bmp_clash);
     RUN_TEST(test_pir_serial_labels);

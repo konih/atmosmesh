@@ -54,19 +54,43 @@ int oled_boot_bar_hold_ms() {
 
 namespace {
 
-std::string two_col(std::string_view left, std::string_view right) {
-    constexpr std::size_t kLeftWidth = 11;
+std::string two_col_width(std::string_view left, std::string_view right, std::size_t left_width) {
     std::string line(left);
-    if (line.size() < kLeftWidth) {
-        line.append(kLeftWidth - line.size(), ' ');
-    } else if (line.size() > kLeftWidth) {
-        line.resize(kLeftWidth);
+    if (line.size() < left_width) {
+        line.append(left_width - line.size(), ' ');
+    } else if (line.size() > left_width) {
+        line.resize(left_width);
     }
     line.append(right);
     return clip_oled_line(line);
 }
 
+std::string two_col(std::string_view left, std::string_view right) {
+    return two_col_width(left, right, 11);
+}
+
 }  // namespace
+
+OledRightCell oled_right_cell_for_ms(unsigned long now_ms) {
+    const unsigned long slot = now_ms / kOledRightCellPeriodMs;
+    return ((slot % 2UL) == 0UL) ? OledRightCell::Lux : OledRightCell::Mq;
+}
+
+std::string format_mq135_oled(int mq135_raw_adc) {
+    // Firmware already warns on raw=0 over serial ("check AOUT/GND/5V heater"); surface the
+    // same fault on the glass instead of printing a plausible-looking zero.
+    if (mq135_raw_adc <= 0) {
+        return "MQ ERR";
+    }
+    // No space after "MQ": a full-scale 4095 must still fit the 6 columns the row can spare.
+    char cell[16];
+    std::snprintf(cell, sizeof(cell), "MQ%d", mq135_raw_adc);
+    return cell;
+}
+
+std::string format_pir_oled(bool pir_motion) {
+    return pir_motion ? "MOT" : "idle";
+}
 
 std::string clip_oled_line(std::string_view text) {
     if (text.size() <= static_cast<std::size_t>(kOledMaxChars)) {
@@ -81,30 +105,37 @@ OledBanner dummy_banner() {
 
 OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_rh, bool bmp_ok,
                                float pressure_hpa, bool pm_ok, float pm25_ug_m3, float pm10_ug_m3,
-                               int mq135_raw_adc, bool pir_motion, bool lux_ok, float lux_lx) {
-    (void)mq135_raw_adc;
-    char line0[24];
+                               int mq135_raw_adc, bool pir_motion, bool lux_ok, float lux_lx,
+                               float bmp_temperature_c, OledRightCell right_cell) {
+    char line0[32];
     if (am_ok) {
         std::snprintf(line0, sizeof(line0), "%.1fC  %.0f%% RH", static_cast<double>(temperature_c),
                       static_cast<double>(humidity_rh));
     } else {
         std::snprintf(line0, sizeof(line0), "--C  --%% RH");
     }
-    if (pir_motion) {
+    // PIR always reports a word. Worst case "-10.0C  100% RH idle" = 20 of 21 columns.
+    {
+        const std::string pir_cell = format_pir_oled(pir_motion);
         const std::size_t used = std::strlen(line0);
-        if (used + 2 < sizeof(line0) && static_cast<int>(used) + 2 <= kOledMaxChars) {
-            std::snprintf(line0 + used, sizeof(line0) - used, " P");
+        if (used + pir_cell.size() + 1 < sizeof(line0) &&
+            static_cast<int>(used + pir_cell.size() + 1) <= kOledMaxChars) {
+            std::snprintf(line0 + used, sizeof(line0) - used, " %s", pir_cell.c_str());
         }
     }
 
-    char pressure[16];
+    // BMP280 contributes both cells here, so one ok flag gates both.
+    char hpa_left[24];
     if (bmp_ok) {
-        std::snprintf(pressure, sizeof(pressure), "%.0f hPa", static_cast<double>(pressure_hpa));
+        std::snprintf(hpa_left, sizeof(hpa_left), "%.0fhPa %.1fC",
+                      static_cast<double>(pressure_hpa), static_cast<double>(bmp_temperature_c));
     } else {
-        std::snprintf(pressure, sizeof(pressure), "-- hPa");
+        std::snprintf(hpa_left, sizeof(hpa_left), "--hPa --C");
     }
 
-    const std::string lux_cell = format_lux_oled(lux_ok, lux_lx);
+    const std::string cell = (right_cell == OledRightCell::Mq)
+                                 ? format_mq135_oled(mq135_raw_adc)
+                                 : format_lux_oled(lux_ok, lux_lx);
 
     char pm25[16];
     char pm10[16];
@@ -118,7 +149,9 @@ OledLivePage live_sensor_lines(bool am_ok, float temperature_c, float humidity_r
         std::snprintf(pm10, sizeof(pm10), "PM10 --");
     }
 
-    return {clip_oled_line(line0), two_col(pressure, lux_cell), two_col(pm25, pm10)};
+    return {clip_oled_line(line0),
+            two_col_width(hpa_left, cell, static_cast<std::size_t>(kOledHpaLeftWidth)),
+            two_col(pm25, pm10)};
 }
 
 }  // namespace atmosmesh
