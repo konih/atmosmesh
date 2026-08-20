@@ -6,7 +6,9 @@
 # Secrets and local configuration
 .env
 .env.*
+.envrc
 !.env.example
+firmware/include/atmosmesh/secrets.hpp
 secrets.yaml
 secrets.yml
 *secret*.yaml
@@ -19,6 +21,9 @@ kubeconfig.*
 
 # Local Python venv (default bootstrap target)
 .venv/
+
+# Agent worktrees (never commit)
+.worktrees/
 
 # Firmware build state
 .esphome/

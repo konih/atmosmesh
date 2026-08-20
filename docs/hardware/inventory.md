@@ -84,6 +84,144 @@ before applying 5 V. OLED blanking with a live `oled: init ok` is not explained 
 short onto GPIO can brown out `3V3` and blank the glass — serial on 2026-08-14 showed **no**
 brownout and I²C 0x3C/0x76 still present.
 
+## Bench bring-up (2026-08-17) — 3V3 sensors pass, both 5 V sensors fail
+
+First capture with everything soldered, 20 s window, board stable (`rst:0x1 (POWERON_RESET)`,
+one boot banner, no loop). Follows the LDO replacement in
+[incident-2026-08-17-ldo.md](incident-2026-08-17-ldo.md).
+
+| Sensor | Rail | Result |
+| --- | --- | --- |
+| AM2302 | 3V3 | **Pass** — `t=28.4C rh=39.2–41.4%`, stable |
+| BMP280 | 3V3 | **Pass** — `t=29.7C p=973.2 hPa` |
+| SSD1306 OLED | 3V3 | **I²C pass** — `init ok … addr=0x3C 128x64`. Pixels unconfirmed |
+| PIR | 3V3 | Inconclusive — `pir: idle` proves the pull-down only |
+| VEML7700 | 3V3 | Not fitted — `not found (ok until fitted)` |
+| **SDS011** | **5 V** | **Fail** — 1546 no-frame lines / 20 s, **0 valid frames** |
+| **MQ135** | **5 V** | **Fail** — erratic `raw=` 1097, 119, 0, 38, 724, 123 |
+
+**The failures partition exactly along the supply rail:** every 3.3 V device works, both 5 V
+devices do not. Per [power.md](power.md), SDS011 and MQ135 are the only 5 V loads.
+
+This is a **lead, not a conclusion**. At least two stories fit equally well:
+
+1. A common 5 V feed is dead or marginal.
+2. Two unrelated faults — MQ135 strapped to 3V3 via `3V3_5V_SEL`, *and* SDS011 UART wired
+   straight-through instead of crossed. The bench schematic has an independent `3V3_5V_SEL`
+   strap, so the two rails are not necessarily one net.
+
+Parsimony is not evidence. Discriminate physically before rewiring anything:
+
+- **Is the SDS011 fan spinning?** Spinning → it has 5 V, so its fault is the UART and the
+  rail story collapses to MQ135 alone. Still → no 5 V.
+- **Is the MQ135 warm after a minute?** A powered heater is unmistakably warm to the touch.
+  Cold means unpowered whatever a meter reads at the header.
+
+Supporting note on MQ135: it read ~1250 in a narrow band *before* soldering (floating pin) and
+now reads mostly 0–123 with occasional spikes. With the 10 k series + 20 k-to-GND divider fitted
+and nothing driving AOUT, the pin is pulled toward ground — *consistent with* an undriven AOUT.
+Not proof; a faulty ADC would look similar.
+
+### SDS011 UART crossing (the rule the current wiring may violate)
+
+From the pin table above — the sensor connector is **crossed**, not straight-through:
+
+| SDS011 pin | Goes to | Never |
+| --- | --- | --- |
+| **TX** (datasheet pin 7) | **GPIO16 / RX2** | not TX2/GPIO17, not RX0/GPIO3 |
+| **RX** (datasheet pin 6) | **GPIO17 / TX2** | not RX2/GPIO16, not TX0/GPIO1 |
+
+Wiring sensor TX → TX2 also puts two push-pull outputs on one net (ESP32 TX2 drives, sensor TX
+drives). That is contention, not just silence.
+
+Firmware says this itself on every failed poll: `sds011: no AA C0 frame (listening GPIO16/RX2;
+sensor TX must not sit on TX2/GPIO17)`.
+
+**Listen-only test if desoldering is expensive:** flash with `Serial2.begin(9600, SERIAL_8N1,
+17, -1)`. Frames appear → sensor TX is on GPIO17 and the pair is straight-through. Use `-1` for
+TX so GPIO16 is never driven into the sensor's TX if the wiring was in fact correct.
+
+### SDS011 confirmed wired straight-through — and GPIO17 has two drivers on it
+
+Operator verified 2026-08-17: **SDS011 TX → TX2/GPIO17, SDS011 RX → RX2/GPIO16.** That is
+straight-through. The pin table above requires it **crossed**: sensor TX → GPIO16, GPIO17 →
+sensor RX. This fully explains 0 valid frames — the ESP32 listens on GPIO16, where only the
+sensor's *receive* pin is connected, so nothing ever arrives.
+
+> **Contention hazard, live right now.** The firmware configures GPIO17 as UART2 **TX**, a
+> push-pull output. The SDS011's TX is also a push-pull output. Both are soldered to the same
+> net and fight whenever they drive opposite levels — roughly 10 ms in every second, each time
+> the sensor transmits its 10-byte frame at 9600 baud. ESP32 GPIO absolute max is 40 mA and a
+> driver fight can exceed it. Fix this before leaving the bench powered for long runs.
+
+Two fixes, and they are not equivalent:
+
+| Fix | Effort | Consequence |
+| --- | --- | --- |
+| **A. Re-solder crossed** | Desolder two joints | Bench matches the pin table, the KiCad board and every doc. Contention gone. |
+| **B. Swap firmware constants** — `kSds011RxGpio = 17`, `kSds011TxGpio = 16` | One-line, no iron | Works, and also ends the contention (GPIO17 becomes an input). But the bench now **diverges** from the routed PCB and the pin table, so both must be annotated or the next board repeats the fault. |
+
+B is the faster confirmation that the diagnosis is right, since UART2 remaps freely through the
+ESP32 GPIO matrix and both pins are ordinary I/O. A is the correct end state for a board whose
+schematic is already routed. Either way the ESP32 stops driving GPIO17.
+
+Note the SDS011 reports autonomously at 1 Hz and needs no commands, so the ESP32→sensor
+direction is optional; only "sensor TX → an ESP32 receive pin" actually matters.
+
+### Flashing is intermittent, not blocked by a dead pin
+
+Attempting `pio run -t upload` now fails, twice, identically:
+
+```text
+Download mode successfully detected, but getting no sync reply:
+The serial TX path seems to be down.
+```
+
+Read that carefully — it is **directional**:
+
+| Direction | Path | State |
+| --- | --- | --- |
+| ESP32 → host | GPIO1 / TX0 → CP2102 | **Works** — 52 kB of boot + app log read back |
+| Host → ESP32 | CP2102 → GPIO3 / RX0 | **Intermittent** — 12 kB written, then no sync reply |
+| Auto-reset | DTR/RTS → EN, IO0 | Works — download mode *is* entered |
+
+The chip and its reset circuit are healthy. The wording "TX path seems to be down" is esptool's
+guess after one lost reply and should not be read as a dead pin — see the correction below.
+
+**Corrected 2026-08-17: this is not a dead GPIO3.** An earlier revision of this note blamed a
+loaded RX0. Two pieces of evidence refute it:
+
+1. Operator verified the SDS011 joints: its TX is on **TX2/GPIO17**, its RX on **RX2/GPIO16**.
+   Nothing is on RX0/GPIO3.
+2. The first upload attempt logged `Writing at 0x00001000... (100 %)` — a **fully successful
+   host→chip write of 12 kB** — before losing the connection. A dead receive pin cannot do that.
+
+So the link is **intermittent, not broken**. Prime suspect is the USB path, consistent with the
+`tcsetattr: Invalid argument` wedge seen on the same port earlier the same day: `ioreg` showed
+the CP2102 sitting behind a **VIA Labs USB2.0 hub chain**. Try a direct port on the Mac, a
+different cable, and a lower `upload_speed` before suspecting the board.
+
+**The old app survived this attempt** — by luck of ordering, not by design. esptool announced
+`Flash will be erased from 0x00010000 to 0x00062fff`, but the erase evidently never executed:
+the board still boots clean (`POWERON_RESET`) and `bmp280`, `am2302`, `mq135` and
+`oled: init ok` all still report. Note that this was verified over serial, which is the very
+channel now proven half-broken — treat it as good evidence, not proof.
+
+> **Improve the USB link before the next flash attempt.** The hazard is the retry itself: an
+> upload that gets one step further erases the app region and can then still fail to write it,
+> leaving the board with no application. That is recoverable — the link is intermittent, not
+> dead — but only by flashing again, so do not spend the working app on a link that is known
+> flaky. Direct USB port, known-good cable, lower `upload_speed` first; then flash once.
+
+### Firmware issues found in the same capture
+
+- `firmware/src/main.cpp:315` — the SDS011 no-frame log is emitted every `loop()` iteration with
+  no rate limit: **~93 lines/s, 96.6 % of all serial output**. It buries every other subsystem.
+  MQ135 (gated at 2 s by `kAm2302MinIntervalMs`) appears at roughly 1 line per 300. Needs a
+  `millis()` throttle.
+- `firmware/src/display_text.cpp:85` — `(void)mq135_raw_adc;` discards the MQ135 value, so it
+  **cannot** appear on the OLED regardless of wiring.
+
 ## Bench MQ135 divider (operator 2026-08-14)
 
 Wired: **10 kΩ series** between MQ135 AOUT and GPIO34, **20 kΩ** from GPIO34 to GND.
