@@ -65,8 +65,9 @@
   id is `atmosmesh-v1`. Publish one JSON state topic plus retained availability (LWT `offline`).
   Announce entities with Home Assistant MQTT discovery (`homeassistant/…/atmosmesh_0001/…`);
   republish discovery on every reconnect (kumulus Mosquitto persistence is off). Wi-Fi/MQTT are
-  async and must not block SDS011 UART drain or the OLED. Credentials only via gitignored
-  `secrets.hpp`. No lux entity until a light sensor is fitted. MQ135 stays `gas_index`, never CO₂.
+  async and must not block SDS011 UART drain or the OLED. Credentials via gitignored `.envrc`
+  (preferred) or `secrets.hpp` — never committed. No lux entity until a light sensor is fitted.
+  MQ135 stays `gas_index`, never CO₂.
 - **Supersedes:** Draft `home/air/wohnzimmer/…` topic candidates in older architecture notes.
 
 ## Open decisions

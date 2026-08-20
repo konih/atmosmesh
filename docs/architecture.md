@@ -52,8 +52,10 @@ State JSON includes `"id":"atmosmesh-0001"` and `"device":"atmosmesh-v1"`. Each 
 a light sensor is fitted. Discovery configs are re-published on every MQTT connect because the
 kumulus broker runs with persistence off.
 
-Credentials live only in the gitignored `firmware/include/atmosmesh/secrets.hpp` (copy from
-`secrets.hpp.example`). Without that file, sensors and OLED still run; Wi-Fi/MQTT stay off.
+Credentials live in a gitignored `.envrc` (see `.envrc.example`). `task build` /
+`task flash` run `scripts/gen-secrets-from-env` to materialise
+`firmware/include/atmosmesh/secrets.hpp`. Without those credentials, sensors and OLED
+still run; Wi-Fi/MQTT stay off.
 
 ## Deployment responsibilities
 

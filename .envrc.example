@@ -1,0 +1,14 @@
+# Local secrets for AtmosMesh firmware. Gitignored — never commit.
+# After editing: `direnv allow` (from the main checkout), then `task build` / `task flash`.
+#
+# `scripts/gen-secrets-from-env` turns these into firmware/include/atmosmesh/secrets.hpp.
+
+export WIFI_SSID="your-ssid"
+export WIFI_PASSWORD="your-wifi-password"
+
+# kum3 LAN address (not mosquitto.mosquitto.svc — that is in-cluster only).
+export MQTT_HOST="kum3-lan-address"
+export MQTT_PORT="1883"
+export MQTT_USER="homeassistant"
+# From kumulus: sops -d secrets/mosquitto-operator.yaml  → mqttPassword
+export MQTT_PASSWORD="your-mqtt-password"

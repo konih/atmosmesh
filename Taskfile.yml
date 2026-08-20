@@ -35,12 +35,14 @@ tasks:
     desc: Build ESP32 firmware (`pio run -e esp32dev`)
     dir: firmware
     cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev"
 
   flash:
     desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). OLED SDA is GPIO5, SCL GPIO4.
     dir: firmware
     cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}"
 
   monitor:
