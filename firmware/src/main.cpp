@@ -11,6 +11,7 @@
 #include "atmosmesh/display_text.hpp"
 #include "atmosmesh/i2c_bus.hpp"
 #include "atmosmesh/mq135_scale.hpp"
+#include "atmosmesh/mqtt_runtime.hpp"
 #include "atmosmesh/oled_address.hpp"
 #include "atmosmesh/oled_profile.hpp"
 #include "atmosmesh/pins.hpp"
@@ -47,6 +48,49 @@ float bmp_p_hpa = 0.0F;
 bool bmp_read_ok = false;
 int mq_raw = 0;
 unsigned long last_env_ms = 0;
+unsigned long last_am_ms = 0;
+unsigned long last_bmp_ms = 0;
+unsigned long last_mq_ms = 0;
+unsigned long last_pir_ms = 0;
+
+atmosmesh::MqttStationState build_mqtt_state(unsigned long now) {
+    atmosmesh::MqttStationState state{};
+    state.temperature.valid = am_hold.show;
+    state.temperature.value = am_hold.temperature_c;
+    state.temperature.age_ms = am_hold.show && last_am_ms != 0 ? (now - last_am_ms) : 0;
+    state.humidity.valid = am_hold.show;
+    state.humidity.value = am_hold.humidity_rh;
+    state.humidity.age_ms = state.temperature.age_ms;
+
+    state.pressure.valid = bmp_read_ok;
+    state.pressure.value = bmp_p_hpa;
+    state.pressure.age_ms = bmp_read_ok && last_bmp_ms != 0 ? (now - last_bmp_ms) : 0;
+    state.bmp_temperature.valid = bmp_read_ok;
+    state.bmp_temperature.value = bmp_t_c;
+    state.bmp_temperature.age_ms = state.pressure.age_ms;
+
+    state.pm25.valid = pm_ok;
+    state.pm25.value = pm25_ug_m3;
+    state.pm25.age_ms = pm_ok && last_pm_ms != 0 ? (now - last_pm_ms) : 0;
+    state.pm10.valid = pm_ok;
+    state.pm10.value = pm10_ug_m3;
+    state.pm10.age_ms = state.pm25.age_ms;
+
+    state.gas_index.valid = true;
+    state.gas_index.value = static_cast<float>(atmosmesh::mq135_gas_index(mq_raw));
+    state.gas_index.age_ms = last_mq_ms != 0 ? (now - last_mq_ms) : 0;
+    state.mq135_raw = mq_raw;
+    state.mq135_raw_valid = true;
+
+    state.motion.valid = true;
+    state.motion.value = pir_motion;
+    state.motion.age_ms = last_pir_ms != 0 ? (now - last_pir_ms) : 0;
+    return state;
+}
+
+void publish_mqtt_state(unsigned long now) {
+    atmosmesh::mqtt_runtime_publish_state(build_mqtt_state(now));
+}
 
 void log_scan(const char* label, const atmosmesh::I2cBusMap& pins, const std::uint8_t* found,
               std::size_t count) {
@@ -124,11 +168,13 @@ void poll_extras() {
     if (atmosmesh::update_debounced_level(pir_edge, pir_sample, now, atmosmesh::kDigitalDebounceMs)) {
         const bool rose = pir_edge.stable && !pir_motion;
         pir_motion = pir_edge.stable;
+        last_pir_ms = now;
         Serial.println(atmosmesh::format_pir_log(pir_motion).c_str());
         if (rose) {
             pulse_beeper();
         }
         refresh_oled();
+        publish_mqtt_state(now);
     }
 }
 
@@ -349,12 +395,14 @@ void setup() {
                   atmosmesh::kSds011TxGpio, atmosmesh::kSds011Baud);
     Serial.println(atmosmesh::format_sds011_listen_log().c_str());
     setup_extras();
+    atmosmesh::mqtt_runtime_begin();
 }
 
 void loop() {
     poll_sds011();
     poll_extras();
     const unsigned long now = millis();
+    atmosmesh::mqtt_runtime_tick(now);
     if ((now - last_env_ms) < static_cast<unsigned long>(atmosmesh::kAm2302MinIntervalMs)) {
         delay(kLoopSliceMs);
         return;
@@ -366,14 +414,15 @@ void loop() {
     am_ok = !isnan(humidity) && !isnan(temperature);
     atmosmesh::update_am2302_hold(am_hold, am_ok, temperature, humidity,
                                   atmosmesh::kAm2302HoldMisses);
-
     if (am_ok) {
+        last_am_ms = now;
         Serial.printf("am2302: t=%.1fC rh=%.1f%%\n", temperature, humidity);
     } else {
         Serial.println("am2302: read failed (need 3V3, 10k pull-up to 3V3 if the module has none)");
     }
 
     mq_raw = analogRead(atmosmesh::kMq135AdcGpio);
+    last_mq_ms = now;
     Serial.println(atmosmesh::format_mq135_serial(mq_raw).c_str());
 
     bmp_t_c = 0.0F;
@@ -384,6 +433,7 @@ void loop() {
         bmp_p_hpa = bmp280.readPressure() / 100.0F;
         bmp_read_ok = !isnan(bmp_t_c) && (bmp_p_hpa > 300.0F) && (bmp_p_hpa < 1100.0F);
         if (bmp_read_ok) {
+            last_bmp_ms = now;
             Serial.println(atmosmesh::format_bmp280_serial(bmp_t_c, bmp_p_hpa).c_str());
         } else {
             Serial.println("bmp280: read failed");
@@ -396,5 +446,6 @@ void loop() {
     }
 
     refresh_oled();
+    publish_mqtt_state(now);
     delay(kLoopSliceMs);
 }

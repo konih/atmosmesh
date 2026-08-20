@@ -33,18 +33,27 @@ measured.
 - Reconnect with bounded backoff and publish MQTT Last Will availability.
 - Avoid credentials in source-controlled files.
 
-## Initial MQTT contract
+## MQTT contract (RLS-05)
 
-The final payload is frozen in RLS-05. Initial topic candidates are:
+Frozen identity (no room name in any topic — Home Assistant areas are assigned later):
 
-```text
-home/air/wohnzimmer/state
-home/air/wohnzimmer/status
-home/air/wohnzimmer/availability
-```
+| Piece | Value |
+| --- | --- |
+| Device id | `atmosmesh-v1` |
+| Station id | `atmosmesh-0001` |
+| State topic | `home/air/atmosmesh-0001/state` (JSON, not retained) |
+| Availability | `home/air/atmosmesh-0001/availability` (`online` / `offline`, retained + LWT) |
+| Discovery | `homeassistant/{sensor\|binary_sensor}/atmosmesh_0001/<object_id>/config` (retained) |
+| Broker | LAN plain MQTT `:1883`, username `homeassistant`, no TLS (kumulus Mosquitto) |
 
-Names must be stable and units explicit. A gas trend from MQ135 must remain semantically separate
-from any future NDIR CO₂ measurement.
+State JSON includes `"id":"atmosmesh-0001"` and `"device":"atmosmesh-v1"`. Each reading is
+`{value, unit, valid, age_ms}`; invalid readings omit `value` entirely. MQ135 publishes
+`gas_index` (unit `index`) and optional `mq135_raw` — never `co2` / `ppm`. Lux is omitted until
+a light sensor is fitted. Discovery configs are re-published on every MQTT connect because the
+kumulus broker runs with persistence off.
+
+Credentials live only in the gitignored `firmware/include/atmosmesh/secrets.hpp` (copy from
+`secrets.hpp.example`). Without that file, sensors and OLED still run; Wi-Fi/MQTT stay off.
 
 ## Deployment responsibilities
 
