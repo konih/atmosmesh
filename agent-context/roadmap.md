@@ -9,7 +9,7 @@ for an unfinished MVP story.
 | 2 | [RLS-02](stories/RLS-02.md) | Blocked | P0 | RLS-01 | OLED and BMP280 work on the shared I²C bus |
 | 3 | [RLS-03](stories/RLS-03.md) | Blocked | P0 | RLS-01, RLS-02 | All MVP sensors run together on the bench |
 | 4 | [RLS-04](stories/RLS-04.md) | Blocked | P1 | RLS-02, RLS-03 | Useful local display and explicit health states |
-| 5 | [RLS-05](stories/RLS-05.md) | Blocked | P0 | RLS-03 | Stable MQTT contract and reconnect behavior |
+| 5 | [RLS-05](stories/RLS-05.md) | In flight | P0 | RLS-03 | Stable MQTT contract and reconnect behavior |
 | 6 | [RLS-06](stories/RLS-06.md) | Blocked | P1 | RLS-05, cluster context | Declarative home-automation services in Kubernetes |
 | 7 | [RLS-07](stories/RLS-07.md) | Blocked | P1 | RLS-05, RLS-06 | Dashboard, history, and first alert end to end |
 | 8 | [RLS-08](stories/RLS-08.md) | Blocked | P0 | RLS-01–RLS-07 | Safe 48-hour unattended run |

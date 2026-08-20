@@ -88,5 +88,17 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `src/mq135_scale.cpp` | Host-testable ADC→mV and 2/3-divider inverse (never CO₂) |
 | `src/digital_edge.cpp` | Host-testable PIR debounce + serial labels |
 | `src/veml7700_text.cpp` | Host-testable VEML7700 0x10 / lux OLED+serial formatters |
-| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, VEML7700, AM2302, SDS011 UART2, MQ135 ADC, PIR/beeper |
-| `test/test_native/` | Unity tests compiled with `pio test -e native` |
+| `src/mqtt_contract.cpp` | Host-testable MQTT topics, state JSON, HA discovery payloads |
+| `src/mqtt_session.cpp` | Host-testable reconnect backoff and publish sequencing |
+| `src/mqtt_runtime.cpp` | ESP32-only async Wi-Fi + `esp_mqtt` (excluded from native) |
+| `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
+| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, VEML7700, AM2302, SDS011 UART2, MQ135 ADC, PIR/beeper, MQTT |
+| `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
+| `test/test_mqtt/` | Unity MQTT contract/session tests |
+
+## MQTT (optional at compile time)
+
+Copy `include/atmosmesh/secrets.hpp.example` to `include/atmosmesh/secrets.hpp` and set
+`ATMOSMESH_WIFI_*` plus `ATMOSMESH_MQTT_*` (broker = kum3 LAN `:1883`, user `homeassistant`).
+Without `secrets.hpp`, the image still samples sensors and drives the OLED; networking is skipped.
+Topics and HA discovery are documented in `docs/architecture.md` (D-007).

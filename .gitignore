@@ -13,6 +13,7 @@ secrets.yaml
 secrets.yml
 *secret*.yaml
 *secret*.yml
+firmware/include/atmosmesh/secrets.hpp
 *.local
 *.key
 *.pem
