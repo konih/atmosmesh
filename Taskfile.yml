@@ -52,6 +52,13 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1"
 
+  build-grove-visual-diagnostic:
+    desc: Build temporary Grove 128x32 fill plus bi-color LED-cycle diagnostic image
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-visual-diagnostic"
+
   build-all:
     desc: Build every first-class AtmosMesh firmware product
     cmds:
@@ -83,6 +90,13 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5 -t upload --upload-port {{.ESP_PORT}}"
 
+  flash-grove-visual-diagnostic:
+    desc: Flash temporary Grove OLED-fill plus LED-cycle diagnostic image; reviewed use only
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-visual-diagnostic -t upload --upload-port {{.ESP_PORT}}"
+
   flash:
     desc: Compatibility alias for flash-v1
     cmds:
@@ -111,6 +125,11 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  monitor-grove-visual-diagnostic:
+    desc: Monitor temporary Grove OLED/LED visual diagnostic at 115200 on ESP_PORT
+    cmds:
+      - task: monitor-v1-5
 
   monitor:
     desc: Compatibility alias for monitor-v1
@@ -155,6 +174,12 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5 -t clean"
+
+  clean-grove-visual-diagnostic:
+    desc: Clean temporary Grove OLED/LED visual diagnostic build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-visual-diagnostic -t clean"
 
   clean:
     desc: Compatibility alias for clean-v1

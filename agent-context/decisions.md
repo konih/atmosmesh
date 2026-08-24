@@ -178,6 +178,25 @@
 - **Boundary:** The page does not add BMP temperature to the public contract, convert light to lux,
   convert soil to moisture, or change AtmosMesh v1.
 
+### D-017 — Grove OLED/LED visual test is an explicit temporary build mode
+
+- **Status:** Accepted from operator diagnostic request, 2026-08-24.
+- **Decision:** The canonical Grove image remains the D-016 four-row live display and normal health
+  LED. A separately named PlatformIO environment and Taskfile workflow may compile
+  `ATMOSMESH_GROVE_VISUAL_DIAGNOSTIC=1`; after a successful OLED initialization that image fills
+  the complete logical 128×32 framebuffer and refuses later live-page redraws.
+- **LED:** The same diagnostic repeats red, green, amber (red+green) and off at two seconds per
+  phase. It derives actual D6/D0 levels from the existing polarity-aware LED abstraction, logs every
+  transition, and uses unsigned elapsed-time arithmetic across `millis()` wraparound.
+- **Observability:** Startup serial must state that the full-area diagnostic is active and name the
+  logical `128x32` geometry. Sensors, status LED and networking may continue running behind the
+  fixed white test screen.
+- **Boundary:** This diagnostic does not alter AtmosMesh v1, the canonical Grove build, wiring,
+  controller selection or geometry. Flashing and restoring images remain explicit operator actions
+  after independent review; the diagnostic may remain installed until the operator explicitly asks
+  to restore normal firmware. A filled logical framebuffer and commanded LED levels are not by
+  themselves proof of physical pixels or colors.
+
 ### D-019 — MQTT remains AtmosMesh's sole transport; ESPHome native API declined
 
 - **Status:** Accepted; see

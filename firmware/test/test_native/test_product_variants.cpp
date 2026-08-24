@@ -6,6 +6,7 @@
 #include "atmosmesh/aqua_mqtt_runtime.hpp"
 #include "atmosmesh/grove_status.hpp"
 #include "atmosmesh/grove_mqtt_runtime.hpp"
+#include "atmosmesh/grove_visual_diagnostic.hpp"
 #include "atmosmesh/product_profile.hpp"
 #include "atmosmesh/rc_light.hpp"
 #include "atmosmesh/soil_sampler.hpp"
@@ -80,6 +81,108 @@ void test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins() {
     TEST_ASSERT_EQUAL_INT(-1, profile.soil_power_control_gpio);
     TEST_ASSERT_EQUAL_INT(14, profile.water_power_control_gpio);
     TEST_ASSERT_FALSE(profile.status_led_common_anode);
+}
+
+void test_grove_oled_diagnostic_policy_is_explicit_and_default_stays_live() {
+    using atmosmesh::GroveVisualMode;
+    using atmosmesh::GroveOledRenderAction;
+
+    TEST_ASSERT_EQUAL(GroveVisualMode::Normal,
+                      atmosmesh::compiled_grove_visual_mode());
+    TEST_ASSERT_EQUAL(GroveOledRenderAction::SkipUnavailable,
+                      atmosmesh::grove_oled_render_action(false,
+                                                          GroveVisualMode::OledFillAndLedCycle));
+    TEST_ASSERT_EQUAL(GroveOledRenderAction::RenderLiveMeasurements,
+                      atmosmesh::grove_oled_render_action(true,
+                                                          GroveVisualMode::Normal));
+    TEST_ASSERT_EQUAL(GroveOledRenderAction::HoldFullAreaFill,
+                      atmosmesh::grove_oled_render_action(true,
+                                                          GroveVisualMode::OledFillAndLedCycle));
+}
+
+void test_grove_oled_full_area_banner_names_mode_and_geometry() {
+    TEST_ASSERT_EQUAL_STRING(
+        "oled-diagnostic: full-area active geometry=128x32 pixels=all-on",
+        atmosmesh::grove_oled_mode_banner(atmosmesh::GroveVisualMode::OledFillAndLedCycle, 128, 32)
+            .c_str());
+}
+
+void test_grove_visual_led_sequence_uses_two_second_phases_and_repeats() {
+    using atmosmesh::GroveVisualLedPhase;
+    constexpr std::uint32_t started = 1000U;
+    atmosmesh::GroveVisualLedState state{};
+    TEST_ASSERT_EQUAL_UINT32(2000U, atmosmesh::kGroveVisualLedPhaseMs);
+    auto step = atmosmesh::grove_visual_led_begin(state, started);
+    TEST_ASSERT_TRUE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Red, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 1999U);
+    TEST_ASSERT_FALSE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Red, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 2000U);
+    TEST_ASSERT_TRUE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Green, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 4000U);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Amber, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 6000U);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Off, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 8000U);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Red, step.phase);
+
+    // A late cooperative tick advances exactly one phase, so no visible phase/log is skipped.
+    step = atmosmesh::grove_visual_led_tick(state, started + 20000U);
+    TEST_ASSERT_TRUE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Green, step.phase);
+}
+
+void test_grove_visual_led_sequence_is_wraparound_safe_and_polarity_aware() {
+    using atmosmesh::GroveVisualLedPhase;
+    using atmosmesh::LedPolarity;
+    constexpr std::uint32_t started = 0xFFFFFF00U;
+    atmosmesh::GroveVisualLedState state{};
+    atmosmesh::grove_visual_led_begin(state, started);
+    auto step = atmosmesh::grove_visual_led_tick(state, started + 1999U);
+    TEST_ASSERT_FALSE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Red, step.phase);
+    step = atmosmesh::grove_visual_led_tick(state, started + 2000U);
+    TEST_ASSERT_TRUE(step.changed);
+    TEST_ASSERT_EQUAL(GroveVisualLedPhase::Green, step.phase);
+
+    auto levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Red,
+                                                      LedPolarity::CommonCathode);
+    TEST_ASSERT_TRUE(levels.red_high);
+    TEST_ASSERT_FALSE(levels.green_high);
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Green,
+                                                 LedPolarity::CommonCathode);
+    TEST_ASSERT_FALSE(levels.red_high);
+    TEST_ASSERT_TRUE(levels.green_high);
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Amber,
+                                                 LedPolarity::CommonCathode);
+    TEST_ASSERT_TRUE(levels.red_high);
+    TEST_ASSERT_TRUE(levels.green_high);
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Off,
+                                                 LedPolarity::CommonCathode);
+    TEST_ASSERT_FALSE(levels.red_high);
+    TEST_ASSERT_FALSE(levels.green_high);
+
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Red,
+                                                 LedPolarity::CommonAnode);
+    TEST_ASSERT_FALSE(levels.red_high);
+    TEST_ASSERT_TRUE(levels.green_high);
+    TEST_ASSERT_EQUAL_STRING(
+        "visual-diagnostic-led: color=red D6=LOW D0=HIGH",
+        atmosmesh::grove_visual_led_transition_text(GroveVisualLedPhase::Red, levels).c_str());
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Green,
+                                                 LedPolarity::CommonAnode);
+    TEST_ASSERT_TRUE(levels.red_high);
+    TEST_ASSERT_FALSE(levels.green_high);
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Amber,
+                                                 LedPolarity::CommonAnode);
+    TEST_ASSERT_FALSE(levels.red_high);
+    TEST_ASSERT_FALSE(levels.green_high);
+    levels = atmosmesh::grove_visual_led_levels(GroveVisualLedPhase::Off,
+                                                 LedPolarity::CommonAnode);
+    TEST_ASSERT_TRUE(levels.red_high);
+    TEST_ASSERT_TRUE(levels.green_high);
 }
 
 void test_grove_page_formats_valid_measurements() {
@@ -387,6 +490,10 @@ void register_product_variant_tests() {
     RUN_TEST(test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins);
     RUN_TEST(test_grove_profile_is_id_based_and_matches_wiring);
     RUN_TEST(test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins);
+    RUN_TEST(test_grove_oled_diagnostic_policy_is_explicit_and_default_stays_live);
+    RUN_TEST(test_grove_oled_full_area_banner_names_mode_and_geometry);
+    RUN_TEST(test_grove_visual_led_sequence_uses_two_second_phases_and_repeats);
+    RUN_TEST(test_grove_visual_led_sequence_is_wraparound_safe_and_polarity_aware);
     RUN_TEST(test_grove_page_formats_valid_measurements);
     RUN_TEST(test_grove_page_never_turns_missing_into_zero);
     RUN_TEST(test_grove_partial_failure_is_explicit);
