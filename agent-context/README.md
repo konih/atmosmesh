@@ -13,7 +13,7 @@ this dashboard records what changes between sessions.
 | [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Confirm OLED pixels |
 | [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Reconnect USB serial, flash, bright/dark/timeout evidence |
 | [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Reconnect USB serial, flash, broker/HA/failure evidence |
-| [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | Fresh review, MOSFET identification, then hardware validation |
+| [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | Fresh review, then hardware validation |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -31,10 +31,9 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
   open `/dev/cu.usbserial-0001`; the port was absent and no bytes were written. No physical
   light/network behavior is claimed yet.
 - Grove V15-06 software and gates are complete for the installed D6/D0 bi-color LED and a
-  D1-switched YL-38. Fresh review and exact MOSFET identification are still required before the
+  D1-controlled YL-38. The operator physically wired a confirmed 2N3906 PNP high-side switch with
+  2.2 kΩ base resistor and 100 kΩ base-emitter pull-up. Fresh review is still required before the
   coordinator may flash or validate it; the implementation lane is not authorized to flash.
-- No P-channel MOSFET marking is recorded. Do not wire the YL-38 high-side switch until a datasheet
-  confirms P-channel enhancement behavior at VGS=-2.5/-3.3 V and the exact source/drain/gate pinout.
 
 ## Next operator inputs
 
@@ -45,8 +44,8 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 4. For Grove, visually confirm whether the OLED shows the four-line page.
 5. Reconnect/power the Grove USB serial device and confirm a `/dev/cu.usbserial-*` port before the
    next authorized V15-04/V15-05 flash and validation run.
-6. Provide the exact marking/photo for the proposed YL-38 P-channel MOSFET so its datasheet pinout
-   and low-voltage gate performance can be approved before wiring.
+6. After fresh review, validate the 2N3906-switched YL-38 raw response and verify VCC turns off
+   between samples.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
 

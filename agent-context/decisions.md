@@ -150,21 +150,19 @@
   sensors are valid but MQTT is offline or unconfigured. Green means core sensors and MQTT are
   healthy. An uncalibrated/missing light or not-yet-sampled soil value alone is not a fault.
 
-### D-015 — Grove soil is raw, MOSFET-switched and sampled every 30 seconds
+### D-015 — Grove soil is raw, PNP-switched and sampled every 30 seconds
 
 - **Status:** Accepted from operator wiring contract, 2026-08-24.
-- **Power:** A high-side P-channel MOSFET switches YL-38 VCC: source=`3V3`, drain=YL VCC,
-  active-LOW gate=`D1`/GPIO5 through approximately 1 kΩ, and external 100 kΩ gate-to-source
-  pull-up. GPIO5 only drives the gate; it must never source YL-38 power. The device must be a
-  P-channel enhancement MOSFET with suitable logic-level behavior at `VGS=-2.5/-3.3 V`.
-  **No part number or pin order is approved yet:** confirm the exact marking and datasheet before
-  connecting source/drain/gate. Initialization establishes OFF before enabling the output. If YL
-  VCC is tied directly to 3V3, firmware cannot prevent continuous power and must not claim duty
+- **Power:** The operator confirmed and physically wired a 2N3906 PNP high-side switch:
+  emitter=`3V3`, collector=YL-38 VCC, base=`D1`/GPIO5 through 2.2 kΩ, with an external 100 kΩ
+  base-to-emitter pull-up. GPIO5 drives only the transistor base and must never source YL-38 power.
+  Base LOW enables the switch; initialization establishes HIGH/OFF before enabling the output. If
+  YL VCC is tied directly to 3V3, firmware cannot prevent continuous power and must not claim duty
   cycling.
-- **Analog:** YL AO reaches A0 through 47 kΩ top / 15 kΩ bottom. Optional 100 nF (`104`) from A0 to
-  GND filters noise; DO is unused and ground is common. Raw counts depend on whether the specific
-  NodeMCU board also contains an onboard A0 divider, so values are `soil_adc_raw` only—never moisture
-  percent or calibrated moisture.
+- **Analog:** YL AO reaches A0 through 47 kΩ top / 15 kΩ bottom. The installed 100 nF (`104`) from
+  A0 to GND filters noise; DO is unused and ground is common. Raw counts depend on whether the
+  specific NodeMCU board also contains an onboard A0 divider, so values are `soil_adc_raw`
+  only—never moisture percent or calibrated moisture.
 - **Cadence:** The operator requested no more than 2 Hz. Soil changes slowly, so firmware uses a
   conservative 30 s start-to-start interval, 100 ms settle and a small bounded averaged sample set,
   then turns power off immediately. MQTT transport work is deferred while the sensor is powered.

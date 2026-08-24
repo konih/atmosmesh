@@ -76,26 +76,25 @@ Allowed for the MVP 3.3 V set (OLED, BMP280, DHT22). Not allowed as a dump for 5
 ## AtmosMesh Grove YL-38 switched 3.3 V
 
 This is separate from the ESP32 station supply above. Grove stays USB-powered and uses its 3V3 rail
-for the small modules. The YL-38 corrosion-control design is provisional until the exact MOSFET is
-identified from its marking and datasheet.
+for the small modules. The operator confirmed and physically wired the 2N3906 PNP high-side
+corrosion-control circuit below.
 
 ```text
-3V3 ── P-channel MOSFET source
-         drain ────────────── YL-38 VCC
-         gate  ── ~1 kΩ ───── D1/GPIO5 (active LOW)
-           └──── 100 kΩ ───── source/3V3 (fail-safe OFF pull-up)
+3V3 ── 2N3906 emitter
+         collector ────────── YL-38 VCC
+         base ───── 2.2 kΩ ── D1/GPIO5 (active LOW)
+           └─────── 100 kΩ ── emitter/3V3 (fail-safe OFF pull-up)
 
 YL-38 AO ── 47 kΩ ── A0
                        ├── 15 kΩ ── GND
-                       └── optional 100 nF / 104 ── GND
+                       └── 100 nF / 104 ────────── GND
 YL-38 GND ─────────────────── GND; DO unused
 ```
 
-Select a P-channel enhancement MOSFET with logic-level performance specified at
-`VGS=-2.5/-3.3 V`. **Do not infer source/drain/gate order:** record the exact marking and use its
-datasheet. GPIO5 drives the gate only; never feed YL VCC from a GPIO. Firmware sets the gate latch
-HIGH before enabling OUTPUT, but the external 100 kΩ gate-source resistor is what keeps the switch
-off during reset/boot. If VCC is directly tied to 3V3, software cannot remove probe power.
+GPIO5 drives the 2N3906 base only; never feed YL VCC from a GPIO. LOW sinks base current through
+2.2 kΩ and enables the PNP; HIGH turns it off. Firmware sets the output latch HIGH before enabling
+OUTPUT, while the external 100 kΩ base-emitter resistor keeps the switch off during reset/boot. If
+VCC is directly tied to 3V3, software cannot remove probe power.
 
 The 47 kΩ / 15 kΩ divider maps 3.3 V to about 0.80 V. This is conservative for a bare ESP8266 ADC,
 but NodeMCU-style boards may already include an A0 divider, changing total attenuation and raw
