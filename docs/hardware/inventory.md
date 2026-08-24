@@ -28,8 +28,8 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Communication pass:** valid frames observed (32.0→31.0 °C, 32% RH); not accuracy/calibration evidence |
 | Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | Installed; software/native build pass, hardware timing pending. Raw µs only, lower means brighter; never lux/percent |
 | Bi-color LED | Two digital channels | Red=`D6`/GPIO12, green=`D0`/GPIO16; separate ~330 Ω resistors | Installed per operator correction. Default common-cathode; compiled common-anode inversion available. Hardware color/polarity validation pending |
-| YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; optional 100 nF (`104`) A0→GND; DO unused | Raw ADC only. Software policy/build pass; hardware divider and sampling pending |
-| P-channel high-side switch | YL-38 VCC control | Intended source=3V3, drain=YL VCC, gate=`D1`/GPIO5 through ~1 kΩ, 100 kΩ gate-source pull-up | **Provisional:** no MOSFET part number recorded. Confirm P-channel enhancement behavior at VGS=-2.5/-3.3 V and exact datasheet pinout before wiring |
+| YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; 100 nF (`104`) A0→GND; DO unused | Wired by operator; raw ADC only. Software policy/build pass; runtime sampling pending |
+| 2N3906 PNP high-side switch | YL-38 VCC control | Emitter=3V3, collector=YL VCC, base=`D1`/GPIO5 through 2.2 kΩ, 100 kΩ base-emitter pull-up | Confirmed alternative physically wired by operator; active LOW, fail-safe OFF |
 
 ### Controlled Grove flash and boot (2026-08-24)
 
@@ -80,8 +80,8 @@ At that point `ls /dev/cu.*` showed no USB serial device and ioreg showed hubs o
 confirm the serial port before retrying light/MQTT validation.
 
 The USB serial device later reappeared, but V15-06 implementation remains unflashed pending fresh
-independent review. Do not connect the provisional high-side switch until its exact MOSFET marking
-and datasheet source/drain/gate pinout are recorded.
+independent review. The operator has since wired the confirmed 2N3906 high-side circuit, but no
+firmware containing the soil feature has been flashed or validated on that circuit yet.
 
 ## USB identity of the connected controller (2026-08-14)
 

@@ -62,8 +62,8 @@ product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 s
 | Bare LDR RC | Measurement node | `D7` / GPIO13 | `3V3 → LDR → 1 kΩ → node`; 100 nF node-to-GND |
 | Bi-color LED red | Color channel | `D6` / GPIO12 | Separate ~330 Ω resistor |
 | Bi-color LED green | Color channel | `D0` / GPIO16 | Separate ~330 Ω resistor |
-| YL-38 high-side switch | P-channel gate | `D1` / GPIO5 | Active LOW via ~1 kΩ; external 100 kΩ gate-to-source pull-up |
-| YL-38 | AO | `A0` through 47 kΩ / 15 kΩ | Optional 100 nF (`104`) A0-to-GND; DO unused |
+| YL-38 high-side switch | 2N3906 PNP base | `D1` / GPIO5 | Active LOW via 2.2 kΩ; external 100 kΩ base-emitter pull-up |
+| YL-38 | AO | `A0` through 47 kΩ / 15 kΩ | 100 nF (`104`) A0-to-GND; DO unused |
 | All modules | VCC/GND | `3V3` / GND | Never power their GPIO pull-ups from 5 V |
 
 Firmware deliberately calls `Wire.begin(4, 0)`; it does not silently rewrite the physical wiring.
@@ -113,15 +113,13 @@ saturated does not by itself turn the LED red.
 
 ### YL-38 raw ADC and switched power
 
-The high-side switch design is **provisional until the exact MOSFET marking and datasheet pinout are
-confirmed**. Use a P-channel enhancement MOSFET with suitable logic-level behavior at
-`VGS=-2.5/-3.3 V`; do not infer source/drain/gate order. The intended net is source=3V3,
-drain=YL-38 VCC, gate=D1/GPIO5 through approximately 1 kΩ, with an external 100 kΩ gate-to-source
-pull-up. GPIO5 drives only the gate and is active LOW—never power the YL board from a GPIO. If YL
-VCC is wired directly to 3V3, firmware cannot prevent continuous power and makes no duty-cycle claim.
+The operator confirmed and physically wired a 2N3906 PNP high-side switch: emitter=3V3,
+collector=YL-38 VCC, base=D1/GPIO5 through 2.2 kΩ, with an external 100 kΩ base-to-emitter pull-up.
+GPIO5 drives only the base and is active LOW—never power the YL board from a GPIO. If YL VCC is
+wired directly to 3V3, firmware cannot prevent continuous power and makes no duty-cycle claim.
 
-YL AO reaches A0 through a conservative 47 kΩ top / 15 kΩ bottom divider; optional 100 nF (`104`)
-from A0 to GND filters noise. Grounds are common and YL DO is unused. This divider keeps 3.3 V AO
+YL AO reaches A0 through a conservative 47 kΩ top / 15 kΩ bottom divider; 100 nF (`104`) from A0
+to GND filters noise. Grounds are common and YL DO is unused. This divider keeps 3.3 V AO
 near 0.80 V for a bare 1.0 V ESP8266 ADC. Some NodeMCU boards already divide A0, so the combined
 attenuation and raw counts depend on the exact board. Firmware therefore exposes only
 `soil_adc_raw`, never calibrated moisture or percent.
@@ -163,8 +161,8 @@ two seconds before the reconnect backoff resumes local work.
 - DHT11: later reported 32.0 °C / 32% RH then 31.0 °C / 32% RH on D5/GPIO14. This proves
   communication, not accuracy or calibration.
 - RC light and Grove MQTT: software/native/build validation only; no hardware claim yet.
-- Bi-color LED and YL-38: software/native/build validation only; no hardware claim yet. The
-  P-channel device marking/pinout is still required before wiring the high-side switch.
+- Bi-color LED and YL-38: the operator physically wired the LED, 2N3906 switch and divided A0
+  circuit; software/native/build validation exists, but runtime behavior is not yet validated.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.

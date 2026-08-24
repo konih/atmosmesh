@@ -121,8 +121,8 @@ SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
 path are still ahead. Grove v1.5 hardware has runtime communication evidence for BMP180 and DHT11;
 OLED controller initialization passed but pixels need visual confirmation. Cooperative D7 RC light
 timing and Grove MQTT/HA discovery are implemented and host/build-tested but await reviewed hardware
-validation. The status LED/soil extension is software-only pending fresh review; its provisional
-P-channel MOSFET requires an exact marking and datasheet pinout before wiring
+validation. The status LED/soil extension is pending fresh review and runtime validation; the
+operator has wired its confirmed 2N3906 PNP high-side switch
 ([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors

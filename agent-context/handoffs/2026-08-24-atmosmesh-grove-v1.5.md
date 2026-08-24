@@ -42,8 +42,7 @@ D5/GPIO14 remains valid, but is not an accuracy claim. MAX4466 is dropped.
 
 The USB serial device later reappeared. V15-06 adds the already-installed bi-color LED on
 red=D6/GPIO12 and green=D0/GPIO16, plus a cooperative YL-38 raw ADC policy using an active-low
-D1/GPIO5 high-side gate. Software must receive fresh independent review before the coordinator
-flashes it. Soil hardware remains blocked on the exact P-channel MOSFET marking and datasheet
-pinout; do not infer a device or pin order. Intended characteristics are P-channel enhancement,
-logic-level at VGS=-2.5/-3.3 V, source=3V3, drain=YL VCC, ~1 kΩ GPIO-to-gate and 100 kΩ
-gate-to-source pull-up.
+D1/GPIO5 high-side control. The operator then confirmed and physically wired a 2N3906 PNP:
+emitter=3V3, collector=YL-38 VCC, base through 2.2 kΩ to D1, and 100 kΩ base-emitter pull-up. AO is
+wired through 47 kΩ / 15 kΩ to A0 with `104` decoupling; DO is unused. Software must receive fresh
+independent review before the coordinator flashes it.

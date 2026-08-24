@@ -21,7 +21,7 @@ struct ProductProfile {
     int light_rc_gpio;
     int status_led_red_gpio;
     int status_led_green_gpio;
-    int soil_power_gate_gpio;
+    int soil_power_control_gpio;
     bool status_led_common_anode;
 };
 
@@ -42,7 +42,7 @@ inline constexpr const ProductProfile& atmosmesh_v1_profile() {
 }
 
 // AtmosMesh Grove v1.5: D2=GPIO4, D3=GPIO0, D5=GPIO14, D7=GPIO13,
-// LED red D6=GPIO12 / green D0=GPIO16, soil gate D1=GPIO5.
+// LED red D6=GPIO12 / green D0=GPIO16, soil PNP base control D1=GPIO5.
 // GPIO0 must remain high during reset or the ESP8266 enters ROM download mode.
 inline constexpr ProductProfile kGroveProfile{
     "AtmosMesh Grove",      "atmosmesh-grove-v1.5", "atmosmesh-v1.5",

@@ -88,15 +88,15 @@ void write_pin_level(int gpio, bool high) {
 
 void apply_soil_power_action(atmosmesh::SoilPowerAction action) {
     if (action != atmosmesh::SoilPowerAction::None) {
-        write_pin_level(profile.soil_power_gate_gpio, atmosmesh::soil_power_pin_high(action));
+        write_pin_level(profile.soil_power_control_gpio, atmosmesh::soil_power_pin_high(action));
     }
 }
 
 void setup_soil_power_fail_safe() {
-    // Set the latch HIGH before OUTPUT. The external 100k gate-source pull-up is still mandatory
-    // to hold the P-channel switch off before firmware takes control.
-    digitalWrite(profile.soil_power_gate_gpio, HIGH);
-    pinMode(profile.soil_power_gate_gpio, OUTPUT);
+    // Set the latch HIGH before OUTPUT. The external 100k base-emitter pull-up is still mandatory
+    // to hold the PNP switch off before firmware takes control.
+    digitalWrite(profile.soil_power_control_gpio, HIGH);
+    pinMode(profile.soil_power_control_gpio, OUTPUT);
     apply_soil_power_action(atmosmesh::soil_sampler_begin(soil_state, millis()).power_action);
 }
 
@@ -288,14 +288,14 @@ void setup() {
                   "resistors=~330ohm-per-channel\n",
                   profile.status_led_red_gpio, profile.status_led_green_gpio,
                   atmosmesh::led_polarity_text(led_polarity()));
-    Serial.printf("soil: gate=D1/GPIO%d active=LOW interval=%lums settle=%lums samples=%u\n",
-                  profile.soil_power_gate_gpio,
+    Serial.printf("soil: control=D1/GPIO%d active=LOW interval=%lums settle=%lums samples=%u\n",
+                  profile.soil_power_control_gpio,
                   static_cast<unsigned long>(atmosmesh::kSoilSampleIntervalMs),
                   static_cast<unsigned long>(atmosmesh::kSoilSettleMs),
                   static_cast<unsigned>(atmosmesh::kSoilSampleCount));
-    Serial.println("soil: high-side P-channel MOSFET marking+datasheet pinout required; "
-                   "GPIO drives gate only");
-    Serial.println("soil: AO->A0 divider=47k/15k optional=104-to-GND DO=unused raw-only; "
+    Serial.println("soil: high-side 2N3906 PNP emitter=3V3 collector=YL-VCC "
+                   "base=D1-via-2.2k pullup=100k-base-emitter");
+    Serial.println("soil: AO->A0 divider=47k/15k 104-to-GND DO=unused raw-only; "
                    "onboard-divider=unknown");
     Serial.println("soil-warning: direct YL VCC->3V3 defeats firmware duty control");
     Serial.println("power: OLED, BMP180, DHT11, LDR RC and switched YL-38 are 3V3 only");
@@ -323,7 +323,7 @@ void loop() {
         last_sample_ms = now;
         sample_sensors();
     }
-    // Defer socket work while either bounded acquisition is active. The YL power gate therefore
+    // Defer socket work while either bounded acquisition is active. The YL power switch therefore
     // cannot remain on through a DNS/TCP/MQTT reconnect attempt.
     if (atmosmesh::grove_network_work_allowed(
             atmosmesh::rc_light_active(light_state),

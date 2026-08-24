@@ -18,9 +18,8 @@ version rules are in [ADR-0001](adr/0001-multi-product-firmware-composition.md).
 
 Grove v1.5 has its own ID-based MQTT product contract and a thin ESP8266WiFi/PubSubClient transport;
 hardware network validation remains pending. It does not inherit claims for ESP32-only SDS011,
-MQ135, PIR, VEML7700 or beeper devices. YL-38 remains hardware-gated on a provisional P-channel
-switch/divider design; exact MOSFET marking and datasheet pinout are still required. MAX4466 is
-dropped.
+MQ135, PIR, VEML7700 or beeper devices. YL-38 uses the operator-wired 2N3906 PNP high-side switch
+and divided A0 raw input; runtime validation remains pending. MAX4466 is dropped.
 
 ## Context
 

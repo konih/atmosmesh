@@ -29,7 +29,7 @@ void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
     TEST_ASSERT_EQUAL_INT(-1, profile.light_rc_gpio);
     TEST_ASSERT_EQUAL_INT(-1, profile.status_led_red_gpio);
     TEST_ASSERT_EQUAL_INT(-1, profile.status_led_green_gpio);
-    TEST_ASSERT_EQUAL_INT(-1, profile.soil_power_gate_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.soil_power_control_gpio);
 }
 
 void test_grove_profile_is_id_based_and_matches_wiring() {
@@ -51,7 +51,7 @@ void test_grove_profile_is_id_based_and_matches_wiring() {
     TEST_ASSERT_EQUAL_INT(13, profile.light_rc_gpio);
     TEST_ASSERT_EQUAL_INT(12, profile.status_led_red_gpio);
     TEST_ASSERT_EQUAL_INT(16, profile.status_led_green_gpio);
-    TEST_ASSERT_EQUAL_INT(5, profile.soil_power_gate_gpio);
+    TEST_ASSERT_EQUAL_INT(5, profile.soil_power_control_gpio);
     TEST_ASSERT_FALSE(profile.status_led_common_anode);
 }
 
