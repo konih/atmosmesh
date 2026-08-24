@@ -13,6 +13,7 @@
 #include "atmosmesh/product_profile.hpp"
 #include "atmosmesh/rc_light.hpp"
 #include "atmosmesh/soil_sampler.hpp"
+#include "atmosmesh/soil_status.hpp"
 #include "atmosmesh/status_led.hpp"
 
 namespace {
@@ -34,8 +35,10 @@ bool oled_ready = false;
 bool bmp_ready = false;
 bool led_status_initialized = false;
 atmosmesh::GroveLedStatus last_led_status = atmosmesh::GroveLedStatus::SensorFault;
+atmosmesh::GroveLedReason last_led_reason = atmosmesh::GroveLedReason::CoreSensorError;
 unsigned long last_sample_ms = 0;
 atmosmesh::GroveVisualLedState visual_led_state{};
+constexpr auto soil_calibration = atmosmesh::compiled_soil_calibration();
 
 constexpr bool visual_diagnostic_active() {
     return atmosmesh::compiled_grove_visual_mode() ==
@@ -118,20 +121,28 @@ void setup_status_led() {
 }
 
 void update_status_led(bool force = false) {
-    const bool acquisition_failed =
-        light_state.status == atmosmesh::RcLightStatus::Timeout ||
-        atmosmesh::soil_sampler_acquisition_failed(soil_state);
-    const auto status = atmosmesh::grove_led_status(atmosmesh::grove_core_sensors_ok(readings),
-                                                     acquisition_failed,
-                                                     atmosmesh::grove_mqtt_runtime_mqtt_up());
-    const auto levels = atmosmesh::grove_led_pin_levels(status, led_polarity());
+    const bool soil_acquisition_failed = atmosmesh::soil_sampler_acquisition_failed(soil_state);
+    const auto soil = atmosmesh::classify_soil(
+        soil_calibration, readings.soil.valid, static_cast<int>(readings.soil.raw),
+        soil_acquisition_failed);
+    const auto decision = atmosmesh::grove_led_decision(
+        {atmosmesh::grove_core_sensors_ok(readings),
+         light_state.status == atmosmesh::RcLightStatus::Timeout || soil_acquisition_failed,
+         atmosmesh::grove_mqtt_runtime_enabled(), atmosmesh::grove_mqtt_runtime_mqtt_up(),
+         soil.condition});
+    const auto levels = atmosmesh::grove_led_pin_levels(decision.status, led_polarity());
     write_pin_level(profile.status_led_red_gpio, levels.red_high);
     write_pin_level(profile.status_led_green_gpio, levels.green_high);
-    if (force || !led_status_initialized || status != last_led_status) {
-        Serial.printf("status-led: %s red=%s green=%s\n",
-                      atmosmesh::grove_led_status_text(status), levels.red_high ? "HIGH" : "LOW",
+    if (force || !led_status_initialized || decision.status != last_led_status ||
+        decision.reason != last_led_reason) {
+        Serial.printf("status-led: %s reason=%s red=%s green=%s\n",
+                      atmosmesh::grove_led_status_text(decision.status),
+                      atmosmesh::grove_led_reason_text(decision.reason),
+                      levels.red_high ? "HIGH" : "LOW",
                       levels.green_high ? "HIGH" : "LOW");
-        last_led_status = status;
+        Serial.println(atmosmesh::soil_led_status_text(decision, soil, soil_calibration).c_str());
+        last_led_status = decision.status;
+        last_led_reason = decision.reason;
         led_status_initialized = true;
     }
 }
@@ -346,6 +357,11 @@ void setup() {
     Serial.println("soil: AO->A0 divider=47k/15k 104-to-GND DO=unused raw-only; "
                    "onboard-divider=unknown");
     Serial.println("soil-warning: direct YL VCC->3V3 defeats firmware duty control");
+    Serial.printf("soil-calibration: %s direction=%s dry=%d acceptable=%d raw-only\n",
+                  atmosmesh::soil_calibration_validation_text(
+                      atmosmesh::validate_soil_calibration(soil_calibration)),
+                  atmosmesh::soil_direction_text(soil_calibration.direction),
+                  soil_calibration.dry_cutoff_raw, soil_calibration.acceptable_cutoff_raw);
     Serial.println("power: OLED, BMP180, DHT11, LDR RC and switched YL-38 are 3V3 only");
     if (visual_diagnostic_active()) {
         Serial.println(atmosmesh::grove_visual_diagnostic_startup_banner(

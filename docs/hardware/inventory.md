@@ -27,7 +27,7 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** repeated; latest four samples, 24.6–24.7 °C and 984.3 hPa |
 | Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Communication pass:** valid frames observed (32.0→31.0 °C, 32% RH); not accuracy/calibration evidence |
 | Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | **Runtime communication pass:** 389–452 µs observed. Bright/dark/saturation/timeout response pending; raw µs only, lower means brighter, never lux/percent |
-| Bi-color LED | Two digital channels | Red=`D6`/GPIO12, green=`D0`/GPIO16; separate ~330 Ω resistors | Installed per operator correction. Default common-cathode; compiled common-anode inversion available. Hardware color/polarity validation pending |
+| Bi-color LED | Two digital channels | Red=`D6`/GPIO12, green=`D0`/GPIO16; separate ~330 Ω resistors | **Operator-confirmed:** installed LED is common-anode/active LOW; only the inverted diagnostic produced the intended D6 red / D0 green colors. Canonical Grove profile now matches; common-cathode is an explicit alternative build |
 | YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; 100 nF (`104`) A0→GND; DO unused | **Runtime raw pass:** two cycles about 30 s apart, each ADC 214 averaged from five samples. No calibration claim |
 | 2N3906 PNP high-side switch | YL-38 VCC control | Emitter=3V3, collector=YL VCC, base=`D1`/GPIO5 through 2.2 kΩ, 100 kΩ base-emitter pull-up | Confirmed alternative physically wired by operator; active LOW, fail-safe OFF |
 
@@ -94,8 +94,12 @@ wrote 310,224 bytes, verified the hash and hard-reset. More than 30 seconds of s
 `mqtt: connected`, logical status `green/healthy`, DHT11 25.0 °C / 36% RH, BMP180
 25.3–25.7 °C / 982.1–982.4 hPa, raw light 420–492 µs and
 `soil: ok adc_raw=214 samples=5 power=off`; DHT/BMP/light health was okay. This does not prove
-broker-side receipt/HA entities, visible LED colour or polarity, visible OLED pixels/layout,
+broker-side receipt/HA entities, visible OLED pixels/layout,
 switched-rail voltage/current, physical power-off or sensor calibration.
+
+The later operator visual diagnostic established that the fitted D6 red / D0 green LED is
+common-anode (active LOW). Raw soil ADC 214 is still not a moisture classification: calibration
+direction and dry/warning/acceptable cutoffs remain unset pending controlled measurements.
 
 ## USB identity of the connected controller (2026-08-14)
 

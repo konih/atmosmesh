@@ -63,3 +63,16 @@ head `4e4a820`, which the coordinator flashed successfully. More than 30 seconds
 25.3–25.7 °C / 982.1–982.4 hPa, raw light 420–492 µs and raw soil ADC 214 with five samples and
 software `power=off`. Broker-side receipt/HA entities, visible LED colour/polarity and visible OLED
 pixels/layout were not observed and remain pending operator confirmation.
+
+V15-08 then added the reversible full-area OLED and red/green/amber/off LED diagnostic. Operator
+inspection established the fitted LED is D6 red / D0 green and common-anode: only the active-LOW
+diagnostic produced the intended colors. Normal firmware was restored from merged main with an ad
+hoc common-anode build flag.
+
+V15-09 removes that footgun by making common-anode canonical while retaining a dedicated
+common-cathode build. A host-tested calibration policy keeps raw soil unclassified/amber until
+explicit direction and ordered raw dry/acceptable cutoffs are valid. Core/acquisition errors and
+configured-offline MQTT take red priority; calibrated dry is red, needs-watering is amber, and only
+calibrated acceptable plus healthy system state is green. MQTT/HA remain raw-only. All 104 native
+tests and the complete product/compatibility/polarity/diagnostic build matrix pass. No V15-09 image
+was flashed; independent review and controlled dry/wet measurements are next.

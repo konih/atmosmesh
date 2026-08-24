@@ -10,6 +10,7 @@
 #include "atmosmesh/product_profile.hpp"
 #include "atmosmesh/rc_light.hpp"
 #include "atmosmesh/soil_sampler.hpp"
+#include "atmosmesh/soil_status.hpp"
 #include "atmosmesh/status_led.hpp"
 
 void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
@@ -56,7 +57,7 @@ void test_grove_profile_is_id_based_and_matches_wiring() {
     TEST_ASSERT_EQUAL_INT(16, profile.status_led_green_gpio);
     TEST_ASSERT_EQUAL_INT(5, profile.soil_power_control_gpio);
     TEST_ASSERT_EQUAL_INT(-1, profile.water_power_control_gpio);
-    TEST_ASSERT_FALSE(profile.status_led_common_anode);
+    TEST_ASSERT_TRUE(profile.status_led_common_anode);
 }
 
 void test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins() {
@@ -383,18 +384,150 @@ void test_grove_oled_shows_raw_light_or_explicit_missing() {
     TEST_ASSERT_EQUAL_STRING("Soil:--", lines[3].c_str());
 }
 
+void test_soil_calibration_defaults_disabled_and_validates_both_directions() {
+    using atmosmesh::SoilCalibrationValidation;
+    using atmosmesh::SoilRawDirection;
+    const auto compiled = atmosmesh::compiled_soil_calibration();
+    TEST_ASSERT_FALSE(compiled.enabled);
+    TEST_ASSERT_EQUAL(SoilRawDirection::Unknown, compiled.direction);
+    TEST_ASSERT_EQUAL_INT(-1, compiled.dry_cutoff_raw);
+    TEST_ASSERT_EQUAL_INT(-1, compiled.acceptable_cutoff_raw);
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::Disabled,
+                      atmosmesh::validate_soil_calibration(compiled));
+
+    const atmosmesh::SoilCalibration higher{true, SoilRawDirection::HigherIsWetter, 200, 700};
+    const atmosmesh::SoilCalibration lower{true, SoilRawDirection::LowerIsWetter, 800, 300};
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::Valid,
+                      atmosmesh::validate_soil_calibration(higher));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::Valid,
+                      atmosmesh::validate_soil_calibration(lower));
+}
+
+void test_soil_calibration_rejects_unknown_range_equal_and_reversed_order() {
+    using atmosmesh::SoilCalibration;
+    using atmosmesh::SoilCalibrationValidation;
+    using atmosmesh::SoilRawDirection;
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidDirection,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::Unknown, 200, 700}));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidRange,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::HigherIsWetter, -1, 700}));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidRange,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::HigherIsWetter, 200, 1024}));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidOrder,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::HigherIsWetter, 500, 500}));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidOrder,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::HigherIsWetter, 700, 200}));
+    TEST_ASSERT_EQUAL(SoilCalibrationValidation::InvalidOrder,
+                      atmosmesh::validate_soil_calibration(
+                          SoilCalibration{true, SoilRawDirection::LowerIsWetter, 200, 700}));
+}
+
+void test_soil_classification_is_directional_and_keeps_zero_numeric() {
+    using atmosmesh::SoilCondition;
+    using atmosmesh::SoilRawDirection;
+    const atmosmesh::SoilCalibration higher{true, SoilRawDirection::HigherIsWetter, 200, 700};
+    TEST_ASSERT_EQUAL(SoilCondition::Dry,
+                      atmosmesh::classify_soil(higher, true, 0, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::Dry,
+                      atmosmesh::classify_soil(higher, true, 200, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::NeedsWatering,
+                      atmosmesh::classify_soil(higher, true, 201, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::Acceptable,
+                      atmosmesh::classify_soil(higher, true, 700, false).condition);
+
+    const atmosmesh::SoilCalibration lower{true, SoilRawDirection::LowerIsWetter, 800, 300};
+    TEST_ASSERT_EQUAL(SoilCondition::Dry,
+                      atmosmesh::classify_soil(lower, true, 1023, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::NeedsWatering,
+                      atmosmesh::classify_soil(lower, true, 799, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::Acceptable,
+                      atmosmesh::classify_soil(lower, true, 0, false).condition);
+}
+
+void test_soil_classification_fails_safe_before_or_without_valid_calibration() {
+    using atmosmesh::SoilCondition;
+    using atmosmesh::SoilRawDirection;
+    const atmosmesh::SoilCalibration disabled{false, SoilRawDirection::Unknown, -1, -1};
+    const atmosmesh::SoilCalibration invalid{true, SoilRawDirection::HigherIsWetter, 700, 200};
+    TEST_ASSERT_EQUAL(SoilCondition::Missing,
+                      atmosmesh::classify_soil(disabled, false, 0, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::Unclassified,
+                      atmosmesh::classify_soil(disabled, true, 214, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::Unclassified,
+                      atmosmesh::classify_soil(invalid, true, 214, false).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::AcquisitionFailed,
+                      atmosmesh::classify_soil(disabled, false, 0, true).condition);
+    TEST_ASSERT_EQUAL(SoilCondition::AcquisitionFailed,
+                      atmosmesh::classify_soil(disabled, true, 2048, false).condition);
+}
+
+void test_soil_led_priority_handles_system_mqtt_and_calibrated_soil() {
+    using atmosmesh::GroveLedReason;
+    using atmosmesh::GroveLedStatus;
+    using atmosmesh::SoilCondition;
+    atmosmesh::GroveLedInputs inputs{true, false, false, false, SoilCondition::Acceptable};
+
+    auto decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::Healthy, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilAcceptable, decision.reason);
+
+    inputs.mqtt_configured = true;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::MqttConfiguredOffline, decision.reason);
+    inputs.mqtt_up = true;
+    inputs.soil_condition = SoilCondition::Dry;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilDry, decision.reason);
+    inputs.soil_condition = SoilCondition::NeedsWatering;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::LocalOnly, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilNeedsWatering, decision.reason);
+    inputs.soil_condition = SoilCondition::Missing;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::LocalOnly, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilSampleMissing, decision.reason);
+    inputs.soil_condition = SoilCondition::Unclassified;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::LocalOnly, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilCalibrationNeeded, decision.reason);
+    inputs.soil_condition = SoilCondition::AcquisitionFailed;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::AcquisitionError, decision.reason);
+    inputs.soil_condition = SoilCondition::Acceptable;
+    inputs.core_sensors_ok = false;
+    inputs.acquisition_failed = true;
+    inputs.mqtt_up = false;
+    inputs.soil_condition = SoilCondition::Dry;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedReason::CoreSensorError, decision.reason);
+    inputs.core_sensors_ok = true;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedReason::AcquisitionError, decision.reason);
+}
+
+void test_soil_led_serial_diagnostic_is_raw_calibration_truth() {
+    using atmosmesh::SoilRawDirection;
+    const atmosmesh::SoilCalibration calibration{false, SoilRawDirection::Unknown, -1, -1};
+    const auto classification = atmosmesh::classify_soil(calibration, true, 214, false);
+    const auto decision = atmosmesh::grove_led_decision(
+        {true, false, false, false, classification.condition});
+    TEST_ASSERT_EQUAL_STRING(
+        "soil-led-status: amber reason=soil-calibration-needed raw=214 "
+        "calibration=disabled direction=unknown dry=unset acceptable=unset",
+        atmosmesh::soil_led_status_text(decision, classification, calibration).c_str());
+}
+
 void test_status_led_maps_health_and_polarity_deterministically() {
     using atmosmesh::GroveLedStatus;
     using atmosmesh::LedPolarity;
-
-    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault,
-                      atmosmesh::grove_led_status(false, false, false));
-    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault,
-                      atmosmesh::grove_led_status(true, true, true));
-    TEST_ASSERT_EQUAL(GroveLedStatus::LocalOnly,
-                      atmosmesh::grove_led_status(true, false, false));
-    TEST_ASSERT_EQUAL(GroveLedStatus::Healthy,
-                      atmosmesh::grove_led_status(true, false, true));
 
     auto levels = atmosmesh::grove_led_pin_levels(GroveLedStatus::SensorFault,
                                                    LedPolarity::CommonCathode);
@@ -524,6 +657,12 @@ void register_product_variant_tests() {
     RUN_TEST(test_grove_dns_and_tcp_share_one_bounded_connect_budget);
     RUN_TEST(test_aqua_dns_and_tcp_share_one_bounded_connect_budget);
     RUN_TEST(test_grove_oled_shows_raw_light_or_explicit_missing);
+    RUN_TEST(test_soil_calibration_defaults_disabled_and_validates_both_directions);
+    RUN_TEST(test_soil_calibration_rejects_unknown_range_equal_and_reversed_order);
+    RUN_TEST(test_soil_classification_is_directional_and_keeps_zero_numeric);
+    RUN_TEST(test_soil_classification_fails_safe_before_or_without_valid_calibration);
+    RUN_TEST(test_soil_led_priority_handles_system_mqtt_and_calibrated_soil);
+    RUN_TEST(test_soil_led_serial_diagnostic_is_raw_calibration_truth);
     RUN_TEST(test_status_led_maps_health_and_polarity_deterministically);
     RUN_TEST(test_soil_sampler_is_cooperative_bounded_and_accepts_raw_zero);
     RUN_TEST(test_soil_sampler_averages_and_fails_off_at_hard_timeout);
