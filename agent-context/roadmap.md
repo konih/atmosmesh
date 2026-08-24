@@ -32,7 +32,7 @@ the order or completion state of the RLS MVP above.
 | V1.5-6 | [V15-06](stories/V15-06.md) | Blocked | P1 | V15-04, V15-05 software contracts | Bi-color health LED and duty-cycled raw YL-38 ADC |
 | V1.5-7 | [V15-07](stories/V15-07.md) | Blocked | P1 | Operator visual confirmation | Descriptive four-row Grove OLED page |
 | V1.5-8 | [V15-08](stories/V15-08.md) | Blocked | P1 | Independent review + operator visual evidence | Reversible OLED/LED visual diagnostic image |
-| V1.5-9 | [V15-09](stories/V15-09.md) | Blocked | P1 | Independent review + controlled dry/wet evidence | Calibration-safe soil/system status LED |
+| V1.5-9 | [V15-09](stories/V15-09.md) | Blocked | P1 | Operator visual confirmation + controlled dry/wet evidence | Calibration-safe soil/system status LED |
 
 ## AtmosMesh Aqua variant
 

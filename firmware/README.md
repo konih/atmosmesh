@@ -246,6 +246,11 @@ two seconds before the reconnect backoff resumes local work.
 - Bi-color LED wiring was subsequently confirmed by the operator as D6 red / D0 green,
   common-anode: only the active-LOW/inverted diagnostic produced the intended colors. Soil
   calibration and its threshold-driven colors remain unvalidated.
+- Independently approved canonical head `8fca62d` was then flashed successfully. Serial reported
+  raw soil ADC 213 and logical amber with common-anode output levels `red=LOW green=LOW`, reason
+  `soil-calibration-needed`, calibration disabled, direction unknown and both thresholds unset.
+  This is logical policy/pin-drive evidence, not visible colour, physical power-off or calibration
+  evidence; those operator checks remain pending.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.
