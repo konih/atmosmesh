@@ -167,6 +167,17 @@
   conservative 30 s start-to-start interval, 100 ms settle and a small bounded averaged sample set,
   then turns power off immediately. MQTT transport work is deferred while the sensor is powered.
 
+### D-016 — Grove live OLED uses all four rows for descriptive measurements
+
+- **Status:** Accepted from operator display feedback, 2026-08-24.
+- **Page:** The 128×32 live page has no product/name row and no anonymous `D1B1` health bits. Its
+  four rows label DHT11 temperature/humidity, BMP180 pressure, raw RC light response in microseconds
+  and raw soil ADC respectively.
+- **Missing values:** Each missing value retains its metric label and is never rendered as numeric
+  zero. Serial diagnostics and the bi-color LED remain the detailed health channels.
+- **Boundary:** The page does not add BMP temperature to the public contract, convert light to lux,
+  convert soil to moisture, or change AtmosMesh v1.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

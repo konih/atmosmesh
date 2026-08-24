@@ -61,35 +61,55 @@ void test_grove_page_formats_valid_measurements() {
     readings.humidity = {true, 48.1F};
     readings.bmp_temperature = {true, 22.8F};
     readings.pressure = {true, 1013.2F};
+    readings.light = {true, 4321U};
+    readings.soil = {true, 512U};
 
     const auto lines = atmosmesh::grove_oled_lines(readings);
-    TEST_ASSERT_EQUAL_STRING("AtmosMesh Grove", lines[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("T 23.4C  H 48%", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("P 1013.2 hPa", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("L-----us S---- D1B1", lines[3].c_str());
+    TEST_ASSERT_EQUAL_STRING("T:23.4C RH:48%", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("P:1013.2hPa", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("Light:4321us", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("Soil:512", lines[3].c_str());
     for (const auto& line : lines) {
         TEST_ASSERT_LESS_OR_EQUAL_INT(21, static_cast<int>(line.size()));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("AtmosMesh"));
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("D1B1"));
     }
 }
 
 void test_grove_page_never_turns_missing_into_zero() {
     const auto lines = atmosmesh::grove_oled_lines({});
-    TEST_ASSERT_EQUAL_STRING("T --.-C  H --%", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("P ----.- hPa", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("L-----us S---- D0B0", lines[3].c_str());
-    TEST_ASSERT_EQUAL(std::string::npos, lines[1].find("0.0"));
-    TEST_ASSERT_EQUAL(std::string::npos, lines[2].find("0.0"));
+    TEST_ASSERT_EQUAL_STRING("T:-- RH:--", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("P:ERR", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("Light:--", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("Soil:--", lines[3].c_str());
+    for (const auto& line : lines) {
+        TEST_ASSERT_EQUAL(std::string::npos, line.find("0"));
+    }
 }
 
 void test_grove_partial_failure_is_explicit() {
     atmosmesh::GroveReadings readings{};
     readings.dht_temperature = {true, 0.0F};
     readings.humidity = {true, 0.0F};
+    readings.light = {true, 0U};
+    readings.soil = {true, 0U};
     const auto lines = atmosmesh::grove_oled_lines(readings);
-    TEST_ASSERT_EQUAL_STRING("T 0.0C  H 0%", lines[1].c_str());
-    TEST_ASSERT_EQUAL_STRING("P ----.- hPa", lines[2].c_str());
-    TEST_ASSERT_EQUAL_STRING("L-----us S---- D1B0", lines[3].c_str());
+    TEST_ASSERT_EQUAL_STRING("T:0.0C RH:0%", lines[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("P:ERR", lines[1].c_str());
+    TEST_ASSERT_EQUAL_STRING("Light:0us", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("Soil:0", lines[3].c_str());
     TEST_ASSERT_EQUAL_STRING("dht=ok bmp=error", atmosmesh::grove_health_text(readings).c_str());
+}
+
+void test_grove_page_names_each_missing_dht_metric_independently() {
+    atmosmesh::GroveReadings readings{};
+    readings.dht_temperature = {true, 25.0F};
+    TEST_ASSERT_EQUAL_STRING("T:25.0C RH:--",
+                             atmosmesh::grove_oled_lines(readings)[0].c_str());
+    readings.dht_temperature = {};
+    readings.humidity = {true, 36.0F};
+    TEST_ASSERT_EQUAL_STRING("T:-- RH:36%",
+                             atmosmesh::grove_oled_lines(readings)[0].c_str());
 }
 
 void test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers() {
@@ -102,8 +122,7 @@ void test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers() {
     atmosmesh::invalidate_grove_bmp(readings);
     TEST_ASSERT_FALSE(readings.bmp_temperature.valid);
     TEST_ASSERT_FALSE(readings.pressure.valid);
-    TEST_ASSERT_EQUAL_STRING("L-----us S---- D0B0",
-                             atmosmesh::grove_oled_lines(readings)[3].c_str());
+    TEST_ASSERT_EQUAL_STRING("P:ERR", atmosmesh::grove_oled_lines(readings)[1].c_str());
     TEST_ASSERT_EQUAL(atmosmesh::GroveBmpAction::Initialize,
                       atmosmesh::grove_bmp_action(true, false));
     TEST_ASSERT_EQUAL(atmosmesh::GroveBmpAction::Read,
@@ -195,12 +214,14 @@ void test_grove_oled_shows_raw_light_or_explicit_missing() {
     atmosmesh::GroveReadings readings{};
     readings.light = {true, 4321U};
     readings.soil = {true, 512U};
-    TEST_ASSERT_EQUAL_STRING("L4321us S512 D0B0",
-                             atmosmesh::grove_oled_lines(readings)[3].c_str());
+    auto lines = atmosmesh::grove_oled_lines(readings);
+    TEST_ASSERT_EQUAL_STRING("Light:4321us", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("Soil:512", lines[3].c_str());
     readings.light = {};
     readings.soil = {};
-    TEST_ASSERT_EQUAL_STRING("L-----us S---- D0B0",
-                             atmosmesh::grove_oled_lines(readings)[3].c_str());
+    lines = atmosmesh::grove_oled_lines(readings);
+    TEST_ASSERT_EQUAL_STRING("Light:--", lines[2].c_str());
+    TEST_ASSERT_EQUAL_STRING("Soil:--", lines[3].c_str());
 }
 
 void test_status_led_maps_health_and_polarity_deterministically() {
@@ -329,6 +350,7 @@ void register_product_variant_tests() {
     RUN_TEST(test_grove_page_formats_valid_measurements);
     RUN_TEST(test_grove_page_never_turns_missing_into_zero);
     RUN_TEST(test_grove_partial_failure_is_explicit);
+    RUN_TEST(test_grove_page_names_each_missing_dht_metric_independently);
     RUN_TEST(test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers);
     RUN_TEST(test_rc_light_policy_is_cooperative_and_reports_microseconds);
     RUN_TEST(test_rc_light_immediate_high_is_saturated_not_zero);

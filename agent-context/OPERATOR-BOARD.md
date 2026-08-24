@@ -4,7 +4,7 @@
 
 | Lane | Owner | Branch | Scope |
 | --- | --- | --- | --- |
-| — | — | — | No implementation lane currently active |
+| Grove descriptive OLED + MQTT sensor coverage | implement_grove_v15 | `codex/atmosmesh-grove-v1-5` | Replace cryptic OLED health bits/name with descriptive sensor rows and prove all fitted sensors remain in MQTT/discovery |
 
 ## PR open
 
