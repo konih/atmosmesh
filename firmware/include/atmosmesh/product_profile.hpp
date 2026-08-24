@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef ATMOSMESH_GROVE_LED_COMMON_ANODE
-#define ATMOSMESH_GROVE_LED_COMMON_ANODE 0
+#define ATMOSMESH_GROVE_LED_COMMON_ANODE 1
 #endif
 
 namespace atmosmesh {

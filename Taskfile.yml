@@ -59,6 +59,13 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-visual-diagnostic"
 
+  build-grove-common-cathode:
+    desc: Build Grove v1.5 for alternative common-cathode bi-color LED hardware
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-common-cathode"
+
   build-all:
     desc: Build every first-class AtmosMesh firmware product
     cmds:

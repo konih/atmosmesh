@@ -143,12 +143,31 @@
 
 - **Status:** Accepted from operator-installed wiring, 2026-08-24.
 - **Wiring:** Red=`D6`/GPIO12 and green=`D0`/GPIO16, each through its own approximately 330 Ω
-  resistor. Default is common-cathode (HIGH turns a channel on); build flag
-  `ATMOSMESH_GROVE_LED_COMMON_ANODE=1` selects common-anode (LOW turns a channel on). Startup must
-  state the compiled polarity and levels. No WS2812 library is used.
-- **Meaning:** Red means a core sensor or explicit acquisition fault. Amber (red+green) means core
-  sensors are valid but MQTT is offline or unconfigured. Green means core sensors and MQTT are
-  healthy. An uncalibrated/missing light or not-yet-sampled soil value alone is not a fault.
+  resistor. Physical diagnostic evidence confirmed the installed LED is common-anode (LOW turns a
+  channel on), so that is the canonical Grove default. An explicit build override selects
+  common-cathode (HIGH turns a channel on) for alternative hardware. Startup must state the
+  compiled polarity and levels. No WS2812 library is used.
+- **Meaning:** The physical color map remains red/amber/green; D-018 supersedes the original simple
+  health-only priority with calibration-safe soil/system semantics. Intentionally unconfigured MQTT
+  is neutral, while configured-but-offline MQTT is red.
+
+### D-018 — Grove soil LED status requires validated directional calibration
+
+- **Status:** Accepted from operator status request, 2026-08-24.
+- **Calibration:** Default is disabled: raw YL-38 ADC remains unclassified. Compile-time metadata
+  may enable calibration only with an explicit direction (`higher-is-wetter` or
+  `lower-is-wetter`) plus raw dry and acceptable cutoffs in 0..1023. Higher-is-wetter requires
+  `dry < acceptable`; lower-is-wetter requires `dry > acceptable`. Unknown direction,
+  out-of-range, equal or direction-inconsistent cutoffs are invalid and fail safe to amber.
+- **Classification:** At/beyond the dry cutoff in the dry direction is `dry`; strictly between
+  cutoffs is `needs-watering`; at/beyond the acceptable cutoff in the wet direction is
+  `acceptable`. Missing before a completed sample is amber; explicit acquisition failure is red.
+- **Priority:** Core sensor/acquisition error is red, then configured-but-offline MQTT is red, then
+  calibrated dry is red. Missing/unclassified/invalid/warning soil is amber. Calibrated acceptable
+  soil with otherwise healthy system is green. Intentionally unconfigured MQTT is neutral.
+- **Truth boundary:** Serial exposes `soil-led-status`, raw value, validation state, direction and
+  cutoffs. MQTT/HA continue publishing raw `soil_adc_raw` only—never moisture percentage/device
+  class. Thresholds remain disabled until operator measurements establish direction and cutoffs.
 
 ### D-015 — Grove soil is raw, PNP-switched and sampled every 30 seconds
 

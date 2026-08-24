@@ -16,6 +16,7 @@ this dashboard records what changes between sessions.
 | [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | LED and switched-rail electrical validation |
 | [V15-07](stories/V15-07.md) | Blocked | Replace cryptic Grove OLED rows with labelled measurements | Operator visual confirmation |
 | [V15-08](stories/V15-08.md) | Blocked | Add reversible Grove OLED/LED visual diagnostic | Independent review, then operator inspection |
+| [V15-09](stories/V15-09.md) | Blocked | Add calibration-safe Grove soil/system LED status | Independent review, then controlled dry/wet thresholds |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -30,10 +31,10 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 - Grove OLED initialization passes at 0x3C/128×32, but visible pixels are not yet confirmed.
 - Reviewed Grove head `4e4a820` is flashed. Serial proves uncalibrated D7 values of 420–492 µs, but
   bright/dark/saturation/timeout behavior and MQTT broker/HA receipt remain unvalidated.
-- Grove V15-06 serial again reports raw ADC 214 with `samples=5 power=off`. The latest runtime also
-  reports a green/healthy logical LED command and `mqtt: connected`, but visible LED colors/polarity,
-  broker/HA receipt, switched-rail voltage/current, physical power-off, probe calibration and OLED
-  pixels remain unconfirmed.
+- Grove V15-06 serial again reports raw ADC 214 with `samples=5 power=off`. The operator has now
+  confirmed the fitted D6 red / D0 green LED is common-anode; only active-LOW diagnostic output
+  produced the intended colors. Soil direction/threshold calibration, broker/HA receipt,
+  switched-rail voltage/current, physical power-off and OLED pixels remain unconfirmed.
 
 ## Next operator inputs
 
@@ -43,8 +44,9 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
 4. For Grove, visually confirm the flashed V15-07 four-labelled-measurement-row layout.
 5. Exercise the Grove LDR under bright/dark and saturation/timeout conditions.
-6. Verify the bi-color LED colors/polarity, YL switched-rail voltage/current and physical power-off,
-   then confirm MQTT broker/HA receipt and reconnect behavior.
+6. Measure controlled dry/wet raw soil values to establish direction and thresholds; verify the YL
+   switched-rail voltage/current and physical power-off, then confirm MQTT broker/HA receipt and
+   reconnect behavior.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
 

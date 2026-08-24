@@ -121,7 +121,8 @@ SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
 path are still ahead. Grove v1.5 hardware has runtime communication evidence for BMP180 and DHT11;
 OLED controller initialization passed but pixels need visual confirmation. Cooperative D7 RC light
 timing and Grove MQTT/HA discovery are implemented and host/build-tested. Reviewed Grove soil
-firmware has produced two raw ADC 214 cycles about 30 seconds apart; LED colors, switched-rail
+firmware has produced two raw ADC 214 cycles about 30 seconds apart. The installed D6 red / D0
+green LED is operator-confirmed common-anode; soil direction/threshold calibration, switched-rail
 electrical behavior, MQTT receipt and OLED pixels remain unconfirmed
 ([roadmap](agent-context/roadmap.md)).
 

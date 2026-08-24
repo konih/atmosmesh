@@ -119,13 +119,13 @@ Missing-address and initialization failures instead report `fill not-applied` wi
 
 At the same time, the installed D6 red / D0 green LED repeats two seconds red, two seconds green,
 two seconds amber (both channels), then two seconds off. Each transition reports the expected color
-and actual polarity-aware pin levels, for example the default common-cathode red phase:
+and actual polarity-aware pin levels. The installed/default common-anode red phase is:
 
 ```text
-visual-diagnostic-led: color=red D6=HIGH D0=LOW
+visual-diagnostic-led: color=red D6=LOW D0=HIGH
 ```
 
-Common-anode builds invert the actual levels while preserving the visible color sequence.
+The explicit common-cathode override inverts those levels while preserving the visible sequence.
 
 This is a reversible diagnostic, not a product default. Leave it running until the operator
 explicitly asks to restore normal firmware, then use a reviewed `task flash-v1-5`. A filled logical
@@ -143,26 +143,39 @@ charge time. Normal charge timing continues cooperatively on subsequent loop tic
 
 ### Bi-color health LED
 
-Default compiled wiring is common-cathode: red D6/GPIO12 and green D0/GPIO16 are active HIGH.
-Each channel requires its own approximately 330 Ω resistor. Define
-`ATMOSMESH_GROVE_LED_COMMON_ANODE=1` in the Grove build flags to invert both channels for a
-common-anode LED; startup prints the exact compiled polarity and HIGH/LOW levels. No WS2812 library
-is used.
-
-Common-anode verification build (does not flash):
+The installed and canonical Grove profile is common-anode: red D6/GPIO12 and green D0/GPIO16 are
+active LOW. Each channel requires its own approximately 330 Ω resistor. Startup prints the exact
+compiled polarity and HIGH/LOW levels. No WS2812 library is used. Alternative common-cathode
+hardware remains an explicit build-only override:
 
 ```bash
-PLATFORMIO_BUILD_FLAGS="-DATMOSMESH_GROVE_LED_COMMON_ANODE=1" task build-v1-5
+task build-grove-common-cathode
 ```
 
-| Color | Meaning |
-| --- | --- |
-| Red | DHT/BMP invalid, or an explicit light/soil acquisition timeout/failure |
-| Amber (red + green) | Core local sensors valid; MQTT offline or unconfigured |
-| Green | Core local sensors valid and MQTT connected |
+The normal LED priority is deterministic:
 
-A light/soil value that is merely uncalibrated, missing before its first sample, or immediately
-saturated does not by itself turn the LED red.
+| Priority | Color | Meaning |
+| ---: | --- | --- |
+| 1 | Red | DHT/BMP or explicit light/soil acquisition error |
+| 2 | Red | MQTT is configured but offline; intentionally unconfigured MQTT is neutral |
+| 3 | Red | Valid calibration classifies the raw soil value as dry |
+| 4 | Amber (red + green) | Soil sample missing, calibration disabled/invalid, or calibrated needs-watering band |
+| 5 | Green | Soil is calibrated acceptable and every higher-priority condition is healthy |
+
+A light value that is merely uncalibrated or immediately saturated does not by itself turn the LED
+red. Before the first soil sample, and after a valid raw sample without validated calibration, the
+LED stays amber rather than guessing moisture.
+
+Soil calibration is compile-time metadata and is disabled by default. The four macros are
+`ATMOSMESH_GROVE_SOIL_CALIBRATION_ENABLED` (`0`/`1`),
+`ATMOSMESH_GROVE_SOIL_RAW_DIRECTION` (`1` higher-is-wetter, `2` lower-is-wetter),
+`ATMOSMESH_GROVE_SOIL_DRY_CUTOFF_RAW`, and
+`ATMOSMESH_GROVE_SOIL_ACCEPTABLE_CUTOFF_RAW`. Both cutoffs must be raw ADC values in `0..1023`.
+Higher-is-wetter requires `dry < acceptable`; lower-is-wetter requires `dry > acceptable`.
+Unknown direction, out-of-range/equal cutoffs, or direction-inconsistent ordering fails safe to
+uncalibrated amber. Do not enable this until controlled dry/wet observations establish direction
+and thresholds. Serial reports `soil-led-status`, reason, raw value, validation, direction and
+cutoffs. MQTT and Home Assistant remain raw-only.
 
 ### YL-38 raw ADC and switched power
 
@@ -225,7 +238,9 @@ two seconds before the reconnect backoff resumes local work.
 - YL-38: serial showed two cycles about 30 seconds apart, each
   `soil: ok adc_raw=214 samples=5 power=off`. This proves raw acquisition and the firmware OFF action,
   not calibration, switched-rail voltage/current or physical power-off.
-- Bi-color LED colors and polarity remain visually unconfirmed.
+- Bi-color LED wiring was subsequently confirmed by the operator as D6 red / D0 green,
+  common-anode: only the active-LOW/inverted diagnostic produced the intended colors. Soil
+  calibration and its threshold-driven colors remain unvalidated.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.
