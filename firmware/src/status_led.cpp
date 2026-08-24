@@ -5,7 +5,7 @@
 namespace atmosmesh {
 
 GroveLedDecision grove_led_decision(const GroveLedInputs& inputs) {
-    if (!inputs.core_sensors_ok) {
+    if (inputs.core_acquisition_attempted && !inputs.core_sensors_ok) {
         return {GroveLedStatus::SensorFault, GroveLedReason::CoreSensorError};
     }
     if (inputs.acquisition_failed || inputs.soil_condition == SoilCondition::AcquisitionFailed) {

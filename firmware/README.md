@@ -162,6 +162,11 @@ The normal LED priority is deterministic:
 | 4 | Amber (red + green) | Soil sample missing, calibration disabled/invalid, or calibrated needs-watering band |
 | 5 | Green | Soil is calibrated acceptable and every higher-priority condition is healthy |
 
+A boot-time DHT/BMP value is unknown until the first acquisition attempt and is not itself an
+error: with MQTT intentionally unconfigured, the missing pre-soil state is amber. Once a DHT/BMP
+cycle has actually run, a missing core reading is red. Configured-but-offline MQTT retains its
+higher red priority even during startup.
+
 A light value that is merely uncalibrated or immediately saturated does not by itself turn the LED
 red. Before the first soil sample, and after a valid raw sample without validated calibration, the
 LED stays amber rather than guessing moisture.
