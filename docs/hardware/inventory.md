@@ -89,6 +89,14 @@ was okay. The OFF text proves the firmware action, not switched-rail voltage or 
 colors/polarity, physical power-off, probe calibration, MQTT broker/HA receipt and OLED pixels
 remain unconfirmed.
 
+On 2026-08-24, reviewed head `4e4a820` was flashed to the same ESP8266EX/26 MHz board: esptool
+wrote 310,224 bytes, verified the hash and hard-reset. More than 30 seconds of serial reported
+`mqtt: connected`, logical status `green/healthy`, DHT11 25.0 °C / 36% RH, BMP180
+25.3–25.7 °C / 982.1–982.4 hPa, raw light 420–492 µs and
+`soil: ok adc_raw=214 samples=5 power=off`; DHT/BMP/light health was okay. This does not prove
+broker-side receipt/HA entities, visible LED colour or polarity, visible OLED pixels/layout,
+switched-rail voltage/current, physical power-off or sensor calibration.
+
 ## USB identity of the connected controller (2026-08-14)
 
 Read-only `esptool` probe on `/dev/cu.usbserial-0001`. Nothing was flashed.
