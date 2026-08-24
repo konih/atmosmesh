@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+#include "atmosmesh/rc_light.hpp"
+
 namespace atmosmesh {
 
 struct Measurement {
@@ -15,6 +17,7 @@ struct GroveReadings {
     Measurement humidity{};
     Measurement bmp_temperature{};
     Measurement pressure{};
+    RcLightMeasurement light{};
 };
 
 enum class GroveBmpAction {

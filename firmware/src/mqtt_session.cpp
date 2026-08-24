@@ -1,6 +1,13 @@
 #include "atmosmesh/mqtt_session.hpp"
 
 namespace atmosmesh {
+namespace {
+
+const MqttProductContract& session_contract(const MqttSession& session) {
+    return session.contract == nullptr ? mqtt_v1_contract() : *session.contract;
+}
+
+}  // namespace
 
 void mqtt_session_reset_backoff(MqttSession& session) {
     session.backoff_ms = kMqttBackoffInitialMs;
@@ -35,8 +42,18 @@ void mqtt_session_note_connect(MqttSession& session) {
     mqtt_session_reset_backoff(session);
 }
 
+void mqtt_session_use_contract(MqttSession& session, const MqttProductContract& contract) {
+    session.contract = &contract;
+}
+
 void mqtt_session_queue_state(MqttSession& session, const MqttStationState& state) {
     session.pending_state = state;
+    session.pending_state_payload = mqtt_state_json(state);
+    session.state_pending = true;
+}
+
+void mqtt_session_queue_payload(MqttSession& session, std::string payload) {
+    session.pending_state_payload = std::move(payload);
     session.state_pending = true;
 }
 
@@ -57,9 +74,10 @@ std::vector<MqttPublishAction> mqtt_session_tick(MqttSession& session, unsigned 
     }
 
     if (!session.discovery_sent) {
-        const std::size_t count = mqtt_discovery_config_count();
+        const auto& contract = session_contract(session);
+        const std::size_t count = mqtt_discovery_config_count(contract);
         for (std::size_t i = 0; i < count; ++i) {
-            const auto cfg = mqtt_discovery_config_at(i);
+            const auto cfg = mqtt_discovery_config_at(contract, i);
             MqttPublishAction action;
             action.kind = MqttSessionActionKind::PublishDiscovery;
             action.topic = cfg.topic;
@@ -71,9 +89,10 @@ std::vector<MqttPublishAction> mqtt_session_tick(MqttSession& session, unsigned 
     }
 
     if (!session.online_sent) {
+        const auto& contract = session_contract(session);
         MqttPublishAction action;
         action.kind = MqttSessionActionKind::PublishAvailabilityOnline;
-        action.topic = kMqttAvailabilityTopic;
+        action.topic = contract.availability_topic;
         action.payload = kMqttAvailabilityOnline;
         action.retained = true;
         actions.push_back(std::move(action));
@@ -81,13 +100,17 @@ std::vector<MqttPublishAction> mqtt_session_tick(MqttSession& session, unsigned 
     }
 
     if (session.state_pending) {
+        const auto& contract = session_contract(session);
         MqttPublishAction action;
         action.kind = MqttSessionActionKind::PublishState;
-        action.topic = kMqttStateTopic;
-        action.payload = mqtt_state_json(session.pending_state);
+        action.topic = contract.state_topic;
+        action.payload = session.pending_state_payload.empty()
+                             ? mqtt_state_json(session.pending_state)
+                             : session.pending_state_payload;
         action.retained = false;
         actions.push_back(std::move(action));
         session.state_pending = false;
+        session.pending_state_payload.clear();
     }
 
     return actions;

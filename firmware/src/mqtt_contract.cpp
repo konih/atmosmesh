@@ -17,7 +17,7 @@ struct DiscoverySpec {
 
 // value_template returns HA `none` when valid is false so entities go unavailable,
 // not zero.
-constexpr DiscoverySpec kDiscoverySpecs[] = {
+constexpr DiscoverySpec kV1DiscoverySpecs[] = {
     {"sensor", "temperature", "Temperature", "temperature", "\u00B0C",
      "{{ value_json.temperature.value if value_json.temperature.valid else none }}"},
     {"sensor", "humidity", "Humidity", "humidity", "%",
@@ -36,6 +36,50 @@ constexpr DiscoverySpec kDiscoverySpecs[] = {
      "{{ 'ON' if value_json.motion.valid and value_json.motion.value else "
      "('OFF' if value_json.motion.valid else none) }}"},
 };
+
+constexpr DiscoverySpec kGroveDiscoverySpecs[] = {
+    {"sensor", "temperature_c", "Temperature", "temperature", "\u00B0C",
+     "{{ value_json.temperature_c | default(none) }}"},
+    {"sensor", "humidity_pct", "Humidity", "humidity", "%",
+     "{{ value_json.humidity_pct | default(none) }}"},
+    {"sensor", "pressure_hpa", "Pressure", "pressure", "hPa",
+     "{{ value_json.pressure_hpa | default(none) }}"},
+    {"sensor", "light_charge_us", "Uncalibrated RC Light Charge Time", nullptr, "µs",
+     "{{ value_json.light_charge_us | default(none) }}"},
+};
+
+constexpr MqttProductContract kV1Contract{
+    MqttProductKind::AtmosMeshV1,
+    kMqttDeviceId,
+    kMqttStationId,
+    kMqttDiscoveryNode,
+    "AtmosMesh 0001",
+    kMqttStateTopic,
+    kMqttAvailabilityTopic,
+};
+
+constexpr MqttProductContract kGroveContract{
+    MqttProductKind::AtmosMeshGroveV1_5,
+    "atmosmesh-grove-v1.5",
+    "atmosmesh-grove-0001",
+    "atmosmesh_grove_0001",
+    "AtmosMesh Grove 0001",
+    "home/air/atmosmesh-grove-0001/state",
+    "home/air/atmosmesh-grove-0001/availability",
+};
+
+struct DiscoverySpecRange {
+    const DiscoverySpec* specs;
+    std::size_t count;
+};
+
+DiscoverySpecRange discovery_specs(const MqttProductContract& contract) {
+    if (contract.kind == MqttProductKind::AtmosMeshGroveV1_5) {
+        return {kGroveDiscoverySpecs,
+                sizeof(kGroveDiscoverySpecs) / sizeof(kGroveDiscoverySpecs[0])};
+    }
+    return {kV1DiscoverySpecs, sizeof(kV1DiscoverySpecs) / sizeof(kV1DiscoverySpecs[0])};
+}
 
 void append_reading(std::string& out, const char* key, const MqttReading& reading,
                     const char* unit, bool with_comma) {
@@ -96,6 +140,19 @@ std::string json_escape(const char* text) {
     return out;
 }
 
+void append_optional_number(std::string& out, const char* key, const MqttReading& reading,
+                            const char* format) {
+    if (!reading.valid) {
+        return;
+    }
+    char value_buf[32];
+    std::snprintf(value_buf, sizeof(value_buf), format, static_cast<double>(reading.value));
+    out += ",\"";
+    out += key;
+    out += "\":";
+    out += value_buf;
+}
+
 }  // namespace
 
 std::string mqtt_state_json(const MqttStationState& state) {
@@ -118,37 +175,83 @@ std::string mqtt_state_json(const MqttStationState& state) {
     return out;
 }
 
+std::string grove_mqtt_state_json(const GroveMqttState& state) {
+    std::string out = "{\"station_id\":\"atmosmesh-grove-0001\",";
+    out += "\"product_id\":\"atmosmesh-grove-v1.5\"";
+    append_optional_number(out, "temperature_c", state.temperature_c, "%.1f");
+    append_optional_number(out, "humidity_pct", state.humidity_pct, "%.1f");
+    append_optional_number(out, "pressure_hpa", state.pressure_hpa, "%.1f");
+    append_optional_number(out, "light_charge_us", state.light_charge_us, "%.0f");
+    out += '}';
+    return out;
+}
+
+const MqttProductContract& mqtt_v1_contract() {
+    return kV1Contract;
+}
+
+const MqttProductContract& mqtt_grove_contract() {
+    return kGroveContract;
+}
+
+MqttWillConfig mqtt_will_config(const MqttProductContract& contract) {
+    return {contract.availability_topic, kMqttAvailabilityOffline, 0, true};
+}
+
 std::string mqtt_discovery_device_json() {
-    return "{\"identifiers\":[\"atmosmesh-v1\",\"atmosmesh-0001\"],"
-           "\"name\":\"AtmosMesh 0001\",\"model\":\"atmosmesh-v1\","
-           "\"manufacturer\":\"AtmosMesh\"}";
+    return mqtt_discovery_device_json(kV1Contract);
+}
+
+std::string mqtt_discovery_device_json(const MqttProductContract& contract) {
+    std::string out = "{\"identifiers\":[\"";
+    out += contract.product_id;
+    out += "\",\"";
+    out += contract.station_id;
+    out += "\"],\"name\":\"";
+    out += contract.display_name;
+    out += "\",\"model\":\"";
+    out += contract.product_id;
+    out += "\",\"manufacturer\":\"AtmosMesh\"}";
+    return out;
 }
 
 std::size_t mqtt_discovery_config_count() {
-    return sizeof(kDiscoverySpecs) / sizeof(kDiscoverySpecs[0]);
+    return mqtt_discovery_config_count(kV1Contract);
+}
+
+std::size_t mqtt_discovery_config_count(const MqttProductContract& contract) {
+    return discovery_specs(contract).count;
 }
 
 MqttDiscoveryConfig mqtt_discovery_config_at(std::size_t index) {
+    return mqtt_discovery_config_at(kV1Contract, index);
+}
+
+MqttDiscoveryConfig mqtt_discovery_config_at(const MqttProductContract& contract,
+                                             std::size_t index) {
     MqttDiscoveryConfig cfg{};
-    if (index >= mqtt_discovery_config_count()) {
+    const auto range = discovery_specs(contract);
+    if (index >= range.count) {
         cfg.component = "";
         cfg.object_id = "";
         return cfg;
     }
-    const DiscoverySpec& spec = kDiscoverySpecs[index];
+    const DiscoverySpec& spec = range.specs[index];
     cfg.component = spec.component;
     cfg.object_id = spec.object_id;
     cfg.topic = std::string(kMqttDiscoveryPrefix) + "/" + spec.component + "/" +
-                kMqttDiscoveryNode + "/" + spec.object_id + "/config";
+                contract.discovery_node + "/" + spec.object_id + "/config";
 
     std::string payload = "{";
     payload += "\"name\":\"";
     payload += spec.name;
     payload += "\",\"state_topic\":\"";
-    payload += kMqttStateTopic;
+    payload += contract.state_topic;
     payload += "\",\"availability_topic\":\"";
-    payload += kMqttAvailabilityTopic;
-    payload += "\",\"unique_id\":\"atmosmesh-0001_";
+    payload += contract.availability_topic;
+    payload += "\",\"unique_id\":\"";
+    payload += contract.station_id;
+    payload += '_';
     payload += spec.object_id;
     payload += "\",\"expire_after\":90";
     payload += ",\"value_template\":\"";
@@ -165,7 +268,7 @@ MqttDiscoveryConfig mqtt_discovery_config_at(std::size_t index) {
         payload += "\"";
     }
     payload += ",\"device\":";
-    payload += mqtt_discovery_device_json();
+    payload += mqtt_discovery_device_json(contract);
     payload += '}';
     cfg.payload = std::move(payload);
     return cfg;

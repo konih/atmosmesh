@@ -22,11 +22,14 @@ product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 s
 ```
 
 OLED initialization again passed but pixels remain visually unconfirmed. BMP180 passed four more
-samples at 24.6–24.7 °C / 984.3 hPa. DHT11 remained unavailable for all four cycles. AtmosMesh v1
-and the ESP32 were untouched.
+samples at 24.6–24.7 °C / 984.3 hPa. DHT11 was initially unavailable, then a later run produced
+32.0→31.0 °C / 32% RH on D5/GPIO14 while BMP180 reported 25.6 °C / 983.9–984.0 hPa. Treat this as
+communication evidence, not DHT accuracy/calibration. AtmosMesh v1 and the ESP32 were untouched.
 
 ## Next validation
 
-Do not flash again just to diagnose DHT11. Verify its actual DATA joint/pin, 3.3 V/GND orientation
-and 4.7–10 kΩ pull-up/module resistor; then capture valid samples and visually confirm the 128×32
-four-line layout. Do not begin V15-04 until the A0 divider and ADC/channel design are confirmed.
+V15-04/V15-05 now add the installed D7/GPIO13 bare-LDR RC response and Grove MQTT contract. The new
+image remains unflashed pending independent review. After review, validate raw light timing across
+bright/dark conditions, timeout behavior, the four-line OLED page, Wi-Fi/broker-loss recovery,
+retained availability and all four Home Assistant entities. A0 stays free for later YL-38 work;
+MAX4466 is dropped.

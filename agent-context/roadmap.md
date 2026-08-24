@@ -26,8 +26,10 @@ the order or completion state of the RLS MVP above.
 | ---: | --- | --- | --- | --- | --- |
 | V1.5-1 | [V15-01](stories/V15-01.md) | Done | P0 | — | ESP8266 identity and safe wiring contract recorded |
 | V1.5-2 | [V15-02](stories/V15-02.md) | Done | P0 | V15-01 | Shared multi-product firmware architecture builds both targets |
-| V1.5-3 | [V15-03](stories/V15-03.md) | Blocked | P0 | V15-02, DHT wiring and OLED visual confirmation | Identity, OLED, BMP180 and DHT11 validated on hardware |
-| V1.5-4 | [V15-04](stories/V15-04.md) | Planned | P2 | V15-03, ADC design | Soil, light and sound evaluated without false claims |
+| V1.5-3 | [V15-03](stories/V15-03.md) | Blocked | P0 | V15-02 and OLED visual confirmation | Identity, OLED, BMP180 and DHT11 validated on hardware |
+| V1.5-4 | [V15-04](stories/V15-04.md) | Blocked | P1 | Reviewed hardware validation | Bounded uncalibrated D7 RC light response |
+| V1.5-5 | [V15-05](stories/V15-05.md) | Blocked | P1 | Reviewed hardware/network validation | Grove MQTT state and Home Assistant discovery |
+| V1.5-6 | — | Planned | P2 | V15-04, approved A0/power design | YL-69/YL-38 evaluated without false claims |
 
 ## Milestones
 

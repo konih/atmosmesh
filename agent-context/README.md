@@ -10,7 +10,9 @@ this dashboard records what changes between sessions.
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
-| [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Fix DHT; confirm OLED pixels |
+| [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Confirm OLED pixels |
+| [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Review, flash, bright/dark/timeout evidence |
+| [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Review, flash, broker/HA/failure evidence |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -22,9 +24,9 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 - Shared-rail peak current (~650 mA) vs 700 mA module rating is unresolved.
 - MQ135 module output range has not been measured.
 - Firmware framework: PlatformIO (D-006). Cluster packaging still open (OQ-002).
-- Grove DHT11 returns unavailable on every observed cycle; DATA joint/pin, rail orientation and
-  pull-up/module resistor need physical verification.
 - Grove OLED initialization passes at 0x3C/128×32, but visible pixels are not yet confirmed.
+- Grove D7 RC light and MQTT/HA software gates pass, but the new image has not been independently
+  reviewed or flashed; no physical light/network behavior is claimed yet.
 
 ## Next operator inputs
 
@@ -32,16 +34,15 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
    BMP280, DHT22, SDS011 plus adapter/cable, MQ135, and the `5V07 / 12V04` AC/DC (AC pads vs DC pads).
 2. Enclose the AC/DC primary **before** applying 230 V. Measure DC out with no ESP32 attached.
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
-4. For Grove, inspect DHT11 DATA=D5/GPIO14, 3.3 V/GND and 4.7–10 kΩ pull-up/module resistor;
-   visually confirm whether the OLED shows the four-line page.
+4. For Grove, visually confirm whether the OLED shows the four-line page.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
 
 The separate **AtmosMesh Grove v1.5** board is an ESP8266EX with 4 MB flash. After authorization
 and independent review, the coordinator replaced its AT firmware with AtmosMesh Grove on
 2026-08-24. A second reviewed flash confirmed the explicit stable product ID at runtime. BMP180
-passed runtime sampling; OLED initialized at 0x3C but pixels need visual proof; DHT11 returned
-unavailable on every observed cycle. Details and next checks are in V15-03.
+passed runtime sampling; OLED initialized at 0x3C but pixels need visual proof. DHT11 later produced
+valid frames on D5/GPIO14 (communication pass only, not accuracy proof). Details are in V15-03.
 
 ## Key context
 

@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <string>
 
 #include <unity.h>
@@ -167,6 +168,98 @@ void test_session_reconnect_backoff_gates_attempts() {
     TEST_ASSERT_EQUAL_UINT32(4000, session.backoff_ms);
 }
 
+void test_grove_contract_uses_stable_ids_and_separate_topics() {
+    const auto& contract = atmosmesh::mqtt_grove_contract();
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-v1.5", contract.product_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-0001", contract.station_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh_grove_0001", contract.discovery_node);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-grove-0001/state", contract.state_topic);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-grove-0001/availability",
+                             contract.availability_topic);
+}
+
+void test_grove_will_is_retained_offline_on_product_availability_topic() {
+    const auto will = atmosmesh::mqtt_will_config(atmosmesh::mqtt_grove_contract());
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-grove-0001/availability", will.topic);
+    TEST_ASSERT_EQUAL_STRING("offline", will.payload);
+    TEST_ASSERT_EQUAL_INT(0, will.qos);
+    TEST_ASSERT_TRUE(will.retained);
+}
+
+void test_grove_state_omits_missing_light_but_preserves_valid_zero_environment() {
+    atmosmesh::GroveMqttState state{};
+    state.temperature_c = {0.0F, true, 0};
+    state.humidity_pct = {32.0F, true, 0};
+    state.pressure_hpa = {984.0F, true, 0};
+    state.light_charge_us = {0.0F, false, 0};
+
+    std::string json = atmosmesh::grove_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"station_id\":\"atmosmesh-grove-0001\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"product_id\":\"atmosmesh-grove-v1.5\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"temperature_c\":0.0"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"humidity_pct\":32.0"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"pressure_hpa\":984.0"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("light_charge_us"));
+
+    state.light_charge_us = {4321.0F, true, 0};
+    json = atmosmesh::grove_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"light_charge_us\":4321"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("lux"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("percent"));
+}
+
+void test_grove_discovery_has_exactly_four_truthful_entities() {
+    const auto& contract = atmosmesh::mqtt_grove_contract();
+    TEST_ASSERT_EQUAL_INT(4, static_cast<int>(atmosmesh::mqtt_discovery_config_count(contract)));
+    bool saw_light = false;
+    for (std::size_t i = 0; i < atmosmesh::mqtt_discovery_config_count(contract); ++i) {
+        const auto cfg = atmosmesh::mqtt_discovery_config_at(contract, i);
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.topic.find("atmosmesh_grove_0001"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find(contract.state_topic));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find(contract.availability_topic));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("atmosmesh-grove-0001_"));
+        TEST_ASSERT_LESS_THAN_UINT32(768U, static_cast<std::uint32_t>(cfg.payload.size()));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("lux"));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("illuminance"));
+        if (std::string(cfg.object_id) == "light_charge_us") {
+            saw_light = true;
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("Uncalibrated RC"));
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("µs"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("device_class"));
+        }
+    }
+    TEST_ASSERT_TRUE(saw_light);
+}
+
+void test_grove_session_replays_retained_discovery_and_availability_on_reconnect() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_use_contract(session, atmosmesh::mqtt_grove_contract());
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::GroveMqttState state{};
+    state.temperature_c = {31.0F, true, 0};
+    atmosmesh::mqtt_session_queue_payload(session, atmosmesh::grove_mqtt_state_json(state));
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 0);
+    TEST_ASSERT_EQUAL_INT(6, static_cast<int>(actions.size()));
+    for (std::size_t i = 0; i < 4; ++i) {
+        TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions[i].kind);
+        TEST_ASSERT_TRUE(actions[i].retained);
+    }
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
+                      actions[4].kind);
+    TEST_ASSERT_TRUE(actions[4].retained);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[5].kind);
+    TEST_ASSERT_FALSE(actions[5].retained);
+
+    atmosmesh::mqtt_session_note_disconnect(session, 1000);
+    atmosmesh::mqtt_session_note_connect(session);
+    actions = atmosmesh::mqtt_session_tick(session, 2000);
+    TEST_ASSERT_EQUAL_INT(5, static_cast<int>(actions.size()));
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions.front().kind);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
+                      actions.back().kind);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_mqtt_ids_and_topics_are_station_not_room);
@@ -176,5 +269,10 @@ int main() {
     RUN_TEST(test_session_does_not_publish_when_disconnected);
     RUN_TEST(test_session_publishes_discovery_online_then_state_on_connect);
     RUN_TEST(test_session_reconnect_backoff_gates_attempts);
+    RUN_TEST(test_grove_contract_uses_stable_ids_and_separate_topics);
+    RUN_TEST(test_grove_will_is_retained_offline_on_product_availability_topic);
+    RUN_TEST(test_grove_state_omits_missing_light_but_preserves_valid_zero_environment);
+    RUN_TEST(test_grove_discovery_has_exactly_four_truthful_entities);
+    RUN_TEST(test_grove_session_replays_retained_discovery_and_availability_on_reconnect);
     return UNITY_END();
 }

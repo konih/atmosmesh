@@ -42,6 +42,7 @@ tasks:
     desc: Build AtmosMesh Grove v1.5 (`pio run -e atmosmesh-grove-v1_5`)
     dir: firmware
     cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5"
 
   build-all:
@@ -71,6 +72,7 @@ tasks:
     desc: Upload Grove v1.5 to ESP_PORT; replaces installed AT firmware; use reviewed image only
     dir: firmware
     cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5 -t upload --upload-port {{.ESP_PORT}}"
 
   flash:

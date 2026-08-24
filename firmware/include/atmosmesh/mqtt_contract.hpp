@@ -43,6 +43,28 @@ struct MqttStationState {
     MqttBoolReading motion;
 };
 
+struct GroveMqttState {
+    MqttReading temperature_c;
+    MqttReading humidity_pct;
+    MqttReading pressure_hpa;
+    MqttReading light_charge_us;
+};
+
+enum class MqttProductKind {
+    AtmosMeshV1,
+    AtmosMeshGroveV1_5,
+};
+
+struct MqttProductContract {
+    MqttProductKind kind;
+    const char* product_id;
+    const char* station_id;
+    const char* discovery_node;
+    const char* display_name;
+    const char* state_topic;
+    const char* availability_topic;
+};
+
 struct MqttDiscoveryConfig {
     const char* component;  // "sensor" or "binary_sensor"
     const char* object_id;
@@ -50,10 +72,25 @@ struct MqttDiscoveryConfig {
     std::string payload;
 };
 
+struct MqttWillConfig {
+    const char* topic;
+    const char* payload;
+    int qos;
+    bool retained;
+};
+
 std::string mqtt_state_json(const MqttStationState& state);
+std::string grove_mqtt_state_json(const GroveMqttState& state);
+const MqttProductContract& mqtt_v1_contract();
+const MqttProductContract& mqtt_grove_contract();
+MqttWillConfig mqtt_will_config(const MqttProductContract& contract);
 std::string mqtt_discovery_device_json();
+std::string mqtt_discovery_device_json(const MqttProductContract& contract);
 std::size_t mqtt_discovery_config_count();
+std::size_t mqtt_discovery_config_count(const MqttProductContract& contract);
 MqttDiscoveryConfig mqtt_discovery_config_at(std::size_t index);
+MqttDiscoveryConfig mqtt_discovery_config_at(const MqttProductContract& contract,
+                                             std::size_t index);
 
 bool mqtt_payload_mentions_forbidden_room(std::string_view text);
 bool mqtt_payload_mentions_forbidden_gas_label(std::string_view text);
