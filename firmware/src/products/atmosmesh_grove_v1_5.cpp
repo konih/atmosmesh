@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "atmosmesh/grove_mqtt_runtime.hpp"
+#include "atmosmesh/grove_visual_diagnostic.hpp"
 #include "atmosmesh/grove_status.hpp"
 #include "atmosmesh/product_profile.hpp"
 #include "atmosmesh/rc_light.hpp"
@@ -34,6 +35,12 @@ bool bmp_ready = false;
 bool led_status_initialized = false;
 atmosmesh::GroveLedStatus last_led_status = atmosmesh::GroveLedStatus::SensorFault;
 unsigned long last_sample_ms = 0;
+atmosmesh::GroveVisualLedState visual_led_state{};
+
+constexpr bool visual_diagnostic_active() {
+    return atmosmesh::compiled_grove_visual_mode() ==
+           atmosmesh::GroveVisualMode::OledFillAndLedCycle;
+}
 
 bool i2c_address_present(std::uint8_t address) {
     Wire.beginTransmission(address);
@@ -50,7 +57,9 @@ int find_oled_address() {
 }
 
 void render() {
-    if (!oled_ready) {
+    const auto render_action =
+        atmosmesh::grove_oled_render_action(oled_ready, atmosmesh::compiled_grove_visual_mode());
+    if (render_action != atmosmesh::GroveOledRenderAction::RenderLiveMeasurements) {
         return;
     }
     const auto lines = atmosmesh::grove_oled_lines(readings);
@@ -127,6 +136,20 @@ void update_status_led(bool force = false) {
     }
 }
 
+void apply_visual_diagnostic_led_step(const atmosmesh::GroveVisualLedStep& step) {
+    if (!step.changed) {
+        return;
+    }
+    const auto levels = atmosmesh::grove_visual_led_levels(step.phase, led_polarity());
+    write_pin_level(profile.status_led_red_gpio, levels.red_high);
+    write_pin_level(profile.status_led_green_gpio, levels.green_high);
+    Serial.println(atmosmesh::grove_visual_led_transition_text(step.phase, levels).c_str());
+}
+
+void update_visual_diagnostic_led(unsigned long now_ms) {
+    apply_visual_diagnostic_led_step(atmosmesh::grove_visual_led_tick(visual_led_state, now_ms));
+}
+
 void publish_grove_state() {
     atmosmesh::GroveMqttState state{};
     state.temperature_c = {readings.dht_temperature.value, readings.dht_temperature.valid, 0};
@@ -188,6 +211,18 @@ void setup_oled() {
     oled_ready = oled.begin();
     Serial.printf("oled: %s addr=0x%02X geometry=%dx%d\n", oled_ready ? "ok" : "error",
                   address, profile.oled_width_px, profile.oled_height_px);
+    if (atmosmesh::grove_oled_render_action(oled_ready,
+                                            atmosmesh::compiled_grove_visual_mode()) ==
+        atmosmesh::GroveOledRenderAction::HoldFullAreaFill) {
+        oled.clearBuffer();
+        oled.setDrawColor(1);
+        oled.drawBox(0, 0, profile.oled_width_px, profile.oled_height_px);
+        oled.sendBuffer();
+        Serial.println(atmosmesh::grove_oled_mode_banner(atmosmesh::compiled_grove_visual_mode(),
+                                                         profile.oled_width_px,
+                                                         profile.oled_height_px)
+                           .c_str());
+    }
 }
 
 void setup_bmp180() {
@@ -308,7 +343,12 @@ void setup() {
     pinMode(profile.light_rc_gpio, INPUT);
     Serial.println("dht11: initialized; first read follows minimum interval");
     atmosmesh::grove_mqtt_runtime_begin();
-    update_status_led(true);
+    if (visual_diagnostic_active()) {
+        apply_visual_diagnostic_led_step(
+            atmosmesh::grove_visual_led_begin(visual_led_state, millis()));
+    } else {
+        update_status_led(true);
+    }
     render();
     last_sample_ms = millis();
 }
@@ -330,6 +370,10 @@ void loop() {
             atmosmesh::soil_sampler_power_active(soil_state))) {
         atmosmesh::grove_mqtt_runtime_tick(now);
     }
-    update_status_led();
+    if (visual_diagnostic_active()) {
+        update_visual_diagnostic_led(now);
+    } else {
+        update_status_led();
+    }
     yield();
 }

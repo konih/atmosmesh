@@ -91,6 +91,42 @@ Every sensor cycle probes BMP180 address 0x77: loss immediately invalidates the 
 return triggers reinitialization before a value can become valid again. Serial startup identifies
 the product/station, exact pins, GPIO0 warning and every init/read state.
 
+### Temporary OLED/LED visual diagnostic
+
+The canonical `task build-v1-5` image always keeps the four live sensor rows above. For an operator
+measurement of the physical active area and installed bi-color LED, an explicit temporary image
+compiles `ATMOSMESH_GROVE_VISUAL_DIAGNOSTIC=1`:
+
+```bash
+task build-grove-visual-diagnostic
+# After independent review and explicit authorization only:
+ESP_PORT=/dev/cu.usbserial-0001 task flash-grove-visual-diagnostic
+ESP_PORT=/dev/cu.usbserial-0001 task monitor-grove-visual-diagnostic
+```
+
+After successful OLED initialization, that image fills the complete logical 128×32 framebuffer
+with ON pixels and suppresses every later live-page redraw while sensors, LED and networking keep
+running. Serial confirms the selected image with:
+
+```text
+oled-diagnostic: full-area active geometry=128x32 pixels=all-on
+```
+
+At the same time, the installed D6 red / D0 green LED repeats two seconds red, two seconds green,
+two seconds amber (both channels), then two seconds off. Each transition reports the expected color
+and actual polarity-aware pin levels, for example the default common-cathode red phase:
+
+```text
+visual-diagnostic-led: color=red D6=HIGH D0=LOW
+```
+
+Common-anode builds invert the actual levels while preserving the visible color sequence.
+
+This is a reversible diagnostic, not a product default. Leave it running until the operator
+explicitly asks to restore normal firmware, then use a reviewed `task flash-v1-5`. A filled logical
+framebuffer and commanded LED levels do not by themselves prove the size/condition of the physical
+lit area or the visible LED colors.
+
 The LDR is uncalibrated digital RC timing: firmware discharges D7 for 1 ms, releases it as an input,
 then advances a cooperative time-to-high state machine with a 200 ms hard timeout. A valid
 `light_charge_us` value is raw microseconds and **lower means brighter**. Immediate/saturated,
@@ -268,6 +304,7 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `src/grove_mqtt_runtime.cpp` | Thin ESP8266WiFi/PubSubClient Grove transport (excluded from native) |
 | `include/atmosmesh/product_profile.hpp` | Host-tested identity and explicit pin/geometry metadata for both products |
 | `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
+| `src/grove_visual_diagnostic.cpp` | Host-tested temporary OLED-fill and LED-cycle policy/logging |
 | `src/rc_light.cpp` | Host-tested cooperative RC discharge/time-to-high policy |
 | `src/soil_sampler.cpp` | Host-tested cooperative active-low power/sample/fail-off policy |
 | `src/status_led.cpp` | Host-tested health/color/polarity mapping |

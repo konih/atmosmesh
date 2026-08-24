@@ -15,6 +15,7 @@ this dashboard records what changes between sessions.
 | [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Broker/HA/reconnect evidence |
 | [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | LED and switched-rail electrical validation |
 | [V15-07](stories/V15-07.md) | Blocked | Replace cryptic Grove OLED rows with labelled measurements | Operator visual confirmation |
+| [V15-08](stories/V15-08.md) | Blocked | Add reversible Grove OLED/LED visual diagnostic | Independent review, then operator inspection |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers

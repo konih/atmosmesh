@@ -4,7 +4,7 @@
 
 | Lane | Owner | Branch | Scope |
 | --- | --- | --- | --- |
-| — | — | — | No implementation lane currently claimed |
+| Grove OLED + LED visual diagnostic | implement_grove_v15 | `codex/grove-oled-fill-test` | Reversible all-pixels-on OLED plus red/green/amber/off LED test image |
 
 ## PR open
 
