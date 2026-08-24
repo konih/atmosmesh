@@ -7,6 +7,7 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | Component | Intended role | Supply | Interface | Verification status |
 | --- | --- | --- | --- | --- |
 | ESP-WROOM-32 devboard | Controller, Wi-Fi, MQTT | Station: `VIN`/`5V` from the 5 V rail. Bench: USB until PSU is enclosed and measured | 3.3-V GPIO | USB probe 2026-08-14: ESP32-D0WDQ6 rev 1.0, 4 MB flash, CP2102, MAC `ac:67:b2:37:26:78`. `VIN`/`5V` silkscreen still pending |
+| ESP8266EX / ESP8266MOD, NodeMCU-style D labels | **AtmosMesh Grove v1.5** controller | USB; fitted modules from `3V3` | 3.3-V GPIO | Read-only probe 2026-08-23: ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader responds and installed AT firmware answers `OK`. Do not flash without explicit authorization |
 | SDS011 (Nova; board often labelled d011v2) | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART2 9600 8N1, 3.3-V TTL | **GPIO16/17 only.** Never RX0/TX0 (GPIO3/1) |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
@@ -15,6 +16,25 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | MQ135 module | Experimental gas trend | 5 V heater | Analog through divider | Bench 10 kΩ series + 20 kΩ to GND on GPIO34. Never label as CO₂ |
 | Open AC/DC `5V07 / 12V04` | Candidate station 5 V rail | 230 V AC primary | DC output unverified | **Must measure** before use. Family is 5 V/700 mA *or* 12 V/~400 mA. Open mains PCB — enclose first. See [power.md](power.md) |
 | SANMIM SM-PLG06A / SM-104-3.3V-02 | Spare 3.3 V AC/DC | 230 V AC primary | 3.3 V | Not required for MVP; do not parallel with ESP32 `3V3`. Open mains PCB |
+
+## AtmosMesh Grove v1.5 — fitted 3.3 V slice (2026-08-24)
+
+This is a separate ESP8266 product variant, not a replacement for the ESP32 station above.
+
+| Component | Interface | Grove wiring | Status |
+| --- | --- | --- | --- |
+| 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | Operator reports wired; runtime not yet tested |
+| BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | Operator reports wired; runtime not yet tested |
+| Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | Module is wired; DATA pin follows the agreed profile but still needs physical verification |
+
+`D3` is ESP8266 GPIO0, a boot strap. It must remain high during reset; if the I²C bus or a
+module pulls it low, the board enters ROM download mode. Firmware preserves the actual wiring with
+`Wire.begin(4, 0)` and logs the constraint rather than silently assigning another pin.
+
+YL-69/YL-38, the uncalibrated LDR and MAX4466 are inventory candidates only. They are not fitted
+or supported by the first Grove image. The bare ESP8266 ADC is 0–1.0 V, some devboards add a
+divider, and there is only one ADC channel; confirm the exact board input circuit before connecting
+any of their analog outputs.
 
 ## USB identity of the connected controller (2026-08-14)
 

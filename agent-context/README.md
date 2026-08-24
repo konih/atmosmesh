@@ -3,13 +3,14 @@
 Committed live context for humans and coding agents. Stable constraints live in `../AGENTS.md`;
 this dashboard records what changes between sessions.
 
-**Last updated:** 2026-08-14
+**Last updated:** 2026-08-24
 
 ## Active work
 
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
+| [V15-03](stories/V15-03.md) | Blocked | Validate Grove OLED/BMP180/DHT11 on hardware | Explicit authorization to replace AT firmware |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -30,6 +31,10 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
+
+The separate **AtmosMesh Grove v1.5** board was probed read-only as an ESP8266EX with 4 MB flash
+and working AT firmware. Its 3.3 V OLED/BMP180/DHT11 software slice is documented in V15-01–03.
+Do not flash it without explicit operator authorization: doing so replaces its current AT firmware.
 
 ## Key context
 

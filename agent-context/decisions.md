@@ -70,6 +70,42 @@
   MQ135 stays `gas_index`, never CO₂.
 - **Supersedes:** Draft `home/air/wohnzimmer/…` topic candidates in older architecture notes.
 
+### D-008 — AtmosMesh Grove is the ESP8266 AtmosMesh v1.5 variant
+
+- **Status:** Accepted (operator, 2026-08-24).
+- **Identity:** Product name **AtmosMesh Grove**, product variant `atmosmesh-v1.5`. Device identity
+  remains ID-based (default `atmosmesh-grove-0001`), never a room name.
+- **Architecture:** ESP32 and ESP8266 have thin target-specific entrypoints and profiles. Pure
+  health/display/domain utilities are shared and native-tested; the ESP8266 application is not a
+  copy of the ESP32 hardware stack.
+- **Boundary:** This first Grove slice measures DHT11 temperature/humidity and BMP180 pressure/
+  temperature and renders a 128×32 SSD1306 display. It does not claim ESP32-only sensors.
+
+### D-009 — Grove v1.5 wiring and boot constraint
+
+- **Status:** Accepted from operator wiring plus read-only board probe, 2026-08-23/24.
+- **Controller evidence:** ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader and existing AT
+  firmware respond. NodeMCU-style D labels are used.
+- **I²C:** OLED and BMP180 share SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0. Firmware must explicitly call
+  `Wire.begin(4, 0)` and target the 128×32 display. All three modules use 3.3 V.
+- **Boot caveat:** `D3`/GPIO0 is a boot strap and must remain high during reset. The present wiring
+  is documented, not silently changed. If the bus or a module holds it low, the ESP8266 enters its
+  ROM download mode instead of starting AtmosMesh.
+- **DHT11 assumption:** DATA=`D5`/GPIO14 follows the agreed wiring proposal but has not been
+  physically re-verified. It is a named profile constant, not an implicit library default.
+- **Flashing:** Current AT firmware is preserved until the operator explicitly authorizes flashing.
+
+### D-010 — Grove analog sensors are deferred
+
+- **Status:** Accepted.
+- **Scope:** YL-69/YL-38 soil probe, uncalibrated LDR and MAX4466 microphone are follow-on work;
+  they are not described as fitted or working in the first Grove image.
+- **ADC constraint:** ESP8266 has one ADC channel. The bare chip input range is 0–1.0 V, while some
+  NodeMCU-style boards add an input divider. The exact board circuit must be confirmed before any
+  analog output is connected or an ADC architecture is selected.
+- **Claims:** LDR and microphone values remain relative unless calibrated. YL-69 corrosion control
+  requires switched power; the three analog sources must never be tied together.
+
 ## Open decisions
 
 ### OQ-001 — Firmware framework

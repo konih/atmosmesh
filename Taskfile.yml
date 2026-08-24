@@ -38,6 +38,12 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev"
 
+  build-grove:
+    desc: Build AtmosMesh Grove v1.5 for the 4 MB ESP8266 (`pio run -e esp8266-grove`)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove"
+
   flash:
     desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). OLED SDA is GPIO5, SCL GPIO4.
     dir: firmware
@@ -45,8 +51,20 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}"
 
+  flash-grove:
+    desc: Upload Grove to ESP_PORT; DESTRUCTIVE to its installed AT firmware; authorization required
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove -t upload --upload-port {{.ESP_PORT}}"
+
   monitor:
     desc: Serial monitor 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  monitor-grove:
+    desc: Serial monitor for AtmosMesh Grove at 115200 on ESP_PORT
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
@@ -72,3 +90,9 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t clean"
+
+  clean-grove:
+    desc: Clean AtmosMesh Grove ESP8266 build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove -t clean"
