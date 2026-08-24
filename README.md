@@ -118,8 +118,9 @@ the breadboard.
 
 AtmosMesh v1 bench firmware drives the OLED (U8g2 SSD1306 ALT0), BMP280, AM2302,
 SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
-path are still ahead. Grove v1.5 software builds, but its physical sensor/display validation is
-still pending ([roadmap](agent-context/roadmap.md)).
+path are still ahead. Grove v1.5 is installed: BMP180 passed runtime sampling, OLED controller
+initialization passed but pixels need visual confirmation, and DHT11 remains blocked on unavailable
+reads and physical wiring/pull-up checks ([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors
 

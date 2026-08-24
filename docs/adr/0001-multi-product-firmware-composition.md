@@ -1,6 +1,6 @@
 # ADR-0001: Multi-product firmware composition
 
-- **Status:** Proposed
+- **Status:** Accepted after independent review
 - **Date:** 2026-08-24
 - **Owners:** AtmosMesh maintainers
 
@@ -106,3 +106,12 @@ stories. No big-bang rewrite is required to accept this ADR.
 - PlatformIO verbose/source-filter inspection confirms each device environment selects exactly one
   product composition root.
 - `task check` and `git diff --check` pass; no flash is required to validate this structural ADR.
+
+### Evidence — 2026-08-24
+
+- Independent review approved the product composition, filters, compatibility aliases and ADR at
+  head `a681990` before hardware upload.
+- The full native/canonical/compatibility gate matrix passed as recorded in V15-02.
+- The coordinator then built/flashed the canonical Grove target and observed the expected
+  `AtmosMesh Grove` / `atmosmesh-v1.5` / `atmosmesh-grove-0001` boot identity. AtmosMesh v1 and its
+  ESP32 hardware were untouched. Hardware sensor results belong to V15-03, not this ADR.

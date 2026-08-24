@@ -6,4 +6,4 @@ later marked **Superseded** rather than rewritten when the architecture changes.
 
 | ADR | Status | Decision |
 | --- | --- | --- |
-| [0001](0001-multi-product-firmware-composition.md) | Proposed | Compose multiple firmware products from one PlatformIO project and shared core |
+| [0001](0001-multi-product-firmware-composition.md) | Accepted | Compose multiple firmware products from one PlatformIO project and shared core |
