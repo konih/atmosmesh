@@ -1,7 +1,13 @@
 # Firmware
 
-PlatformIO + Arduino on `esp32dev` (ESP32-WROOM-32). Host tests run on the `native` environment
-and do not need the board.
+PlatformIO + Arduino builds two product variants from one project:
+
+- **AtmosMesh v1** on `esp32dev`: the full ESP32 station hardware stack.
+- **AtmosMesh Grove v1.5** on `esp8266-grove`: a focused ESP8266 OLED/BMP180/DHT11 variant.
+
+Each target has a thin hardware entrypoint selected by PlatformIO source filters. Pure profiles,
+health states and display formatting live under `include/atmosmesh/` and are exercised by the same
+`native` host tests; Grove is not a wholesale copy of the ESP32 application.
 
 ## Commands
 
@@ -13,9 +19,41 @@ From `firmware/` (only after `scripts/with-agent-python` or the venv `bin` is fi
 ```bash
 pio test -e native          # host unit tests (required)
 pio run -e esp32dev         # build device image
+pio run -e esp8266-grove    # build Grove v1.5 image
 pio run -e esp32dev -t upload --upload-port /dev/cu.usbserial-0001
 pio device monitor --port /dev/cu.usbserial-0001 --baud 115200
 ```
+
+From the repository root use `task build` for ESP32 and `task build-grove` for Grove. The explicit
+`task flash-grove` command exists for later bring-up, but **must not be run without operator
+authorization**: uploading AtmosMesh replaces the board's currently working AT firmware.
+
+## AtmosMesh Grove v1.5 wiring
+
+The default ID is `atmosmesh-grove-0001`; IDs remain device-based, never room names. A read-only
+probe found an ESP8266EX with a 26 MHz crystal and 4 MB flash. The NodeMCU-style profile is:
+
+| Device | Module pin | ESP8266MOD | Notes |
+| --- | --- | --- | --- |
+| SSD1306 128×32 | SDA | `D2` / GPIO4 | I²C 0x3C, then 0x3D fallback |
+| SSD1306 128×32 | SCL | `D3` / GPIO0 | Shared bus; boot-strap caveat below |
+| BMP180 | SDA | `D2` / GPIO4 | I²C 0x77 |
+| BMP180 | SCL | `D3` / GPIO0 | Shared bus |
+| DHT11 | DATA | `D5` / GPIO14 | Agreed profile assumption; verify the physical joint |
+| All modules | VCC/GND | `3V3` / GND | Never power their GPIO pull-ups from 5 V |
+
+Firmware deliberately calls `Wire.begin(4, 0)`; it does not silently rewrite the physical wiring.
+`D3` is GPIO0, an ESP8266 boot strap. It must stay **HIGH during reset**. If a module or fault holds
+SCL low, the board enters the ROM downloader rather than starting AtmosMesh. Moving SCL to D1/GPIO5
+is a possible later hardware revision, not the v1.5 wiring implemented here.
+
+The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
+explicit DHT/BMP health. Missing or failed samples render as dashes plus `ERR`, never numeric zero.
+Serial startup identifies the product/station, exact pins, GPIO0 warning and every init/read state.
+
+YL-69/YL-38 soil, the LDR and MAX4466 are deferred. They are not claimed as fitted or working.
+There is one ADC channel, and the exact board-level A0 divider is unverified, so no analog output
+should be attached until V15-04 approves its voltage and channel-sharing design.
 
 ## Bench OLED wiring (D-001)
 
@@ -91,8 +129,11 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `src/mqtt_contract.cpp` | Host-testable MQTT topics, state JSON, HA discovery payloads |
 | `src/mqtt_session.cpp` | Host-testable reconnect backoff and publish sequencing |
 | `src/mqtt_runtime.cpp` | ESP32-only async Wi-Fi + `esp_mqtt` (excluded from native) |
+| `include/atmosmesh/product_profile.hpp` | Host-tested Grove product identity and explicit pin/geometry profile |
+| `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
 | `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
-| `src/main.cpp` | Bring-up: U8g2 OLED, BMP280, VEML7700, AM2302, SDS011 UART2, MQ135 ADC, PIR/beeper, MQTT |
+| `src/main.cpp` | Thin ESP32 v1 entrypoint: full station hardware stack |
+| `src/grove_main.cpp` | Thin ESP8266 Grove v1.5 entrypoint: shared I²C OLED/BMP180 and DHT11 |
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |
 

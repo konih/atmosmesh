@@ -16,6 +16,19 @@ for an unfinished MVP story.
 | — | [RLS-09](stories/RLS-09.md) | Optional | P3 | Confirmed NDIR sensor, RLS-08 | True CO₂ measurement |
 | — | [RLS-10](stories/RLS-10.md) | Optional | P3 | RLS-08 | Evaluate 480×320 TFT separately |
 
+## AtmosMesh Grove v1.5 variant
+
+This is a separate ESP8266 product variant. It reuses shared, host-tested domain and display
+utilities; it does not copy the ESP32 station's complete hardware stack. Its work does not change
+the order or completion state of the RLS MVP above.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| V1.5-1 | [V15-01](stories/V15-01.md) | Done | P0 | — | ESP8266 identity and safe wiring contract recorded |
+| V1.5-2 | [V15-02](stories/V15-02.md) | Done | P0 | V15-01 | Shared multi-variant firmware architecture builds both targets |
+| V1.5-3 | [V15-03](stories/V15-03.md) | Blocked | P0 | V15-02, flash authorization | OLED, BMP180 and DHT11 validated on physical hardware |
+| V1.5-4 | [V15-04](stories/V15-04.md) | Planned | P2 | V15-03, ADC design | Soil, light and sound evaluated without false claims |
+
 ## Milestones
 
 ### M1 — Hardware approved
