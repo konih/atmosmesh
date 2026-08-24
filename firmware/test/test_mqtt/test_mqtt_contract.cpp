@@ -158,6 +158,36 @@ void test_session_publishes_discovery_online_then_state_on_connect() {
     TEST_ASSERT_TRUE(saw_state);
 }
 
+void test_esp_publish_message_id_clears_only_successfully_queued_state() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::MqttStationState state{};
+    state.temperature = {21.5F, true, 10};
+    atmosmesh::mqtt_session_queue_state(session, state);
+
+    atmosmesh::mqtt_session_note_publish_result(
+        session, atmosmesh::MqttSessionActionKind::PublishState, -1);
+    TEST_ASSERT_TRUE(session.state_pending);
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 100);
+    bool replayed_state = false;
+    for (const auto& action : actions) {
+        replayed_state = replayed_state ||
+                         action.kind == atmosmesh::MqttSessionActionKind::PublishState;
+    }
+    TEST_ASSERT_TRUE(replayed_state);
+
+    // ESP-MQTT documents QoS 0 success as message id zero; positive ids are also success.
+    atmosmesh::mqtt_session_note_publish_result(
+        session, atmosmesh::MqttSessionActionKind::PublishState, 0);
+    TEST_ASSERT_FALSE(session.state_pending);
+
+    atmosmesh::mqtt_session_queue_state(session, state);
+    atmosmesh::mqtt_session_note_publish_result(
+        session, atmosmesh::MqttSessionActionKind::PublishState, 42);
+    TEST_ASSERT_FALSE(session.state_pending);
+}
+
 void test_session_reconnect_backoff_gates_attempts() {
     atmosmesh::MqttSession session{};
     atmosmesh::mqtt_session_note_disconnect(session, 1000);
@@ -331,6 +361,7 @@ int main() {
     RUN_TEST(test_backoff_doubles_until_cap);
     RUN_TEST(test_session_does_not_publish_when_disconnected);
     RUN_TEST(test_session_publishes_discovery_online_then_state_on_connect);
+    RUN_TEST(test_esp_publish_message_id_clears_only_successfully_queued_state);
     RUN_TEST(test_session_reconnect_backoff_gates_attempts);
     RUN_TEST(test_grove_contract_uses_stable_ids_and_separate_topics);
     RUN_TEST(test_grove_will_is_retained_offline_on_product_availability_topic);

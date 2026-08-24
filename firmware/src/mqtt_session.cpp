@@ -65,6 +65,13 @@ void mqtt_session_note_publish_success(MqttSession& session, MqttSessionActionKi
     session.pending_state_payload.clear();
 }
 
+void mqtt_session_note_publish_result(MqttSession& session, MqttSessionActionKind kind,
+                                      int message_id) {
+    if (message_id >= 0) {
+        mqtt_session_note_publish_success(session, kind);
+    }
+}
+
 bool mqtt_session_should_attempt_reconnect(const MqttSession& session, unsigned long now_ms) {
     if (session.mqtt_connected) {
         return false;

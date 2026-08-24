@@ -98,6 +98,12 @@ network/broker loss leaves local sensing and OLED work active.
 Soil is an uncalibrated ADC count with no moisture device class or percent claim. Pending state
 survives earlier discovery/availability failures, including the optional soil value.
 
+The shared session separates planning a state action from acknowledging transport acceptance.
+PubSubClient acknowledgement follows its successful boolean result; ESP-MQTT acknowledgement
+follows a nonnegative publish message ID (`0` is QoS 0 success, `-1` is failure). A failed publish
+therefore remains pending for retry instead of being lost, while an accepted state is not emitted on
+every firmware loop tick.
+
 ## Deployment responsibilities
 
 - Declarative, reproducible configuration.
