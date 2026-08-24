@@ -48,6 +48,16 @@ RcLightStep rc_light_tick(RcLightState& state, std::uint32_t now_us, bool input_
     return {};
 }
 
+RcLightStep rc_light_note_released_level(RcLightState& state, bool input_high) {
+    if (state.phase != RcLightPhase::Charging || !input_high) {
+        return {};
+    }
+    state.phase = RcLightPhase::Complete;
+    state.status = RcLightStatus::Saturated;
+    state.measurement = {};
+    return {RcLightPinAction::None, true};
+}
+
 bool rc_light_active(const RcLightState& state) {
     return state.phase == RcLightPhase::Discharging || state.phase == RcLightPhase::Charging;
 }

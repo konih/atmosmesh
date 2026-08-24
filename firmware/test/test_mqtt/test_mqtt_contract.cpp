@@ -250,6 +250,7 @@ void test_grove_session_replays_retained_discovery_and_availability_on_reconnect
     TEST_ASSERT_TRUE(actions[4].retained);
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[5].kind);
     TEST_ASSERT_FALSE(actions[5].retained);
+    atmosmesh::mqtt_session_note_publish_success(session, actions[5].kind);
 
     atmosmesh::mqtt_session_note_disconnect(session, 1000);
     atmosmesh::mqtt_session_note_connect(session);
@@ -258,6 +259,32 @@ void test_grove_session_replays_retained_discovery_and_availability_on_reconnect
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions.front().kind);
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
                       actions.back().kind);
+}
+
+void test_pending_state_survives_failure_before_state_publish_and_clears_only_on_success() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_use_contract(session, atmosmesh::mqtt_grove_contract());
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::GroveMqttState state{};
+    state.temperature_c = {22.0F, true, 0};
+    atmosmesh::mqtt_session_queue_payload(session, atmosmesh::grove_mqtt_state_json(state));
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 0);
+    TEST_ASSERT_TRUE(session.state_pending);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions.front().kind);
+
+    // Transport fails on discovery before it reaches the state action.
+    atmosmesh::mqtt_session_note_disconnect(session, 10);
+    TEST_ASSERT_TRUE(session.state_pending);
+    atmosmesh::mqtt_session_note_connect(session);
+    actions = atmosmesh::mqtt_session_tick(session, 20);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions.back().kind);
+    TEST_ASSERT_TRUE(session.state_pending);
+
+    atmosmesh::mqtt_session_note_publish_success(
+        session, atmosmesh::MqttSessionActionKind::PublishState);
+    TEST_ASSERT_FALSE(session.state_pending);
+    TEST_ASSERT_TRUE(session.pending_state_payload.empty());
 }
 
 int main() {
@@ -274,5 +301,6 @@ int main() {
     RUN_TEST(test_grove_state_omits_missing_light_but_preserves_valid_zero_environment);
     RUN_TEST(test_grove_discovery_has_exactly_four_truthful_entities);
     RUN_TEST(test_grove_session_replays_retained_discovery_and_availability_on_reconnect);
+    RUN_TEST(test_pending_state_survives_failure_before_state_publish_and_clears_only_on_success);
     return UNITY_END();
 }

@@ -57,6 +57,14 @@ void mqtt_session_queue_payload(MqttSession& session, std::string payload) {
     session.state_pending = true;
 }
 
+void mqtt_session_note_publish_success(MqttSession& session, MqttSessionActionKind kind) {
+    if (kind != MqttSessionActionKind::PublishState) {
+        return;
+    }
+    session.state_pending = false;
+    session.pending_state_payload.clear();
+}
+
 bool mqtt_session_should_attempt_reconnect(const MqttSession& session, unsigned long now_ms) {
     if (session.mqtt_connected) {
         return false;
@@ -109,8 +117,6 @@ std::vector<MqttPublishAction> mqtt_session_tick(MqttSession& session, unsigned 
                              : session.pending_state_payload;
         action.retained = false;
         actions.push_back(std::move(action));
-        session.state_pending = false;
-        session.pending_state_payload.clear();
     }
 
     return actions;

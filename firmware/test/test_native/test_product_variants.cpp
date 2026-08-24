@@ -4,6 +4,7 @@
 #include <unity.h>
 
 #include "atmosmesh/grove_status.hpp"
+#include "atmosmesh/grove_mqtt_runtime.hpp"
 #include "atmosmesh/product_profile.hpp"
 #include "atmosmesh/rc_light.hpp"
 
@@ -127,14 +128,28 @@ void test_rc_light_policy_is_cooperative_and_reports_microseconds() {
 void test_rc_light_immediate_high_is_saturated_not_zero() {
     atmosmesh::RcLightState state{};
     atmosmesh::rc_light_begin(state, 0U);
-    atmosmesh::rc_light_tick(state, atmosmesh::kRcLightDischargeUs, false);
-    const auto step = atmosmesh::rc_light_tick(state, atmosmesh::kRcLightDischargeUs, true);
+    const auto release =
+        atmosmesh::rc_light_tick(state, atmosmesh::kRcLightDischargeUs, false);
+    TEST_ASSERT_EQUAL(atmosmesh::RcLightPinAction::ReleaseInput, release.pin_action);
+    // The hardware caller samples D7 synchronously after applying ReleaseInput. A line that is
+    // already HIGH at that point is saturated even though a later loop tick cannot have elapsed=0.
+    const auto step = atmosmesh::rc_light_note_released_level(state, true);
     TEST_ASSERT_TRUE(step.completed);
     TEST_ASSERT_EQUAL(atmosmesh::RcLightStatus::Saturated, state.status);
     TEST_ASSERT_FALSE(state.measurement.valid);
     TEST_ASSERT_EQUAL_UINT32(0U, state.measurement.charge_us);
     TEST_ASSERT_EQUAL_STRING("light: unavailable saturated/immediate",
                              atmosmesh::rc_light_serial_text(state).c_str());
+}
+
+void test_grove_dns_and_tcp_share_one_bounded_connect_budget() {
+    TEST_ASSERT_EQUAL_UINT32(1000U, atmosmesh::kGroveMqttTransportConnectBudgetMs);
+    TEST_ASSERT_EQUAL_UINT32(
+        750U, atmosmesh::grove_mqtt_connect_budget_remaining_ms(1000U, 1250U));
+    TEST_ASSERT_EQUAL_UINT32(
+        0U, atmosmesh::grove_mqtt_connect_budget_remaining_ms(1000U, 2000U));
+    TEST_ASSERT_EQUAL_UINT32(
+        0U, atmosmesh::grove_mqtt_connect_budget_remaining_ms(1000U, 2500U));
 }
 
 void test_rc_light_timeout_is_unavailable_and_never_zero() {
@@ -185,5 +200,6 @@ void register_product_variant_tests() {
     RUN_TEST(test_rc_light_immediate_high_is_saturated_not_zero);
     RUN_TEST(test_rc_light_timeout_is_unavailable_and_never_zero);
     RUN_TEST(test_rc_light_rejects_high_first_seen_after_hard_timeout);
+    RUN_TEST(test_grove_dns_and_tcp_share_one_bounded_connect_budget);
     RUN_TEST(test_grove_oled_shows_raw_light_or_explicit_missing);
 }

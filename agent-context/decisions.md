@@ -133,7 +133,9 @@
   ESP8266WiFi/PubSubClient remains a thin product transport. Existing ESP32 wrappers and runtime
   behavior stay intact.
 - **Failure behavior:** Missing credentials or network/broker loss must not stop local sensors/OLED.
-  Reconnect attempts use bounded backoff; secrets remain generated and gitignored.
+  Reconnect attempts use bounded backoff. DNS plus TCP share a 1000 ms transport budget and the
+  MQTT response wait is separately bounded to one second. Pending state clears only after its state
+  publish succeeds, not when an action is merely planned. Secrets remain generated and gitignored.
 
 ## Additional accepted decision
 

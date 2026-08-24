@@ -16,7 +16,32 @@
 namespace atmosmesh {
 namespace {
 
-WiFiClient network_client;
+class BoundedWiFiClient final : public WiFiClient {
+   public:
+    int connect(const char* host, std::uint16_t port) override {
+        const std::uint32_t started_ms = millis();
+        IPAddress remote_address;
+        if (!WiFi.hostByName(host, remote_address, kGroveMqttTransportConnectBudgetMs)) {
+            return 0;
+        }
+        const std::uint32_t remaining_ms =
+            grove_mqtt_connect_budget_remaining_ms(started_ms, millis());
+        if (remaining_ms == 0U) {
+            return 0;
+        }
+        setTimeout(remaining_ms);
+        const int result = WiFiClient::connect(remote_address, port);
+        setTimeout(kGroveMqttTransportConnectBudgetMs);
+        return result;
+    }
+
+    int connect(IPAddress address, std::uint16_t port) override {
+        setTimeout(kGroveMqttTransportConnectBudgetMs);
+        return WiFiClient::connect(address, port);
+    }
+};
+
+BoundedWiFiClient network_client;
 PubSubClient mqtt_client(network_client);
 MqttSession session{};
 bool enabled = false;
@@ -35,6 +60,7 @@ bool apply_actions(const std::vector<MqttPublishAction>& actions, unsigned long 
             mqtt_session_note_disconnect(session, now_ms);
             return false;
         }
+        mqtt_session_note_publish_success(session, action.kind);
     }
     return true;
 }
@@ -90,7 +116,7 @@ bool grove_mqtt_runtime_begin() {
     mqtt_client.setSocketTimeout(1);
     mqtt_client.setBufferSize(768);
     Serial.println("wifi: asynchronous connection started");
-    Serial.println("mqtt: reconnect backoff=1..30s socket-timeout=1s");
+    Serial.println("mqtt: reconnect backoff=1..30s DNS+TCP-budget=1000ms response-timeout=1s");
     return true;
 #endif
 }

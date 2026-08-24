@@ -79,6 +79,10 @@ then advances a cooperative time-to-high state machine with a 200 ms hard timeou
 timeout or disconnected states are unavailable. A0 remains free for a later YL-38 analog design;
 YL-69/YL-38 is not implemented, and MAX4466 has been dropped.
 
+The firmware samples D7 synchronously immediately after changing it from driven-low to input. If
+the released line is already HIGH, that cycle is saturated/unavailable rather than a small plausible
+charge time. Normal charge timing continues cooperatively on subsequent loop ticks.
+
 ### Grove MQTT contract
 
 With generated credentials present, the Grove transport uses ESP8266WiFi and pinned PubSubClient
@@ -95,7 +99,10 @@ and sensors/OLED continue.
 State omits invalid values, so missing is distinct from a valid numeric zero. The light entity is
 named **Uncalibrated RC Light Charge Time**, uses `µs`, and has no illuminance device class. Every
 connect replays discovery, followed by retained online availability and any pending state. Broker
-retries back off from 1 to 30 seconds; the socket timeout is bounded to one second.
+retries back off from 1 to 30 seconds. DNS lookup and TCP connection share a 1000 ms transport
+budget instead of the ESP8266 core's roughly five-second default. PubSubClient's subsequent MQTT
+response wait is separately bounded to one second, so a complete failed attempt can occupy roughly
+two seconds before the reconnect backoff resumes local work.
 
 ### Controlled hardware result (2026-08-24)
 
