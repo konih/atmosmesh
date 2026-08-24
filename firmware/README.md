@@ -37,9 +37,9 @@ device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the 
 `build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases.
 
 After explicit authorization and independent review, the coordinator flashed AtmosMesh Grove on
-2026-08-24. The former AT firmware was replaced. The later RC-light/MQTT image described below has
-not been flashed. The newer LED/soil image also remains software-only; physical validation waits
-for fresh independent review and a coordinator upload.
+2026-08-24. The former AT firmware was replaced. Reviewed head `c880afe`, including RC light, MQTT,
+LED and soil support, was later flashed successfully. Serial/raw sampling evidence is described
+below; visual, electrical and broker-side validation remains incomplete.
 
 ## AtmosMesh Grove v1.5 wiring
 
@@ -160,9 +160,12 @@ two seconds before the reconnect backoff resumes local work.
 - BMP180: runtime passed repeatedly; latest paired observation was 25.6 °C / 983.9–984.0 hPa.
 - DHT11: later reported 32.0 °C / 32% RH then 31.0 °C / 32% RH on D5/GPIO14. This proves
   communication, not accuracy or calibration.
-- RC light and Grove MQTT: software/native/build validation only; no hardware claim yet.
-- Bi-color LED and YL-38: the operator physically wired the LED, 2N3906 switch and divided A0
-  circuit; software/native/build validation exists, but runtime behavior is not yet validated.
+- RC light: serial showed uncalibrated 389–452 µs values; controlled bright/dark/saturation/timeout
+  response remains pending. MQTT broker/HA receipt and reconnect behavior are not yet validated.
+- YL-38: serial showed two cycles about 30 seconds apart, each
+  `soil: ok adc_raw=214 samples=5 power=off`. This proves raw acquisition and the firmware OFF action,
+  not calibration, switched-rail voltage/current or physical power-off.
+- Bi-color LED colors and polarity remain visually unconfirmed.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.

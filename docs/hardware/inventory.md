@@ -26,9 +26,9 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | **Initialization pass:** `oled: ok addr=0x3C geometry=128x32`; pixels not visually confirmed |
 | BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** repeated; latest four samples, 24.6–24.7 °C and 984.3 hPa |
 | Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Communication pass:** valid frames observed (32.0→31.0 °C, 32% RH); not accuracy/calibration evidence |
-| Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | Installed; software/native build pass, hardware timing pending. Raw µs only, lower means brighter; never lux/percent |
+| Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | **Runtime communication pass:** 389–452 µs observed. Bright/dark/saturation/timeout response pending; raw µs only, lower means brighter, never lux/percent |
 | Bi-color LED | Two digital channels | Red=`D6`/GPIO12, green=`D0`/GPIO16; separate ~330 Ω resistors | Installed per operator correction. Default common-cathode; compiled common-anode inversion available. Hardware color/polarity validation pending |
-| YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; 100 nF (`104`) A0→GND; DO unused | Wired by operator; raw ADC only. Software policy/build pass; runtime sampling pending |
+| YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; 100 nF (`104`) A0→GND; DO unused | **Runtime raw pass:** two cycles about 30 s apart, each ADC 214 averaged from five samples. No calibration claim |
 | 2N3906 PNP high-side switch | YL-38 VCC control | Emitter=3V3, collector=YL VCC, base=`D1`/GPIO5 through 2.2 kΩ, 100 kΩ base-emitter pull-up | Confirmed alternative physically wired by operator; active LOW, fail-safe OFF |
 
 ### Controlled Grove flash and boot (2026-08-24)
@@ -79,9 +79,15 @@ or write began, so zero bytes from `e5d83e1` reached the board and its prior fir
 At that point `ls /dev/cu.*` showed no USB serial device and ioreg showed hubs only. Reconnect and
 confirm the serial port before retrying light/MQTT validation.
 
-The USB serial device later reappeared, but V15-06 implementation remains unflashed pending fresh
-independent review. The operator has since wired the confirmed 2N3906 high-side circuit, but no
-firmware containing the soil feature has been flashed or validated on that circuit yet.
+The USB serial device later reappeared. After independent approval of head `c880afe`, the
+coordinator ran `ESP_PORT=/dev/cu.usbserial-0001 task flash-v1-5`. Esptool identified ESP8266EX,
+26 MHz crystal and MAC `2c:3a:e8:43:7c:16`, wrote 310,288 bytes, verified the hash and hard-reset.
+More than 60 seconds of 115200-baud serial contained two soil cycles about 30 seconds apart, both
+exactly `soil: ok adc_raw=214 samples=5 power=off`. DHT11 was stable at 25.0 °C / 36–37% RH,
+BMP180 at 24.4–24.5 °C / 982.6–982.8 hPa, uncalibrated light at 389–452 µs and core sensor health
+was okay. The OFF text proves the firmware action, not switched-rail voltage or current. LED
+colors/polarity, physical power-off, probe calibration, MQTT broker/HA receipt and OLED pixels
+remain unconfirmed.
 
 ## USB identity of the connected controller (2026-08-14)
 

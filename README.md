@@ -120,9 +120,9 @@ AtmosMesh v1 bench firmware drives the OLED (U8g2 SSD1306 ALT0), BMP280, AM2302,
 SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
 path are still ahead. Grove v1.5 hardware has runtime communication evidence for BMP180 and DHT11;
 OLED controller initialization passed but pixels need visual confirmation. Cooperative D7 RC light
-timing and Grove MQTT/HA discovery are implemented and host/build-tested but await reviewed hardware
-validation. The status LED/soil extension is pending fresh review and runtime validation; the
-operator has wired its confirmed 2N3906 PNP high-side switch
+timing and Grove MQTT/HA discovery are implemented and host/build-tested. Reviewed Grove soil
+firmware has produced two raw ADC 214 cycles about 30 seconds apart; LED colors, switched-rail
+electrical behavior, MQTT receipt and OLED pixels remain unconfirmed
 ([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors
