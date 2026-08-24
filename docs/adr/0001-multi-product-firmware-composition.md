@@ -112,6 +112,8 @@ stories. No big-bang rewrite is required to accept this ADR.
 - Independent review approved the product composition, filters, compatibility aliases and ADR at
   head `a681990` before hardware upload.
 - The full native/canonical/compatibility gate matrix passed as recorded in V15-02.
-- The coordinator then built/flashed the canonical Grove target and observed the expected
-  `AtmosMesh Grove` / `atmosmesh-v1.5` / `atmosmesh-grove-0001` boot identity. AtmosMesh v1 and its
-  ESP32 hardware were untouched. Hardware sensor results belong to V15-03, not this ADR.
+- The coordinator then built/flashed the canonical Grove target and observed display name
+  `AtmosMesh Grove`, variant `atmosmesh-v1.5` and station ID `atmosmesh-grove-0001`. That reviewed
+  head did not emit the stable product ID separately. A follow-up test/build fixes the contract to
+  add `product_id=atmosmesh-grove-v1.5`; hardware capture remains pending. AtmosMesh v1 and its ESP32
+  were untouched. Hardware sensor results belong to V15-03, not this ADR.
