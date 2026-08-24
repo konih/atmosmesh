@@ -10,7 +10,7 @@
 
 | Lane | PR | State | Hardware follow-up |
 | --- | --- | --- | --- |
-| Grove OLED/LED diagnostic + calibrated soil-status policy | [#4](https://github.com/konih/atmosmesh/pull/4) | Review change addressed; fresh independent review pending | After approval, controlled dry/wet measurements before enabling thresholds; no flash occurred in V15-09 |
+| Grove OLED/LED diagnostic + calibrated soil-status policy | [#4](https://github.com/konih/atmosmesh/pull/4) | Independently approved; reviewed head flashed and serial policy pass recorded | Operator visual confirmation plus controlled dry/wet measurements before enabling thresholds |
 
 ## Integrated
 

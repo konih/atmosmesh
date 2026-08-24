@@ -101,6 +101,13 @@ The later operator visual diagnostic established that the fitted D6 red / D0 gre
 common-anode (active LOW). Raw soil ADC 214 is still not a moisture classification: calibration
 direction and dry/warning/acceptable cutoffs remain unset pending controlled measurements.
 
+Reviewed canonical head `8fca62d` was subsequently flashed on 2026-08-24. Esptool wrote 480,976
+bytes and verified the image. Serial reported raw soil ADC 213 from five samples, followed by
+logical common-anode amber (`red=LOW green=LOW`) because calibration was disabled, direction was
+unknown and thresholds were unset. This validates the firmware policy and logical pin drive only;
+visible LED colour, physical power-off and controlled dry/wet calibration references remain
+pending.
+
 ## USB identity of the connected controller (2026-08-14)
 
 Read-only `esptool` probe on `/dev/cu.usbserial-0001`. Nothing was flashed.

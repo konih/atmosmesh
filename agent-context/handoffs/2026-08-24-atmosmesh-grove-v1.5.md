@@ -74,5 +74,16 @@ common-cathode build. A host-tested calibration policy keeps raw soil unclassifi
 explicit direction and ordered raw dry/acceptable cutoffs are valid. Core/acquisition errors and
 configured-offline MQTT take red priority; calibrated dry is red, needs-watering is amber, and only
 calibrated acceptable plus healthy system state is green. MQTT/HA remain raw-only. All 104 native
-tests and the complete product/compatibility/polarity/diagnostic build matrix pass. No V15-09 image
-was flashed; independent review and controlled dry/wet measurements are next.
+tests and the complete product/compatibility/polarity/diagnostic build matrix pass. A later review
+regression brought the suite to 105 tests by distinguishing unknown-before-first-acquisition from
+a real core failure.
+
+After independent approval of head `8fca62d`, the coordinator flashed the canonical Grove image on
+2026-08-24. Esptool wrote 480,976 bytes, verified the hash and hard-reset the ESP8266EX/26 MHz
+target. Serial over more than 30 seconds showed DHT11 26.0 °C / 35–37% RH, BMP180
+26.1–26.3 °C / 981.5–981.6 hPa, raw light 393–401 µs and one soil cycle at ADC 213 from five
+samples with software `power=off`. The resulting diagnostics reported logical common-anode amber
+with both outputs LOW and `soil-calibration-needed`, calibration disabled, unknown direction and
+unset thresholds. This is a runtime policy/drive-level pass, not visible LED-colour, physical
+power-off or calibration evidence. Operator visual confirmation and controlled dry/wet references
+remain pending.

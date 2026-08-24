@@ -16,7 +16,7 @@ this dashboard records what changes between sessions.
 | [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | LED and switched-rail electrical validation |
 | [V15-07](stories/V15-07.md) | Blocked | Replace cryptic Grove OLED rows with labelled measurements | Operator visual confirmation |
 | [V15-08](stories/V15-08.md) | Blocked | Add reversible Grove OLED/LED visual diagnostic | Independent review, then operator inspection |
-| [V15-09](stories/V15-09.md) | Blocked | Add calibration-safe Grove soil/system LED status | Independent review, then controlled dry/wet thresholds |
+| [V15-09](stories/V15-09.md) | Blocked | Add calibration-safe Grove soil/system LED status | Visual confirmation and controlled dry/wet thresholds |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -35,6 +35,10 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
   confirmed the fitted D6 red / D0 green LED is common-anode; only active-LOW diagnostic output
   produced the intended colors. Soil direction/threshold calibration, broker/HA receipt,
   switched-rail voltage/current, physical power-off and OLED pixels remain unconfirmed.
+- Reviewed V15-09 head `8fca62d` is now flashed. Serial proves the canonical profile drove logical
+  common-anode amber (`red=LOW green=LOW`) for raw soil ADC 213 with calibration disabled. Visible
+  colour for this canonical run, physical power-off and dry/wet calibration references remain
+  operator-unconfirmed.
 
 ## Next operator inputs
 
