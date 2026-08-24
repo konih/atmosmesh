@@ -2,12 +2,10 @@
 
 ## In flight
 
-| Lane | Owner | Branch | Scope |
-| --- | --- | --- | --- |
-| Grove light + MQTT | implementation agent | `codex/atmosmesh-grove-v1-5` | Add bounded D7 RC light measurement and Grove MQTT/HA publication without affecting AtmosMesh v1 |
+_None._
 
 ## PR open
 
 | Lane | PR | State | Hardware follow-up |
 | --- | --- | --- | --- |
-| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Reopened for installed light sensor and Grove MQTT | DHT11 now returns valid values; light/MQTT validation pending |
+| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Product diff independently approved at `e5d83e1`; CI green | Reconnect ESP8266 USB serial, then flash/validate light and MQTT; last attempt opened no port and wrote no bytes |
