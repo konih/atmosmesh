@@ -4,10 +4,16 @@
 
 | Lane | Owner | Branch | Scope |
 | --- | --- | --- | --- |
-| Grove OLED + LED visual diagnostic | implement_grove_v15 | `codex/grove-oled-fill-test` | Reversible all-pixels-on OLED plus red/green/amber/off LED test image |
+| — | — | — | No implementation lane currently claimed |
 
 ## PR open
 
 | Lane | PR | State | Hardware follow-up |
 | --- | --- | --- | --- |
-| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Product diff approved and CI green; latest evidence docs need fresh review | Head `4e4a820` flashed; serial runtime passed. OLED pixels, visible LED colour, electrical and broker/HA receipt follow-up pending |
+| Grove OLED + LED visual diagnostic | [#4](https://github.com/konih/atmosmesh/pull/4) | Implementation gates green; independent review pending | After approval, operator-authorized flash/visual inspection; leave diagnostic installed until explicit restore request |
+
+## Integrated
+
+| Lane | PR | Main | Remaining hardware follow-up |
+| --- | --- | --- | --- |
+| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | `797aabd` | OLED pixels, visible LED colour, electrical behavior and broker/HA receipt |
