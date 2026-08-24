@@ -17,9 +17,17 @@ struct GroveReadings {
     Measurement pressure{};
 };
 
+enum class GroveBmpAction {
+    Unavailable,
+    Initialize,
+    Read,
+};
+
 using GroveOledLines = std::array<std::string, 4>;
 
 GroveOledLines grove_oled_lines(const GroveReadings& readings);
 std::string grove_health_text(const GroveReadings& readings);
+GroveBmpAction grove_bmp_action(bool address_present, bool initialized);
+void invalidate_grove_bmp(GroveReadings& readings);
 
 }  // namespace atmosmesh

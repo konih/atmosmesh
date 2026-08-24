@@ -79,6 +79,33 @@ void setup_bmp180() {
     Serial.printf("bmp180: %s addr=0x77\n", bmp_ready ? "ok" : "error");
 }
 
+bool prepare_bmp180_sample() {
+    const bool address_present = i2c_address_present(kBmp180Address);
+    switch (atmosmesh::grove_bmp_action(address_present, bmp_ready)) {
+        case atmosmesh::GroveBmpAction::Unavailable:
+            if (bmp_ready) {
+                Serial.println("bmp180: lost addr=0x77; prior reading invalidated");
+            }
+            bmp_ready = false;
+            atmosmesh::invalidate_grove_bmp(readings);
+            return false;
+        case atmosmesh::GroveBmpAction::Initialize:
+            bmp_ready = bmp180.begin(BMP085_STANDARD, &Wire);
+            // Adafruit_BMP085 may call Wire.begin(); restore the wired D2/D3 bus explicitly.
+            Wire.begin(profile.i2c_sda_gpio, profile.i2c_scl_gpio);
+            Wire.setClock(kI2cClockHz);
+            Serial.printf("bmp180: %s addr=0x77 after probe\n",
+                          bmp_ready ? "recovered" : "initialize error");
+            if (!bmp_ready) {
+                atmosmesh::invalidate_grove_bmp(readings);
+            }
+            return bmp_ready;
+        case atmosmesh::GroveBmpAction::Read:
+            return true;
+    }
+    return false;
+}
+
 void sample_sensors() {
     const float humidity = dht.readHumidity();
     const float dht_temperature = dht.readTemperature();
@@ -89,14 +116,18 @@ void sample_sensors() {
     bool bmp_valid = false;
     float bmp_temperature = 0.0F;
     float pressure_hpa = 0.0F;
-    if (bmp_ready) {
+    if (prepare_bmp180_sample()) {
         bmp_temperature = bmp180.readTemperature();
         pressure_hpa = bmp180.readPressure() / 100.0F;
         bmp_valid = std::isfinite(bmp_temperature) && std::isfinite(pressure_hpa) &&
                     pressure_hpa >= 300.0F && pressure_hpa <= 1100.0F;
     }
-    readings.bmp_temperature = {bmp_valid, bmp_valid ? bmp_temperature : 0.0F};
-    readings.pressure = {bmp_valid, bmp_valid ? pressure_hpa : 0.0F};
+    if (bmp_valid) {
+        readings.bmp_temperature = {true, bmp_temperature};
+        readings.pressure = {true, pressure_hpa};
+    } else {
+        atmosmesh::invalidate_grove_bmp(readings);
+    }
 
     if (dht_valid) {
         Serial.printf("dht11: ok temperature=%.1f C humidity=%.1f %%RH\n",

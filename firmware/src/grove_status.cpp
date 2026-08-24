@@ -44,4 +44,16 @@ std::string grove_health_text(const GroveReadings& readings) {
            " bmp=" + (bmp_ok(readings) ? "ok" : "error");
 }
 
+GroveBmpAction grove_bmp_action(bool address_present, bool initialized) {
+    if (!address_present) {
+        return GroveBmpAction::Unavailable;
+    }
+    return initialized ? GroveBmpAction::Read : GroveBmpAction::Initialize;
+}
+
+void invalidate_grove_bmp(GroveReadings& readings) {
+    readings.bmp_temperature = {};
+    readings.pressure = {};
+}
+
 }  // namespace atmosmesh
