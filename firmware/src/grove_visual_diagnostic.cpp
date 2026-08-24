@@ -13,16 +13,41 @@ GroveOledRenderAction grove_oled_render_action(bool oled_ready, GroveVisualMode 
                : GroveOledRenderAction::RenderLiveMeasurements;
 }
 
-std::string grove_oled_mode_banner(GroveVisualMode mode, int width_px, int height_px) {
-    char line[96];
+std::string grove_visual_diagnostic_startup_banner(GroveVisualMode mode, int width_px,
+                                                   int height_px) {
+    char line[128];
     if (mode == GroveVisualMode::OledFillAndLedCycle) {
         std::snprintf(line, sizeof(line),
-                      "oled-diagnostic: full-area active geometry=%dx%d pixels=all-on", width_px,
-                      height_px);
+                      "visual-diagnostic: selected oled=full-area geometry=%dx%d "
+                      "led=red-green-amber-off phase=2000ms",
+                      width_px, height_px);
     } else {
         std::snprintf(line, sizeof(line),
-                      "oled-diagnostic: inactive geometry=%dx%d mode=live-measurements", width_px,
+                      "visual-diagnostic: not-selected oled=live geometry=%dx%d", width_px,
                       height_px);
+    }
+    return line;
+}
+
+std::string grove_oled_fill_result_text(GroveOledFillResult result, int width_px, int height_px) {
+    char line[96];
+    switch (result) {
+        case GroveOledFillResult::Applied:
+            std::snprintf(line, sizeof(line),
+                          "oled-diagnostic: fill applied geometry=%dx%d pixels=all-on", width_px,
+                          height_px);
+            break;
+        case GroveOledFillResult::OledNotFound:
+            std::snprintf(line, sizeof(line),
+                          "oled-diagnostic: fill not-applied geometry=%dx%d reason=oled-not-found",
+                          width_px, height_px);
+            break;
+        case GroveOledFillResult::OledInitFailed:
+            std::snprintf(line, sizeof(line),
+                          "oled-diagnostic: fill not-applied geometry=%dx%d "
+                          "reason=oled-init-failed",
+                          width_px, height_px);
+            break;
     }
     return line;
 }

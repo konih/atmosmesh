@@ -22,6 +22,12 @@ enum class GroveOledRenderAction {
     HoldFullAreaFill,
 };
 
+enum class GroveOledFillResult {
+    Applied,
+    OledNotFound,
+    OledInitFailed,
+};
+
 enum class GroveVisualLedPhase {
     Red,
     Green,
@@ -51,7 +57,9 @@ inline constexpr GroveVisualMode compiled_grove_visual_mode() {
 }
 
 GroveOledRenderAction grove_oled_render_action(bool oled_ready, GroveVisualMode mode);
-std::string grove_oled_mode_banner(GroveVisualMode mode, int width_px, int height_px);
+std::string grove_visual_diagnostic_startup_banner(GroveVisualMode mode, int width_px,
+                                                   int height_px);
+std::string grove_oled_fill_result_text(GroveOledFillResult result, int width_px, int height_px);
 GroveVisualLedStep grove_visual_led_begin(GroveVisualLedState& state, std::uint32_t now_ms);
 GroveVisualLedStep grove_visual_led_tick(GroveVisualLedState& state, std::uint32_t now_ms);
 LedPinLevels grove_visual_led_levels(GroveVisualLedPhase phase, LedPolarity polarity);

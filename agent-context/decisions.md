@@ -188,9 +188,10 @@
 - **LED:** The same diagnostic repeats red, green, amber (red+green) and off at two seconds per
   phase. It derives actual D6/D0 levels from the existing polarity-aware LED abstraction, logs every
   transition, and uses unsigned elapsed-time arithmetic across `millis()` wraparound.
-- **Observability:** Startup serial must state that the full-area diagnostic is active and name the
-  logical `128x32` geometry. Sensors, status LED and networking may continue running behind the
-  fixed white test screen.
+- **Observability:** Startup serial states that the full-area diagnostic is selected and names the
+  logical `128x32` geometry before OLED probe/init, including error paths. A separate result says
+  whether the fill was applied or not applied because the OLED was missing/init failed. Sensors,
+  status LED and networking may continue running behind the fixed white test screen.
 - **Boundary:** This diagnostic does not alter AtmosMesh v1, the canonical Grove build, wiring,
   controller selection or geometry. Flashing and restoring images remain explicit operator actions
   after independent review; the diagnostic may remain installed until the operator explicitly asks

@@ -102,8 +102,25 @@ void test_grove_oled_diagnostic_policy_is_explicit_and_default_stays_live() {
 
 void test_grove_oled_full_area_banner_names_mode_and_geometry() {
     TEST_ASSERT_EQUAL_STRING(
-        "oled-diagnostic: full-area active geometry=128x32 pixels=all-on",
-        atmosmesh::grove_oled_mode_banner(atmosmesh::GroveVisualMode::OledFillAndLedCycle, 128, 32)
+        "visual-diagnostic: selected oled=full-area geometry=128x32 "
+        "led=red-green-amber-off phase=2000ms",
+        atmosmesh::grove_visual_diagnostic_startup_banner(
+            atmosmesh::GroveVisualMode::OledFillAndLedCycle, 128, 32)
+            .c_str());
+}
+
+void test_grove_oled_diagnostic_reports_applied_and_every_init_error_path() {
+    using atmosmesh::GroveOledFillResult;
+    TEST_ASSERT_EQUAL_STRING(
+        "oled-diagnostic: fill applied geometry=128x32 pixels=all-on",
+        atmosmesh::grove_oled_fill_result_text(GroveOledFillResult::Applied, 128, 32).c_str());
+    TEST_ASSERT_EQUAL_STRING(
+        "oled-diagnostic: fill not-applied geometry=128x32 reason=oled-not-found",
+        atmosmesh::grove_oled_fill_result_text(GroveOledFillResult::OledNotFound, 128, 32)
+            .c_str());
+    TEST_ASSERT_EQUAL_STRING(
+        "oled-diagnostic: fill not-applied geometry=128x32 reason=oled-init-failed",
+        atmosmesh::grove_oled_fill_result_text(GroveOledFillResult::OledInitFailed, 128, 32)
             .c_str());
 }
 
@@ -492,6 +509,7 @@ void register_product_variant_tests() {
     RUN_TEST(test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins);
     RUN_TEST(test_grove_oled_diagnostic_policy_is_explicit_and_default_stays_live);
     RUN_TEST(test_grove_oled_full_area_banner_names_mode_and_geometry);
+    RUN_TEST(test_grove_oled_diagnostic_reports_applied_and_every_init_error_path);
     RUN_TEST(test_grove_visual_led_sequence_uses_two_second_phases_and_repeats);
     RUN_TEST(test_grove_visual_led_sequence_is_wraparound_safe_and_polarity_aware);
     RUN_TEST(test_grove_page_formats_valid_measurements);
