@@ -8,6 +8,7 @@
 void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
     const auto& profile = atmosmesh::atmosmesh_v1_profile();
     TEST_ASSERT_EQUAL_STRING("AtmosMesh", profile.product_name);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-v1", profile.product_id);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-v1", profile.product_variant);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-0001", profile.station_id);
     TEST_ASSERT_EQUAL_INT(5, profile.i2c_sda_gpio);
@@ -22,6 +23,7 @@ void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
 void test_grove_profile_is_id_based_and_matches_wiring() {
     const auto& profile = atmosmesh::grove_profile();
     TEST_ASSERT_EQUAL_STRING("AtmosMesh Grove", profile.product_name);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-v1.5", profile.product_id);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-v1.5", profile.product_variant);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-0001", profile.station_id);
     TEST_ASSERT_EQUAL_INT(4, profile.i2c_sda_gpio);

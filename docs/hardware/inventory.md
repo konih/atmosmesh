@@ -45,6 +45,10 @@ flashed or otherwise changed. For DHT11, do not infer a cause from the error alo
 DATA joint/pin, 3.3 V/GND orientation and a 4.7–10 kΩ pull-up (or resistor on the module). A serial
 OLED init line proves controller communication, not visible pixels.
 
+The captured `a681990` banner above had no separate stable product ID. A later reviewed source fix
+adds `product_id=atmosmesh-grove-v1.5` alongside the existing variant; that field still requires a
+future flash/monitor capture before it becomes hardware evidence.
+
 `D3` is ESP8266 GPIO0, a boot strap. It must remain high during reset; if the I²C bus or a
 module pulls it low, the board enters ROM download mode. Firmware preserves the actual wiring with
 `Wire.begin(4, 0)` and logs the constraint rather than silently assigning another pin.

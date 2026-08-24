@@ -4,6 +4,7 @@ namespace atmosmesh {
 
 struct ProductProfile {
     const char* product_name;
+    const char* product_id;
     const char* product_variant;
     const char* station_id;
     int i2c_sda_gpio;
@@ -19,10 +20,10 @@ struct ProductProfile {
 // The legacy ESP32 composition root consumes its existing pin constants; this metadata makes the
 // product contract explicit without changing that runtime in the structural migration.
 inline constexpr ProductProfile kAtmosMeshV1Profile{
-    "AtmosMesh", "atmosmesh-v1", "atmosmesh-0001",
-    5,            4,              true,
-    false,        18,             128,
-    64,
+    "AtmosMesh",     "atmosmesh-v1", "atmosmesh-v1",
+    "atmosmesh-0001", 5,              4,
+    true,             false,          18,
+    128,              64,
 };
 
 inline constexpr const ProductProfile& atmosmesh_v1_profile() {
@@ -32,10 +33,10 @@ inline constexpr const ProductProfile& atmosmesh_v1_profile() {
 // AtmosMesh Grove v1.5: NodeMCU labels D2=GPIO4, D3=GPIO0, D5=GPIO14.
 // GPIO0 must remain high during reset or the ESP8266 enters ROM download mode.
 inline constexpr ProductProfile kGroveProfile{
-    "AtmosMesh Grove", "atmosmesh-v1.5", "atmosmesh-grove-0001",
-    4,                  0,                  false,
-    true,               14,                 128,
-    32,
+    "AtmosMesh Grove",      "atmosmesh-grove-v1.5", "atmosmesh-v1.5",
+    "atmosmesh-grove-0001", 4,                       0,
+    false,                    true,                    14,
+    128,                      32,
 };
 
 inline constexpr const ProductProfile& grove_profile() {

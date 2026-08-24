@@ -151,8 +151,8 @@ void sample_sensors() {
 void setup() {
     Serial.begin(115200);
     delay(200);
-    Serial.printf("product=%s variant=%s station_id=%s\n", profile.product_name,
-                  profile.product_variant, profile.station_id);
+    Serial.printf("product=%s product_id=%s variant=%s station_id=%s\n", profile.product_name,
+                  profile.product_id, profile.product_variant, profile.station_id);
     Serial.printf("i2c: SDA=D2/GPIO%d SCL=D3/GPIO%d clock=%lu Hz\n", profile.i2c_sda_gpio,
                   profile.i2c_scl_gpio, static_cast<unsigned long>(kI2cClockHz));
     Serial.println("boot-warning: D3/GPIO0 must remain HIGH during reset");

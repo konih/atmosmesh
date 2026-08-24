@@ -7,8 +7,8 @@ PlatformIO + Arduino builds two independent, first-class products from one proje
 | **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
 | **AtmosMesh Grove v1.5** — ESP8266 OLED/BMP180/DHT11 node | `atmosmesh-grove-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 
-Neither product replaces the other. The composition model and version semantics are proposed in
-[ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
+Neither product replaces the other. The composition model and version semantics are defined by the
+accepted [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
 
 PlatformIO source filters select the existing ESP32 runtime from its named composition root and a
 separate thin, profiled Grove root. Grove health states and display formatting live under
@@ -45,6 +45,12 @@ remaining checks are physical wiring/pull-up inspection and visual OLED confirma
 The default ID is `atmosmesh-grove-0001`; IDs remain device-based, never room names. A read-only
 probe found an ESP8266EX with a 26 MHz crystal and 4 MB flash. The NodeMCU-style profile is:
 
+Current firmware emits all identity concepts separately:
+
+```text
+product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 station_id=atmosmesh-grove-0001
+```
+
 | Device | Module pin | ESP8266MOD | Notes |
 | --- | --- | --- | --- |
 | SSD1306 128×32 | SDA | `D2` / GPIO4 | I²C 0x3C, then 0x3D fallback |
@@ -75,6 +81,9 @@ should be attached until V15-04 approves its voltage and channel-sharing design.
 - BMP180: runtime passed with five stable 25.1 °C / 984.2–984.3 hPa samples.
 - DHT11: initialized on profile D5/GPIO14 but every observed read was unavailable. Verify the DATA
   joint/pin, 3.3 V/GND orientation and 4.7–10 kΩ pull-up/module resistor before another run.
+- The captured banner came from reviewed head `a681990` and contained product name, variant and
+  station ID, but no separate `product_id`. The follow-up build adds it; hardware observation awaits
+  a later reviewed flash.
 
 ## AtmosMesh v1 bench OLED wiring (D-001)
 

@@ -73,8 +73,9 @@
 ### D-008 — AtmosMesh Grove is the ESP8266 AtmosMesh v1.5 variant
 
 - **Status:** Accepted (operator, 2026-08-24).
-- **Identity:** Product name **AtmosMesh Grove**, product variant `atmosmesh-v1.5`. Device identity
-  remains ID-based (default `atmosmesh-grove-0001`), never a room name.
+- **Identity:** Product name **AtmosMesh Grove**, stable product ID `atmosmesh-grove-v1.5`, product
+  variant `atmosmesh-v1.5`, and default station ID `atmosmesh-grove-0001` are separate concepts.
+  Device identity remains ID-based, never a room name.
 - **Architecture:** Grove has a thin target-specific entrypoint and explicit product profile. It
   shares native-tested health/display/domain utilities while PlatformIO source filters keep the
   existing ESP32 runtime behavior intact. This slice moves that large composition root to an

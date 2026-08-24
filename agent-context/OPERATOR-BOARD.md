@@ -8,4 +8,4 @@ None.
 
 | Lane | PR | State | Hardware follow-up |
 | --- | --- | --- | --- |
-| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Code/ADR independently approved; final hardware-evidence docs need fresh review | BMP180 pass; verify DHT DATA/power/pull-up and visually confirm OLED pixels |
+| AtmosMesh multi-product + Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Review fixes applied; needs fresh independent review | BMP180 pass; verify DHT and OLED pixels; capture explicit `product_id` after a later reviewed flash |
