@@ -69,6 +69,13 @@ YL-69/YL-38 remains deferred and A0 stays free for its later analog design. MAX4
 used. The installed LDR avoids A0 through the bounded D7 RC timing circuit above; the new firmware
 reports only raw microseconds and explicit unavailable states, but has not yet been flashed.
 
+After independent approval of the light/MQTT product diff at `e5d83e1` and green CI, an authorized
+follow-up upload rebuilt the image and generated secrets successfully. Before esptool opened the
+port, `/dev/cu.usbserial-0001` disappeared; upload ended with `FileNotFoundError`. No chip connection
+or write began, so zero bytes from `e5d83e1` reached the board and its prior firmware is unchanged.
+At that point `ls /dev/cu.*` showed no USB serial device and ioreg showed hubs only. Reconnect and
+confirm the serial port before retrying light/MQTT validation.
+
 ## USB identity of the connected controller (2026-08-14)
 
 Read-only `esptool` probe on `/dev/cu.usbserial-0001`. Nothing was flashed.

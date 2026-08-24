@@ -28,8 +28,15 @@ communication evidence, not DHT accuracy/calibration. AtmosMesh v1 and the ESP32
 
 ## Next validation
 
-V15-04/V15-05 now add the installed D7/GPIO13 bare-LDR RC response and Grove MQTT contract. The new
-image remains unflashed pending independent review. After review, validate raw light timing across
+V15-04/V15-05 add the installed D7/GPIO13 bare-LDR RC response and Grove MQTT contract. The product
+diff was independently approved at `e5d83e1` and CI is green. During the authorized follow-up,
+secret generation and the firmware build succeeded, but `/dev/cu.usbserial-0001` disappeared before
+esptool opened it. Upload failed with `FileNotFoundError` before connecting or writing, so the Grove
+still runs its prior firmware and no bytes from `e5d83e1` reached the device. `ls /dev/cu.*` showed
+no USB serial device and ioreg showed hubs only; do not infer a firmware or board failure from this.
+
+Reconnect/power the USB serial device and confirm its port, then validate raw light timing across
 bright/dark conditions, timeout behavior, the four-line OLED page, Wi-Fi/broker-loss recovery,
-retained availability and all four Home Assistant entities. A0 stays free for later YL-38 work;
-MAX4466 is dropped.
+retained availability and all four Home Assistant entities. Prior DHT11 communication evidence on
+D5/GPIO14 remains valid, but is not an accuracy claim. A0 stays free for later YL-38 work; MAX4466
+is dropped.
