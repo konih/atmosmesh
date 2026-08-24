@@ -104,13 +104,18 @@ ESP_PORT=/dev/cu.usbserial-0001 task flash-grove-visual-diagnostic
 ESP_PORT=/dev/cu.usbserial-0001 task monitor-grove-visual-diagnostic
 ```
 
-After successful OLED initialization, that image fills the complete logical 128×32 framebuffer
-with ON pixels and suppresses every later live-page redraw while sensors, LED and networking keep
-running. Serial confirms the selected image with:
+The selected diagnostic and logical geometry are announced before OLED probing, so even a missing
+or failed display cannot hide which image is running:
 
 ```text
-oled-diagnostic: full-area active geometry=128x32 pixels=all-on
+visual-diagnostic: selected oled=full-area geometry=128x32 led=red-green-amber-off phase=2000ms
 ```
+
+After successful OLED initialization, the image fills the complete logical 128×32 framebuffer with
+ON pixels and suppresses every later live-page redraw while sensors, LED and networking keep
+running. Serial separately reports `oled-diagnostic: fill applied geometry=128x32 pixels=all-on`.
+Missing-address and initialization failures instead report `fill not-applied` with
+`reason=oled-not-found` or `reason=oled-init-failed`; the selection banner still appears.
 
 At the same time, the installed D6 red / D0 green LED repeats two seconds red, two seconds green,
 two seconds amber (both channels), then two seconds off. Each transition reports the expected color

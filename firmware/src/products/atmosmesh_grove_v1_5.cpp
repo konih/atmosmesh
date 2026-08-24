@@ -204,6 +204,12 @@ void setup_oled() {
     const int address = find_oled_address();
     if (address < 0) {
         Serial.println("oled: error not found at 0x3C/0x3D");
+        if (visual_diagnostic_active()) {
+            Serial.println(atmosmesh::grove_oled_fill_result_text(
+                               atmosmesh::GroveOledFillResult::OledNotFound,
+                               profile.oled_width_px, profile.oled_height_px)
+                               .c_str());
+        }
         return;
     }
     oled.setI2CAddress(static_cast<std::uint8_t>(address << 1));
@@ -211,6 +217,13 @@ void setup_oled() {
     oled_ready = oled.begin();
     Serial.printf("oled: %s addr=0x%02X geometry=%dx%d\n", oled_ready ? "ok" : "error",
                   address, profile.oled_width_px, profile.oled_height_px);
+    if (visual_diagnostic_active() && !oled_ready) {
+        Serial.println(atmosmesh::grove_oled_fill_result_text(
+                           atmosmesh::GroveOledFillResult::OledInitFailed,
+                           profile.oled_width_px, profile.oled_height_px)
+                           .c_str());
+        return;
+    }
     if (atmosmesh::grove_oled_render_action(oled_ready,
                                             atmosmesh::compiled_grove_visual_mode()) ==
         atmosmesh::GroveOledRenderAction::HoldFullAreaFill) {
@@ -218,9 +231,9 @@ void setup_oled() {
         oled.setDrawColor(1);
         oled.drawBox(0, 0, profile.oled_width_px, profile.oled_height_px);
         oled.sendBuffer();
-        Serial.println(atmosmesh::grove_oled_mode_banner(atmosmesh::compiled_grove_visual_mode(),
-                                                         profile.oled_width_px,
-                                                         profile.oled_height_px)
+        Serial.println(atmosmesh::grove_oled_fill_result_text(
+                           atmosmesh::GroveOledFillResult::Applied, profile.oled_width_px,
+                           profile.oled_height_px)
                            .c_str());
     }
 }
@@ -334,6 +347,12 @@ void setup() {
                    "onboard-divider=unknown");
     Serial.println("soil-warning: direct YL VCC->3V3 defeats firmware duty control");
     Serial.println("power: OLED, BMP180, DHT11, LDR RC and switched YL-38 are 3V3 only");
+    if (visual_diagnostic_active()) {
+        Serial.println(atmosmesh::grove_visual_diagnostic_startup_banner(
+                           atmosmesh::compiled_grove_visual_mode(), profile.oled_width_px,
+                           profile.oled_height_px)
+                           .c_str());
+    }
 
     Wire.begin(profile.i2c_sda_gpio, profile.i2c_scl_gpio);
     Wire.setClock(kI2cClockHz);
