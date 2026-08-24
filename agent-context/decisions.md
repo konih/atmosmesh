@@ -162,7 +162,10 @@
 - **Classification:** At/beyond the dry cutoff in the dry direction is `dry`; strictly between
   cutoffs is `needs-watering`; at/beyond the acceptable cutoff in the wet direction is
   `acceptable`. Missing before a completed sample is amber; explicit acquisition failure is red.
-- **Priority:** Core sensor/acquisition error is red, then configured-but-offline MQTT is red, then
+- **Priority:** Core readings are unknown, not erroneous, until the first acquisition attempt; with
+  MQTT intentionally unconfigured this boot/pre-sample state follows missing soil to amber. After
+  an actual DHT/BMP attempt, a core sensor error is red. Core/acquisition error is red, then
+  configured-but-offline MQTT is red, then
   calibrated dry is red. Missing/unclassified/invalid/warning soil is amber. Calibrated acceptable
   soil with otherwise healthy system is green. Intentionally unconfigured MQTT is neutral.
 - **Truth boundary:** Serial exposes `soil-led-status`, raw value, validation state, direction and

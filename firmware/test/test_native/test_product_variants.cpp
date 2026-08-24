@@ -470,7 +470,8 @@ void test_soil_led_priority_handles_system_mqtt_and_calibrated_soil() {
     using atmosmesh::GroveLedReason;
     using atmosmesh::GroveLedStatus;
     using atmosmesh::SoilCondition;
-    atmosmesh::GroveLedInputs inputs{true, false, false, false, SoilCondition::Acceptable};
+    atmosmesh::GroveLedInputs inputs{true, true, false, false, false,
+                                     SoilCondition::Acceptable};
 
     auto decision = atmosmesh::grove_led_decision(inputs);
     TEST_ASSERT_EQUAL(GroveLedStatus::Healthy, decision.status);
@@ -513,12 +514,31 @@ void test_soil_led_priority_handles_system_mqtt_and_calibrated_soil() {
     TEST_ASSERT_EQUAL(GroveLedReason::AcquisitionError, decision.reason);
 }
 
+void test_soil_led_boot_unknown_is_amber_until_core_acquisition_is_attempted() {
+    using atmosmesh::GroveLedReason;
+    using atmosmesh::GroveLedStatus;
+    using atmosmesh::SoilCondition;
+    atmosmesh::GroveLedInputs inputs{};
+    inputs.core_acquisition_attempted = false;
+    inputs.core_sensors_ok = false;
+    inputs.soil_condition = SoilCondition::Missing;
+
+    auto decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::LocalOnly, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::SoilSampleMissing, decision.reason);
+
+    inputs.core_acquisition_attempted = true;
+    decision = atmosmesh::grove_led_decision(inputs);
+    TEST_ASSERT_EQUAL(GroveLedStatus::SensorFault, decision.status);
+    TEST_ASSERT_EQUAL(GroveLedReason::CoreSensorError, decision.reason);
+}
+
 void test_soil_led_serial_diagnostic_is_raw_calibration_truth() {
     using atmosmesh::SoilRawDirection;
     const atmosmesh::SoilCalibration calibration{false, SoilRawDirection::Unknown, -1, -1};
     const auto classification = atmosmesh::classify_soil(calibration, true, 214, false);
     const auto decision = atmosmesh::grove_led_decision(
-        {true, false, false, false, classification.condition});
+        {true, true, false, false, false, classification.condition});
     TEST_ASSERT_EQUAL_STRING(
         "soil-led-status: amber reason=soil-calibration-needed raw=214 "
         "calibration=disabled direction=unknown dry=unset acceptable=unset",
@@ -662,6 +682,7 @@ void register_product_variant_tests() {
     RUN_TEST(test_soil_classification_is_directional_and_keeps_zero_numeric);
     RUN_TEST(test_soil_classification_fails_safe_before_or_without_valid_calibration);
     RUN_TEST(test_soil_led_priority_handles_system_mqtt_and_calibrated_soil);
+    RUN_TEST(test_soil_led_boot_unknown_is_amber_until_core_acquisition_is_attempted);
     RUN_TEST(test_soil_led_serial_diagnostic_is_raw_calibration_truth);
     RUN_TEST(test_status_led_maps_health_and_polarity_deterministically);
     RUN_TEST(test_soil_sampler_is_cooperative_bounded_and_accepts_raw_zero);

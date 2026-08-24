@@ -33,6 +33,7 @@ atmosmesh::RcLightState light_state{};
 atmosmesh::SoilSamplerState soil_state{};
 bool oled_ready = false;
 bool bmp_ready = false;
+bool core_acquisition_attempted = false;
 bool led_status_initialized = false;
 atmosmesh::GroveLedStatus last_led_status = atmosmesh::GroveLedStatus::SensorFault;
 atmosmesh::GroveLedReason last_led_reason = atmosmesh::GroveLedReason::CoreSensorError;
@@ -126,7 +127,7 @@ void update_status_led(bool force = false) {
         soil_calibration, readings.soil.valid, static_cast<int>(readings.soil.raw),
         soil_acquisition_failed);
     const auto decision = atmosmesh::grove_led_decision(
-        {atmosmesh::grove_core_sensors_ok(readings),
+        {atmosmesh::grove_core_sensors_ok(readings), core_acquisition_attempted,
          light_state.status == atmosmesh::RcLightStatus::Timeout || soil_acquisition_failed,
          atmosmesh::grove_mqtt_runtime_enabled(), atmosmesh::grove_mqtt_runtime_mqtt_up(),
          soil.condition});
@@ -325,6 +326,7 @@ void sample_sensors() {
     }
     readings.light = {};
     apply_light_pin_action(atmosmesh::rc_light_begin(light_state, micros()).pin_action);
+    core_acquisition_attempted = true;
 }
 
 }  // namespace

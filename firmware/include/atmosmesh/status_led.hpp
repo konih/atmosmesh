@@ -35,6 +35,7 @@ enum class GroveLedReason {
 
 struct GroveLedInputs {
     bool core_sensors_ok = false;
+    bool core_acquisition_attempted = false;
     bool acquisition_failed = false;
     bool mqtt_configured = false;
     bool mqtt_up = false;
