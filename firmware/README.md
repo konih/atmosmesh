@@ -5,9 +5,11 @@ PlatformIO + Arduino builds two product variants from one project:
 - **AtmosMesh v1** on `esp32dev`: the full ESP32 station hardware stack.
 - **AtmosMesh Grove v1.5** on `esp8266-grove`: a focused ESP8266 OLED/BMP180/DHT11 variant.
 
-Each target has a thin hardware entrypoint selected by PlatformIO source filters. Pure profiles,
-health states and display formatting live under `include/atmosmesh/` and are exercised by the same
-`native` host tests; Grove is not a wholesale copy of the ESP32 application.
+PlatformIO source filters preserve the existing ESP32 `main.cpp` and select a separate thin,
+profiled Grove entrypoint. Grove health states and display formatting live under
+`include/atmosmesh/` and are exercised by the same `native` host tests; Grove is not a wholesale
+copy of the ESP32 application. This slice does not refactor or describe the legacy ESP32 entrypoint
+as thin/profile-driven.
 
 ## Commands
 
@@ -49,7 +51,9 @@ is a possible later hardware revision, not the v1.5 wiring implemented here.
 
 The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
 explicit DHT/BMP health. Missing or failed samples render as dashes plus `ERR`, never numeric zero.
-Serial startup identifies the product/station, exact pins, GPIO0 warning and every init/read state.
+Every sensor cycle probes BMP180 address 0x77: loss immediately invalidates the prior sample, while
+return triggers reinitialization before a value can become valid again. Serial startup identifies
+the product/station, exact pins, GPIO0 warning and every init/read state.
 
 YL-69/YL-38 soil, the LDR and MAX4466 are deferred. They are not claimed as fitted or working.
 There is one ADC channel, and the exact board-level A0 divider is unverified, so no analog output
@@ -132,7 +136,7 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `include/atmosmesh/product_profile.hpp` | Host-tested Grove product identity and explicit pin/geometry profile |
 | `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
 | `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
-| `src/main.cpp` | Thin ESP32 v1 entrypoint: full station hardware stack |
+| `src/main.cpp` | Existing ESP32 v1 entrypoint: full station hardware stack |
 | `src/grove_main.cpp` | Thin ESP8266 Grove v1.5 entrypoint: shared I²C OLED/BMP180 and DHT11 |
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |

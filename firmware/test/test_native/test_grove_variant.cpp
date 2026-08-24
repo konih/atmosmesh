@@ -55,9 +55,28 @@ void test_grove_partial_failure_is_explicit() {
     TEST_ASSERT_EQUAL_STRING("dht=ok bmp=error", atmosmesh::grove_health_text(readings).c_str());
 }
 
+void test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers() {
+    atmosmesh::GroveReadings readings{};
+    readings.bmp_temperature = {true, 22.8F};
+    readings.pressure = {true, 1013.2F};
+
+    TEST_ASSERT_EQUAL(atmosmesh::GroveBmpAction::Unavailable,
+                      atmosmesh::grove_bmp_action(false, true));
+    atmosmesh::invalidate_grove_bmp(readings);
+    TEST_ASSERT_FALSE(readings.bmp_temperature.valid);
+    TEST_ASSERT_FALSE(readings.pressure.valid);
+    TEST_ASSERT_EQUAL_STRING("DHT ERR BMP ERR",
+                             atmosmesh::grove_oled_lines(readings)[3].c_str());
+    TEST_ASSERT_EQUAL(atmosmesh::GroveBmpAction::Initialize,
+                      atmosmesh::grove_bmp_action(true, false));
+    TEST_ASSERT_EQUAL(atmosmesh::GroveBmpAction::Read,
+                      atmosmesh::grove_bmp_action(true, true));
+}
+
 void register_grove_variant_tests() {
     RUN_TEST(test_grove_profile_is_id_based_and_matches_wiring);
     RUN_TEST(test_grove_page_formats_valid_measurements);
     RUN_TEST(test_grove_page_never_turns_missing_into_zero);
     RUN_TEST(test_grove_partial_failure_is_explicit);
+    RUN_TEST(test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers);
 }

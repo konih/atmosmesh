@@ -75,9 +75,10 @@
 - **Status:** Accepted (operator, 2026-08-24).
 - **Identity:** Product name **AtmosMesh Grove**, product variant `atmosmesh-v1.5`. Device identity
   remains ID-based (default `atmosmesh-grove-0001`), never a room name.
-- **Architecture:** ESP32 and ESP8266 have thin target-specific entrypoints and profiles. Pure
-  health/display/domain utilities are shared and native-tested; the ESP8266 application is not a
-  copy of the ESP32 hardware stack.
+- **Architecture:** Grove has a thin target-specific entrypoint and explicit product profile. It
+  shares native-tested health/display/domain utilities while PlatformIO source filters keep the
+  existing ESP32 entrypoint intact. This slice does not refactor the large legacy ESP32 `main.cpp`
+  into a thin profiled entrypoint and does not copy that hardware stack into the ESP8266 app.
 - **Boundary:** This first Grove slice measures DHT11 temperature/humidity and BMP180 pressure/
   temperature and renders a 128×32 SSD1306 display. It does not claim ESP32-only sensors.
 
