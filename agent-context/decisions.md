@@ -122,6 +122,9 @@
   host-testable code remains outside product roots.
 - **Compatibility:** `esp32dev`, `esp8266-grove`, `task build` and `task build-grove` remain aliases
   during migration. Product IDs describe hardware contracts and do not change with routine fixes.
+- **Identity metadata:** Stable product ID, product variant and station ID are separate values for
+  every profile. AtmosMesh v1 uses product ID `atmosmesh-v1`, variant `esp32-full-station` and
+  default station ID `atmosmesh-0001`; Grove retains the D-008 values.
 - **Boundary:** Moving the ESP32 root does not authorize behavior changes or claim it is already a
   thin composition layer. Shared extraction remains incremental work.
 

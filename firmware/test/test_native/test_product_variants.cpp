@@ -1,3 +1,4 @@
+#include <cstring>
 #include <string>
 
 #include <unity.h>
@@ -9,8 +10,11 @@ void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
     const auto& profile = atmosmesh::atmosmesh_v1_profile();
     TEST_ASSERT_EQUAL_STRING("AtmosMesh", profile.product_name);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-v1", profile.product_id);
-    TEST_ASSERT_EQUAL_STRING("atmosmesh-v1", profile.product_variant);
+    TEST_ASSERT_EQUAL_STRING("esp32-full-station", profile.product_variant);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-0001", profile.station_id);
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.product_variant));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.station_id));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_variant, profile.station_id));
     TEST_ASSERT_EQUAL_INT(5, profile.i2c_sda_gpio);
     TEST_ASSERT_EQUAL_INT(4, profile.i2c_scl_gpio);
     TEST_ASSERT_TRUE(profile.i2c_sda_is_bootstrap);
@@ -26,6 +30,9 @@ void test_grove_profile_is_id_based_and_matches_wiring() {
     TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-v1.5", profile.product_id);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-v1.5", profile.product_variant);
     TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-0001", profile.station_id);
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.product_variant));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.station_id));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_variant, profile.station_id));
     TEST_ASSERT_EQUAL_INT(4, profile.i2c_sda_gpio);
     TEST_ASSERT_EQUAL_INT(0, profile.i2c_scl_gpio);
     TEST_ASSERT_FALSE(profile.i2c_sda_is_bootstrap);
