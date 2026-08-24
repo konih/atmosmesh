@@ -33,10 +33,16 @@ GroveOledLines grove_oled_lines(const GroveReadings& readings) {
         std::snprintf(pressure, sizeof(pressure), "P ----.- hPa");
     }
 
-    char health[24];
-    std::snprintf(health, sizeof(health), "DHT %s BMP %s", dht_ok(readings) ? "OK" : "ERR",
-                  bmp_ok(readings) ? "OK" : "ERR");
-    return {"AtmosMesh Grove", environment, pressure, health};
+    char light[24];
+    if (readings.light.valid) {
+        std::snprintf(light, sizeof(light), "L %5luus D%d B%d",
+                      static_cast<unsigned long>(readings.light.charge_us), dht_ok(readings) ? 1 : 0,
+                      bmp_ok(readings) ? 1 : 0);
+    } else {
+        std::snprintf(light, sizeof(light), "L -----us D%d B%d", dht_ok(readings) ? 1 : 0,
+                      bmp_ok(readings) ? 1 : 0);
+    }
+    return {"AtmosMesh Grove", environment, pressure, light};
 }
 
 std::string grove_health_text(const GroveReadings& readings) {

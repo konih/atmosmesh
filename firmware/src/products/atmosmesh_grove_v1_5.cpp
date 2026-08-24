@@ -7,8 +7,10 @@
 
 #include <cmath>
 
+#include "atmosmesh/grove_mqtt_runtime.hpp"
 #include "atmosmesh/grove_status.hpp"
 #include "atmosmesh/product_profile.hpp"
+#include "atmosmesh/rc_light.hpp"
 
 namespace {
 
@@ -23,6 +25,7 @@ Adafruit_BMP085 bmp180;
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE,
                                              profile.i2c_scl_gpio, profile.i2c_sda_gpio);
 atmosmesh::GroveReadings readings{};
+atmosmesh::RcLightState light_state{};
 bool oled_ready = false;
 bool bmp_ready = false;
 unsigned long last_sample_ms = 0;
@@ -53,6 +56,48 @@ void render() {
         oled.drawStr(0, kBaselines[i], lines[i].c_str());
     }
     oled.sendBuffer();
+}
+
+void apply_light_pin_action(atmosmesh::RcLightPinAction action) {
+    switch (action) {
+        case atmosmesh::RcLightPinAction::DriveLow:
+            pinMode(profile.light_rc_gpio, OUTPUT);
+            digitalWrite(profile.light_rc_gpio, LOW);
+            break;
+        case atmosmesh::RcLightPinAction::ReleaseInput:
+            pinMode(profile.light_rc_gpio, INPUT);
+            break;
+        case atmosmesh::RcLightPinAction::None:
+            break;
+    }
+}
+
+void publish_grove_state() {
+    atmosmesh::GroveMqttState state{};
+    state.temperature_c = {readings.dht_temperature.value, readings.dht_temperature.valid, 0};
+    state.humidity_pct = {readings.humidity.value, readings.humidity.valid, 0};
+    state.pressure_hpa = {readings.pressure.value, readings.pressure.valid, 0};
+    state.light_charge_us = {static_cast<float>(readings.light.charge_us), readings.light.valid, 0};
+    atmosmesh::grove_mqtt_runtime_publish_state(state);
+}
+
+void service_light_measurement() {
+    if (!atmosmesh::rc_light_active(light_state)) {
+        return;
+    }
+    const bool input_high = light_state.phase == atmosmesh::RcLightPhase::Charging &&
+                            digitalRead(profile.light_rc_gpio) == HIGH;
+    const auto step = atmosmesh::rc_light_tick(light_state, micros(), input_high);
+    apply_light_pin_action(step.pin_action);
+    if (!step.completed) {
+        return;
+    }
+    readings.light = light_state.measurement;
+    Serial.println(atmosmesh::rc_light_serial_text(light_state).c_str());
+    Serial.printf("health: %s light=%s\n", atmosmesh::grove_health_text(readings).c_str(),
+                  readings.light.valid ? "ok" : "unavailable");
+    render();
+    publish_grove_state();
 }
 
 void setup_oled() {
@@ -142,8 +187,8 @@ void sample_sensors() {
     } else {
         Serial.println("bmp180: error reading unavailable");
     }
-    Serial.printf("health: %s\n", atmosmesh::grove_health_text(readings).c_str());
-    render();
+    readings.light = {};
+    apply_light_pin_action(atmosmesh::rc_light_begin(light_state, micros()).pin_action);
 }
 
 }  // namespace
@@ -156,25 +201,34 @@ void setup() {
     Serial.printf("i2c: SDA=D2/GPIO%d SCL=D3/GPIO%d clock=%lu Hz\n", profile.i2c_sda_gpio,
                   profile.i2c_scl_gpio, static_cast<unsigned long>(kI2cClockHz));
     Serial.println("boot-warning: D3/GPIO0 must remain HIGH during reset");
-    Serial.printf("dht11: DATA=D5/GPIO%d (profile assumption; verify physical joint)\n",
+    Serial.printf("dht11: DATA=D5/GPIO%d (communication observed; values uncalibrated)\n",
                   profile.dht_data_gpio);
-    Serial.println("power: OLED, BMP180 and DHT11 are 3V3 only");
+    Serial.printf("light: D7/GPIO%d RC raw microseconds; lower=brighter; A0 unused\n",
+                  profile.light_rc_gpio);
+    Serial.println("power: OLED, BMP180, DHT11 and LDR RC are 3V3 only");
 
     Wire.begin(profile.i2c_sda_gpio, profile.i2c_scl_gpio);
     Wire.setClock(kI2cClockHz);
     setup_oled();
     setup_bmp180();
     dht.begin();
+    pinMode(profile.light_rc_gpio, INPUT);
     Serial.println("dht11: initialized; first read follows minimum interval");
+    atmosmesh::grove_mqtt_runtime_begin();
     render();
     last_sample_ms = millis();
 }
 
 void loop() {
     const unsigned long now = millis();
-    if (now - last_sample_ms >= kSampleIntervalMs) {
+    service_light_measurement();
+    if (!atmosmesh::rc_light_active(light_state) && now - last_sample_ms >= kSampleIntervalMs) {
         last_sample_ms = now;
         sample_sensors();
     }
-    delay(10);
+    // Defer socket work for at most the bounded RC window so connect latency cannot distort timing.
+    if (!atmosmesh::rc_light_active(light_state)) {
+        atmosmesh::grove_mqtt_runtime_tick(now);
+    }
+    yield();
 }

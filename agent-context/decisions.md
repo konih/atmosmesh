@@ -94,22 +94,46 @@
 - **Boot caveat:** `D3`/GPIO0 is a boot strap and must remain high during reset. The present wiring
   is documented, not silently changed. If the bus or a module holds it low, the ESP8266 enters its
   ROM download mode instead of starting AtmosMesh.
-- **DHT11 assumption:** DATA=`D5`/GPIO14 follows the agreed wiring proposal but has not been
-  physically re-verified. It is a named profile constant, not an implicit library default.
+- **DHT11:** DATA=`D5`/GPIO14 is a named profile constant. Valid runtime frames on 2026-08-24 prove
+  communication on the configured input; observed values are not calibration or accuracy evidence.
 - **Flashing:** After operator authorization and independent review, the coordinator successfully
   flashed AtmosMesh Grove on 2026-08-24. The former AT firmware was replaced; AtmosMesh v1 and its
   ESP32 were untouched.
 
-### D-010 — Grove analog sensors are deferred
+### D-010 — Grove A0 sensors are deferred
 
 - **Status:** Accepted.
-- **Scope:** YL-69/YL-38 soil probe, uncalibrated LDR and MAX4466 microphone are follow-on work;
-  they are not described as fitted or working in the first Grove image.
+- **Scope:** YL-69/YL-38 soil remains follow-on work and is not implemented. MAX4466 has been
+  dropped from the Grove plan. The LDR moved to the separately approved D7 RC interface in D-012.
 - **ADC constraint:** ESP8266 has one ADC channel. The bare chip input range is 0–1.0 V, while some
   NodeMCU-style boards add an input divider. The exact board circuit must be confirmed before any
   analog output is connected or an ADC architecture is selected.
-- **Claims:** LDR and microphone values remain relative unless calibrated. YL-69 corrosion control
-  requires switched power; the three analog sources must never be tied together.
+- **Claims:** YL-69 corrosion control requires switched power. Its later analog path must not be tied
+  to another analog source.
+
+### D-012 — Grove light uses a bounded D7 RC response time
+
+- **Status:** Accepted from installed operator wiring, 2026-08-24.
+- **Wiring:** `3V3 → LDR → 1 kΩ series → D7/GPIO13 measurement node`; 100 nF from the node to GND.
+- **Measurement:** Firmware briefly drives D7 low to discharge the capacitor, releases D7 as an
+  input, then cooperatively measures time-to-high with a hard timeout. It must not busy-wait long
+  enough to starve Wi-Fi, MQTT, sensing or display work.
+- **Semantics:** The only valid value is uncalibrated `light_charge_us`; lower means brighter.
+  Timeout, disconnected and saturated/immediate states are unavailable—not zero, lux or percent.
+- **Boundary:** A0 remains unused for a later YL-38 design. MAX4466 will not be used.
+
+### D-013 — Grove reuses the ID-based MQTT contract with a thin ESP8266 transport
+
+- **Status:** Accepted by operator, 2026-08-24.
+- **Contract:** Grove uses product ID `atmosmesh-grove-v1.5`, station ID
+  `atmosmesh-grove-0001`, retained availability/LWT, reconnect discovery replay and optional
+  `light_charge_us`. Its four discovery entities are temperature, humidity, pressure and explicitly
+  uncalibrated RC charge/response time in microseconds.
+- **Architecture:** Shared host-tested identity/topic/discovery/session utilities are parameterized;
+  ESP8266WiFi/PubSubClient remains a thin product transport. Existing ESP32 wrappers and runtime
+  behavior stay intact.
+- **Failure behavior:** Missing credentials or network/broker loss must not stop local sensors/OLED.
+  Reconnect attempts use bounded backoff; secrets remain generated and gitignored.
 
 ## Additional accepted decision
 

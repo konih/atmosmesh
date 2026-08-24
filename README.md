@@ -13,7 +13,7 @@
   <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-policy-blue" alt="Security policy"></a>
   <img src="https://img.shields.io/badge/ESP32-WROOM--32-000000?logo=espressif&logoColor=white" alt="ESP32">
   <img src="https://img.shields.io/badge/PlatformIO-Arduino-orange" alt="PlatformIO">
-  <img src="https://img.shields.io/badge/MQTT-planned-41BDF5?logo=homeassistant&logoColor=white" alt="MQTT planned">
+  <img src="https://img.shields.io/badge/MQTT-firmware-41BDF5?logo=homeassistant&logoColor=white" alt="MQTT firmware">
   <img src="https://img.shields.io/badge/status-bench%20bring--up-yellow" alt="Status: bench bring-up">
 </p>
 
@@ -25,7 +25,7 @@ compact ESP8266 Grove node are both first-class products; neither supersedes the
 | Product | Product ID | Product variant | Controller | Sensor/display scope | Canonical build |
 | --- | --- | --- | --- | --- | --- |
 | **AtmosMesh v1** | `atmosmesh-v1` | `esp32-full-station` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` |
-| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11 | `task build-v1-5` |
+| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11, uncalibrated D7 RC light, MQTT | `task build-v1-5` |
 
 The products share one PlatformIO project and host-tested core, with explicit composition roots
 instead of copied firmware trees. See [ADR-0001](docs/adr/0001-multi-product-firmware-composition.md).
@@ -118,9 +118,10 @@ the breadboard.
 
 AtmosMesh v1 bench firmware drives the OLED (U8g2 SSD1306 ALT0), BMP280, AM2302,
 SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
-path are still ahead. Grove v1.5 is installed: BMP180 passed runtime sampling, OLED controller
-initialization passed but pixels need visual confirmation, and DHT11 remains blocked on unavailable
-reads and physical wiring/pull-up checks ([roadmap](agent-context/roadmap.md)).
+path are still ahead. Grove v1.5 hardware has runtime communication evidence for BMP180 and DHT11;
+OLED controller initialization passed but pixels need visual confirmation. Cooperative D7 RC light
+timing and Grove MQTT/HA discovery are implemented and host/build-tested but await reviewed hardware
+validation ([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors
 

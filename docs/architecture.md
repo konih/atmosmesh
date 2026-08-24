@@ -4,18 +4,19 @@
 
 AtmosMesh keeps the existing **AtmosMesh v1** ESP32 station entrypoint and full sensor/MQTT stack.
 **AtmosMesh Grove v1.5** is the smaller ESP8266 variant (`atmosmesh-grove-0001` by default) with a
-thin profiled entrypoint for its 128×32 OLED, BMP180 and DHT11. PlatformIO source filters keep the
-target runtimes separate, while Grove measurement validity and display/health decisions are
-host-testable shared utilities. This slice does not claim to make the legacy ESP32 composition root
-thin or profile-driven.
+thin profiled entrypoint for its 128×32 OLED, BMP180, DHT11 and uncalibrated D7 RC light response.
+PlatformIO source filters keep target transports/runtimes separate, while measurement validity,
+display decisions, MQTT identity/discovery/state formatting and reconnect sequencing are shared,
+host-testable utilities. This does not claim the legacy ESP32 composition root is thin/profile-driven.
 
 Both composition roots are explicitly named under `firmware/src/products/`; the ESP32 source was
 moved there without behavior changes. Compile-time identity metadata now exists for both products,
 while incremental ESP32 adoption remains migration work. The full proposal, alternatives and
 version rules are in [ADR-0001](adr/0001-multi-product-firmware-composition.md).
 
-Grove v1.5 does not yet publish MQTT and does not inherit claims for ESP32-only SDS011, MQ135, PIR,
-VEML7700 or beeper devices. Soil, LDR and microphone support is a separately gated follow-on.
+Grove v1.5 has its own ID-based MQTT product contract and a thin ESP8266WiFi/PubSubClient transport;
+hardware network validation remains pending. It does not inherit claims for ESP32-only SDS011,
+MQ135, PIR, VEML7700 or beeper devices. YL-69/YL-38 remains separately gated; MAX4466 is dropped.
 
 ## Context
 
@@ -69,10 +70,27 @@ State JSON includes `"id":"atmosmesh-0001"` and `"device":"atmosmesh-v1"`. Each 
 a light sensor is fitted. Discovery configs are re-published on every MQTT connect because the
 kumulus broker runs with persistence off.
 
-Credentials live in a gitignored `.envrc` (see `.envrc.example`). `task build` /
-`task flash` run `scripts/gen-secrets-from-env` to materialise
+Credentials live in a gitignored `.envrc` (see `.envrc.example`). Both canonical product build and
+flash tasks run `scripts/gen-secrets-from-env` to materialise
 `firmware/include/atmosmesh/secrets.hpp`. Without those credentials, sensors and OLED
 still run; Wi-Fi/MQTT stay off.
+
+### Grove v1.5 MQTT contract (D-013)
+
+| Piece | Value |
+| --- | --- |
+| Product id | `atmosmesh-grove-v1.5` |
+| Station id | `atmosmesh-grove-0001` |
+| State topic | `home/air/atmosmesh-grove-0001/state` (JSON, not retained) |
+| Availability | `home/air/atmosmesh-grove-0001/availability` (`online` / `offline`, retained + LWT) |
+| Discovery | `homeassistant/sensor/atmosmesh_grove_0001/<object_id>/config` (retained) |
+
+Grove state uses optional scalar keys `temperature_c`, `humidity_pct`, `pressure_hpa` and
+`light_charge_us`; invalid readings are omitted while valid numeric zero remains publishable. Home
+Assistant discovery covers exactly those four entities and is replayed on every connect. Light is
+an **uncalibrated RC charge time** in `µs`, lower meaning brighter; it is never lux/illuminance or
+percent. Both product builds use the same generated, gitignored secrets. Missing credentials or
+network/broker loss leaves local sensing and OLED work active.
 
 ## Deployment responsibilities
 

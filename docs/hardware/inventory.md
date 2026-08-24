@@ -25,7 +25,8 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | --- | --- | --- | --- |
 | 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | **Initialization pass:** `oled: ok addr=0x3C geometry=128x32`; pixels not visually confirmed |
 | BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** repeated; latest four samples, 24.6–24.7 °C and 984.3 hPa |
-| Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Runtime fail:** every observed read unavailable; exact joint/pin, rail orientation and pull-up remain unverified |
+| Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Communication pass:** valid frames observed (32.0→31.0 °C, 32% RH); not accuracy/calibration evidence |
+| Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | Installed; software/native build pass, hardware timing pending. Raw µs only, lower means brighter; never lux/percent |
 
 ### Controlled Grove flash and boot (2026-08-24)
 
@@ -61,10 +62,12 @@ The I²C configuration and power/boot warnings were correct. OLED initialization
 module pulls it low, the board enters ROM download mode. Firmware preserves the actual wiring with
 `Wire.begin(4, 0)` and logs the constraint rather than silently assigning another pin.
 
-YL-69/YL-38, the uncalibrated LDR and MAX4466 are inventory candidates only. They are not fitted
-or supported by the first Grove image. The bare ESP8266 ADC is 0–1.0 V, some devboards add a
-divider, and there is only one ADC channel; confirm the exact board input circuit before connecting
-any of their analog outputs.
+The DHT11 later returned valid frames on D5/GPIO14 while BMP180 reported 25.6 °C and
+983.9–984.0 hPa. This is a communication pass, not DHT11 accuracy proof.
+
+YL-69/YL-38 remains deferred and A0 stays free for its later analog design. MAX4466 will not be
+used. The installed LDR avoids A0 through the bounded D7 RC timing circuit above; the new firmware
+reports only raw microseconds and explicit unavailable states, but has not yet been flashed.
 
 ## USB identity of the connected controller (2026-08-14)
 

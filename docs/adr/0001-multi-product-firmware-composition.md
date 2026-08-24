@@ -88,6 +88,9 @@ small, tested stories later.
 - The ESP32 composition root remains large initially. This is acknowledged migration debt, not a
   claim that the v1 runtime is already thin/profile-driven.
 - Compatibility environments/tasks add temporary maintenance surface until consumers migrate.
+- Product-specific network transports may differ (ESP32 `esp_mqtt`, ESP8266 PubSubClient), while
+  identity, topics, discovery payload construction and reconnect/publish sequencing stay shared and
+  host-tested. This is composition at the transport boundary, not duplicated product contracts.
 
 ## Migration
 

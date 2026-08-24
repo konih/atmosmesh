@@ -5,7 +5,7 @@ PlatformIO + Arduino builds two independent, first-class products from one proje
 | Product | Stable product ID | Product variant | Composition root | Canonical environment |
 | --- | --- | --- | --- | --- |
 | **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `esp32-full-station` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
-| **AtmosMesh Grove v1.5** — ESP8266 OLED/BMP180/DHT11 node | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
+| **AtmosMesh Grove v1.5** — compact ESP8266 node | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 
 Neither product replaces the other. The composition model and version semantics are defined by the
 accepted [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
@@ -37,8 +37,8 @@ device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the 
 `build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases.
 
 After explicit authorization and independent review, the coordinator flashed AtmosMesh Grove on
-2026-08-24. The former AT firmware was replaced. Do not flash again merely to diagnose DHT11; the
-remaining checks are physical wiring/pull-up inspection and visual OLED confirmation.
+2026-08-24. The former AT firmware was replaced. The later RC-light/MQTT image described below has
+not been flashed; physical validation waits for fresh independent review and a coordinator upload.
 
 ## AtmosMesh Grove v1.5 wiring
 
@@ -57,7 +57,8 @@ product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 s
 | SSD1306 128×32 | SCL | `D3` / GPIO0 | Shared bus; boot-strap caveat below |
 | BMP180 | SDA | `D2` / GPIO4 | I²C 0x77 |
 | BMP180 | SCL | `D3` / GPIO0 | Shared bus |
-| DHT11 | DATA | `D5` / GPIO14 | Agreed profile assumption; verify the physical joint |
+| DHT11 | DATA | `D5` / GPIO14 | Valid communication observed; readings remain uncalibrated |
+| Bare LDR RC | Measurement node | `D7` / GPIO13 | `3V3 → LDR → 1 kΩ → node`; 100 nF node-to-GND |
 | All modules | VCC/GND | `3V3` / GND | Never power their GPIO pull-ups from 5 V |
 
 Firmware deliberately calls `Wire.begin(4, 0)`; it does not silently rewrite the physical wiring.
@@ -66,21 +67,43 @@ SCL low, the board enters the ROM downloader rather than starting AtmosMesh. Mov
 is a possible later hardware revision, not the v1.5 wiring implemented here.
 
 The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
-explicit DHT/BMP health. Missing or failed samples render as dashes plus `ERR`, never numeric zero.
+raw RC light time plus DHT/BMP health bits (for example `L  4321us D1 B1`). Missing light renders
+as `L -----us`, never numeric zero, lux or percent.
 Every sensor cycle probes BMP180 address 0x77: loss immediately invalidates the prior sample, while
 return triggers reinitialization before a value can become valid again. Serial startup identifies
 the product/station, exact pins, GPIO0 warning and every init/read state.
 
-YL-69/YL-38 soil, the LDR and MAX4466 are deferred. They are not claimed as fitted or working.
-There is one ADC channel, and the exact board-level A0 divider is unverified, so no analog output
-should be attached until V15-04 approves its voltage and channel-sharing design.
+The LDR is uncalibrated digital RC timing: firmware discharges D7 for 1 ms, releases it as an input,
+then advances a cooperative time-to-high state machine with a 200 ms hard timeout. A valid
+`light_charge_us` value is raw microseconds and **lower means brighter**. Immediate/saturated,
+timeout or disconnected states are unavailable. A0 remains free for a later YL-38 analog design;
+YL-69/YL-38 is not implemented, and MAX4466 has been dropped.
+
+### Grove MQTT contract
+
+With generated credentials present, the Grove transport uses ESP8266WiFi and pinned PubSubClient
+2.8 over the shared host-tested MQTT contract/session. Without credentials, networking is disabled
+and sensors/OLED continue.
+
+| Piece | Grove value |
+| --- | --- |
+| State | `home/air/atmosmesh-grove-0001/state` (not retained) |
+| Availability/LWT | `home/air/atmosmesh-grove-0001/availability` (`online`/`offline`, retained) |
+| Discovery | `homeassistant/sensor/atmosmesh_grove_0001/<object_id>/config` (retained) |
+| Entities | `temperature_c`, `humidity_pct`, `pressure_hpa`, `light_charge_us` |
+
+State omits invalid values, so missing is distinct from a valid numeric zero. The light entity is
+named **Uncalibrated RC Light Charge Time**, uses `µs`, and has no illuminance device class. Every
+connect replays discovery, followed by retained online availability and any pending state. Broker
+retries back off from 1 to 30 seconds; the socket timeout is bounded to one second.
 
 ### Controlled hardware result (2026-08-24)
 
 - OLED: controller initialization passed at 0x3C as 128×32; pixels remain visually unconfirmed.
-- BMP180: runtime passed with five stable 25.1 °C / 984.2–984.3 hPa samples.
-- DHT11: initialized on profile D5/GPIO14 but every observed read was unavailable. Verify the DATA
-  joint/pin, 3.3 V/GND orientation and 4.7–10 kΩ pull-up/module resistor before another run.
+- BMP180: runtime passed repeatedly; latest paired observation was 25.6 °C / 983.9–984.0 hPa.
+- DHT11: later reported 32.0 °C / 32% RH then 31.0 °C / 32% RH on D5/GPIO14. This proves
+  communication, not accuracy or calibration.
+- RC light and Grove MQTT: software/native/build validation only; no hardware claim yet.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.
@@ -161,13 +184,15 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `src/mqtt_contract.cpp` | Host-testable MQTT topics, state JSON, HA discovery payloads |
 | `src/mqtt_session.cpp` | Host-testable reconnect backoff and publish sequencing |
 | `src/mqtt_runtime.cpp` | ESP32-only async Wi-Fi + `esp_mqtt` (excluded from native) |
+| `src/grove_mqtt_runtime.cpp` | Thin ESP8266WiFi/PubSubClient Grove transport (excluded from native) |
 | `include/atmosmesh/product_profile.hpp` | Host-tested identity and explicit pin/geometry metadata for both products |
 | `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
+| `src/rc_light.cpp` | Host-tested cooperative RC discharge/time-to-high policy |
 | `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |
 
-## AtmosMesh v1 MQTT / Wi-Fi credentials
+## MQTT / Wi-Fi credentials for both products
 
 Preferred: put secrets in a **gitignored** `.envrc` at the main checkout (see `.envrc.example`):
 
@@ -180,11 +205,12 @@ export MQTT_USER="homeassistant"
 export MQTT_PASSWORD="from-kumulus-sops"
 ```
 
-Then `direnv allow` and `task build` / `task flash`. Those tasks run
+Then `direnv allow` and use `task build-v1`, `task build-v1-5`, or `task build-all` (and the matching
+reviewed flash command only when authorized). Both product build/flash tasks run
 `scripts/gen-secrets-from-env`, which writes gitignored
 `firmware/include/atmosmesh/secrets.hpp` (also works from a git worktree by reading the
 main-checkout `.envrc`).
 
 Alternative: copy `include/atmosmesh/secrets.hpp.example` → `secrets.hpp` by hand.
-Without Wi-Fi + MQTT credentials, the image still samples sensors and drives the OLED;
-networking is skipped. Topics and HA discovery are in `docs/architecture.md` (D-007).
+Without Wi-Fi + MQTT credentials, either image still samples sensors and drives the OLED;
+networking is skipped. Topics and HA discovery are in `docs/architecture.md` (D-007/D-013).

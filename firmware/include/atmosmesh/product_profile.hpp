@@ -14,6 +14,7 @@ struct ProductProfile {
     int dht_data_gpio;
     int oled_width_px;
     int oled_height_px;
+    int light_rc_gpio;
 };
 
 // AtmosMesh v1: existing ESP32 station identity and already-established display/DHT pins.
@@ -23,7 +24,7 @@ inline constexpr ProductProfile kAtmosMeshV1Profile{
     "AtmosMesh",     "atmosmesh-v1", "esp32-full-station",
     "atmosmesh-0001", 5,              4,
     true,             false,          18,
-    128,              64,
+    128,              64,             -1,
 };
 
 inline constexpr const ProductProfile& atmosmesh_v1_profile() {
@@ -36,7 +37,7 @@ inline constexpr ProductProfile kGroveProfile{
     "AtmosMesh Grove",      "atmosmesh-grove-v1.5", "atmosmesh-v1.5",
     "atmosmesh-grove-0001", 4,                       0,
     false,                    true,                    14,
-    128,                      32,
+    128,                      32,                      13,
 };
 
 inline constexpr const ProductProfile& grove_profile() {
