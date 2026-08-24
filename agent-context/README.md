@@ -11,9 +11,9 @@ this dashboard records what changes between sessions.
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
 | [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Confirm OLED pixels |
-| [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Reconnect USB serial, flash, bright/dark/timeout evidence |
-| [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Reconnect USB serial, flash, broker/HA/failure evidence |
-| [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | Fresh review, then hardware validation |
+| [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Bright/dark/saturation/timeout evidence |
+| [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Broker/HA/reconnect evidence |
+| [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | LED and switched-rail electrical validation |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -26,14 +26,11 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 - MQ135 module output range has not been measured.
 - Firmware framework: PlatformIO (D-006). Cluster packaging still open (OQ-002).
 - Grove OLED initialization passes at 0x3C/128×32, but visible pixels are not yet confirmed.
-- Grove D7 RC light and MQTT/HA product diff was independently approved at `e5d83e1` and CI is
-  green, but the new image is not flashed. The authorized upload attempt failed before esptool could
-  open `/dev/cu.usbserial-0001`; the port was absent and no bytes were written. No physical
-  light/network behavior is claimed yet.
-- Grove V15-06 software and gates are complete for the installed D6/D0 bi-color LED and a
-  D1-controlled YL-38. The operator physically wired a confirmed 2N3906 PNP high-side switch with
-  2.2 kΩ base resistor and 100 kΩ base-emitter pull-up. Fresh review is still required before the
-  coordinator may flash or validate it; the implementation lane is not authorized to flash.
+- Reviewed Grove head `c880afe` is flashed. Serial proves uncalibrated D7 values of 389–452 µs, but
+  bright/dark/saturation/timeout behavior and MQTT broker/HA receipt remain unvalidated.
+- Grove V15-06 serial proves two 30-second YL-38 cycles at raw ADC 214 and reports software
+  `power=off` after each. LED colors/polarity, switched-rail voltage/current, physical power-off,
+  probe calibration, MQTT receipt and OLED pixels remain unconfirmed.
 
 ## Next operator inputs
 
@@ -42,10 +39,9 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 2. Enclose the AC/DC primary **before** applying 230 V. Measure DC out with no ESP32 attached.
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
 4. For Grove, visually confirm whether the OLED shows the four-line page.
-5. Reconnect/power the Grove USB serial device and confirm a `/dev/cu.usbserial-*` port before the
-   next authorized V15-04/V15-05 flash and validation run.
-6. After fresh review, validate the 2N3906-switched YL-38 raw response and verify VCC turns off
-   between samples.
+5. Exercise the Grove LDR under bright/dark and saturation/timeout conditions.
+6. Verify the bi-color LED colors/polarity, YL switched-rail voltage/current and physical power-off,
+   then confirm MQTT broker/HA receipt and reconnect behavior.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
 

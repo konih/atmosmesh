@@ -46,3 +46,10 @@ D1/GPIO5 high-side control. The operator then confirmed and physically wired a 2
 emitter=3V3, collector=YL-38 VCC, base through 2.2 kΩ to D1, and 100 kΩ base-emitter pull-up. AO is
 wired through 47 kΩ / 15 kΩ to A0 with `104` decoupling; DO is unused. Software must receive fresh
 independent review before the coordinator flashes it.
+
+Independent review approved head `c880afe`, and the coordinator then flashed it successfully.
+Over more than 60 seconds, serial showed two soil cycles about 30 seconds apart, each exactly
+`soil: ok adc_raw=214 samples=5 power=off`; DHT11 was 25.0 °C / 36–37% RH, BMP180 was
+24.4–24.5 °C / 982.6–982.8 hPa and uncalibrated light timing was 389–452 µs. This is a raw sampling
+and software OFF-action pass only. LED colors/polarity, switched-rail voltage/current, physical
+power-off, calibration, MQTT broker/HA receipt and OLED pixels remain pending.
