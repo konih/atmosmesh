@@ -47,6 +47,10 @@ void mqtt_session_use_contract(MqttSession& session, const MqttProductContract& 
 void mqtt_session_queue_state(MqttSession& session, const MqttStationState& state);
 void mqtt_session_queue_payload(MqttSession& session, std::string payload);
 void mqtt_session_note_publish_success(MqttSession& session, MqttSessionActionKind kind);
+// ESP-MQTT returns a nonnegative message id when publish was accepted (QoS 0 returns zero) and -1
+// on failure. Only an accepted PublishState action clears pending state.
+void mqtt_session_note_publish_result(MqttSession& session, MqttSessionActionKind kind,
+                                      int message_id);
 
 // Pure tick: returns ordered publish actions for this slice. Does not block.
 // When disconnected, returns empty — never invents publish work for a dead link.

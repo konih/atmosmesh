@@ -56,3 +56,13 @@ blocking local measurement or display.
   `mqtt: connected` to kum3 LAN `192.168.178.82:1883`; subscriber received
   `home/air/atmosmesh-0001/availability` (`online`), eight HA discovery `/config` topics, and
   `home/air/atmosmesh-0001/state` JSON.
+- **Cumulative-review regression, 2026-08-24:** a red native test failed to compile against the
+  missing ESP-MQTT publish-result acknowledgement policy. The pinned ESP-MQTT API documents QoS 0
+  success as message ID `0`, positive IDs as success for applicable QoS, and `-1` as failure.
+  Runtime now acknowledges a `PublishState` action only for a nonnegative result. Tests prove `-1`
+  preserves pending state for retry while `0` and a positive ID clear it exactly once; non-state
+  action results cannot clear pending state.
+- Full regression matrix (2026-08-24): `task test` passed 93/93; `task build-all`, compatibility
+  `task build` / `task build-grove`, direct `esp32dev` / `esp8266-grove`, and the Grove
+  common-anode build passed; `task check`, `git diff --check`, and the generated-secret audit
+  passed. No device was flashed.

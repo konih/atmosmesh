@@ -34,8 +34,10 @@ void apply_actions(const std::vector<MqttPublishAction>& actions) {
         }
         const int qos = 0;
         const int retain = action.retained ? 1 : 0;
-        esp_mqtt_client_publish(g_client, action.topic.c_str(), action.payload.c_str(),
-                                static_cast<int>(action.payload.size()), qos, retain);
+        const int message_id =
+            esp_mqtt_client_publish(g_client, action.topic.c_str(), action.payload.c_str(),
+                                    static_cast<int>(action.payload.size()), qos, retain);
+        mqtt_session_note_publish_result(g_session, action.kind, message_id);
     }
 }
 
