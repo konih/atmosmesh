@@ -46,6 +46,8 @@ constexpr DiscoverySpec kGroveDiscoverySpecs[] = {
      "{{ value_json.pressure_hpa | default(none) }}"},
     {"sensor", "light_charge_us", "Uncalibrated RC Light Charge Time", nullptr, "µs",
      "{{ value_json.light_charge_us | default(none) }}"},
+    {"sensor", "soil_adc_raw", "Soil Probe ADC Raw", nullptr, "ADC count",
+     "{{ value_json.soil_adc_raw | default(none) }}"},
 };
 
 constexpr MqttProductContract kV1Contract{
@@ -182,6 +184,7 @@ std::string grove_mqtt_state_json(const GroveMqttState& state) {
     append_optional_number(out, "humidity_pct", state.humidity_pct, "%.1f");
     append_optional_number(out, "pressure_hpa", state.pressure_hpa, "%.1f");
     append_optional_number(out, "light_charge_us", state.light_charge_us, "%.0f");
+    append_optional_number(out, "soil_adc_raw", state.soil_adc_raw, "%.0f");
     out += '}';
     return out;
 }

@@ -192,6 +192,7 @@ void test_grove_state_omits_missing_light_but_preserves_valid_zero_environment()
     state.humidity_pct = {32.0F, true, 0};
     state.pressure_hpa = {984.0F, true, 0};
     state.light_charge_us = {0.0F, false, 0};
+    state.soil_adc_raw = {0.0F, false, 0};
 
     std::string json = atmosmesh::grove_mqtt_state_json(state);
     TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"station_id\":\"atmosmesh-grove-0001\""));
@@ -200,18 +201,23 @@ void test_grove_state_omits_missing_light_but_preserves_valid_zero_environment()
     TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"humidity_pct\":32.0"));
     TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"pressure_hpa\":984.0"));
     TEST_ASSERT_EQUAL(std::string::npos, json.find("light_charge_us"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("soil_adc_raw"));
 
     state.light_charge_us = {4321.0F, true, 0};
     json = atmosmesh::grove_mqtt_state_json(state);
     TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"light_charge_us\":4321"));
+    state.soil_adc_raw = {0.0F, true, 0};
+    json = atmosmesh::grove_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"soil_adc_raw\":0"));
     TEST_ASSERT_EQUAL(std::string::npos, json.find("lux"));
     TEST_ASSERT_EQUAL(std::string::npos, json.find("percent"));
 }
 
-void test_grove_discovery_has_exactly_four_truthful_entities() {
+void test_grove_discovery_has_five_truthful_entities() {
     const auto& contract = atmosmesh::mqtt_grove_contract();
-    TEST_ASSERT_EQUAL_INT(4, static_cast<int>(atmosmesh::mqtt_discovery_config_count(contract)));
+    TEST_ASSERT_EQUAL_INT(5, static_cast<int>(atmosmesh::mqtt_discovery_config_count(contract)));
     bool saw_light = false;
+    bool saw_soil = false;
     for (std::size_t i = 0; i < atmosmesh::mqtt_discovery_config_count(contract); ++i) {
         const auto cfg = atmosmesh::mqtt_discovery_config_at(contract, i);
         TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.topic.find("atmosmesh_grove_0001"));
@@ -227,8 +233,17 @@ void test_grove_discovery_has_exactly_four_truthful_entities() {
             TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("µs"));
             TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("device_class"));
         }
+        if (std::string(cfg.object_id) == "soil_adc_raw") {
+            saw_soil = true;
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("Soil Probe ADC Raw"));
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("ADC count"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("device_class"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("moisture"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("%"));
+        }
     }
     TEST_ASSERT_TRUE(saw_light);
+    TEST_ASSERT_TRUE(saw_soil);
 }
 
 void test_grove_session_replays_retained_discovery_and_availability_on_reconnect() {
@@ -240,22 +255,22 @@ void test_grove_session_replays_retained_discovery_and_availability_on_reconnect
     atmosmesh::mqtt_session_queue_payload(session, atmosmesh::grove_mqtt_state_json(state));
 
     auto actions = atmosmesh::mqtt_session_tick(session, 0);
-    TEST_ASSERT_EQUAL_INT(6, static_cast<int>(actions.size()));
-    for (std::size_t i = 0; i < 4; ++i) {
+    TEST_ASSERT_EQUAL_INT(7, static_cast<int>(actions.size()));
+    for (std::size_t i = 0; i < 5; ++i) {
         TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions[i].kind);
         TEST_ASSERT_TRUE(actions[i].retained);
     }
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
-                      actions[4].kind);
-    TEST_ASSERT_TRUE(actions[4].retained);
-    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[5].kind);
-    TEST_ASSERT_FALSE(actions[5].retained);
-    atmosmesh::mqtt_session_note_publish_success(session, actions[5].kind);
+                      actions[5].kind);
+    TEST_ASSERT_TRUE(actions[5].retained);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[6].kind);
+    TEST_ASSERT_FALSE(actions[6].retained);
+    atmosmesh::mqtt_session_note_publish_success(session, actions[6].kind);
 
     atmosmesh::mqtt_session_note_disconnect(session, 1000);
     atmosmesh::mqtt_session_note_connect(session);
     actions = atmosmesh::mqtt_session_tick(session, 2000);
-    TEST_ASSERT_EQUAL_INT(5, static_cast<int>(actions.size()));
+    TEST_ASSERT_EQUAL_INT(6, static_cast<int>(actions.size()));
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions.front().kind);
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
                       actions.back().kind);
@@ -267,6 +282,7 @@ void test_pending_state_survives_failure_before_state_publish_and_clears_only_on
     atmosmesh::mqtt_session_note_connect(session);
     atmosmesh::GroveMqttState state{};
     state.temperature_c = {22.0F, true, 0};
+    state.soil_adc_raw = {0.0F, true, 0};
     atmosmesh::mqtt_session_queue_payload(session, atmosmesh::grove_mqtt_state_json(state));
 
     auto actions = atmosmesh::mqtt_session_tick(session, 0);
@@ -279,6 +295,8 @@ void test_pending_state_survives_failure_before_state_publish_and_clears_only_on
     atmosmesh::mqtt_session_note_connect(session);
     actions = atmosmesh::mqtt_session_tick(session, 20);
     TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions.back().kind);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                          actions.back().payload.find("\"soil_adc_raw\":0"));
     TEST_ASSERT_TRUE(session.state_pending);
 
     atmosmesh::mqtt_session_note_publish_success(
@@ -299,7 +317,7 @@ int main() {
     RUN_TEST(test_grove_contract_uses_stable_ids_and_separate_topics);
     RUN_TEST(test_grove_will_is_retained_offline_on_product_availability_topic);
     RUN_TEST(test_grove_state_omits_missing_light_but_preserves_valid_zero_environment);
-    RUN_TEST(test_grove_discovery_has_exactly_four_truthful_entities);
+    RUN_TEST(test_grove_discovery_has_five_truthful_entities);
     RUN_TEST(test_grove_session_replays_retained_discovery_and_availability_on_reconnect);
     RUN_TEST(test_pending_state_survives_failure_before_state_publish_and_clears_only_on_success);
     return UNITY_END();

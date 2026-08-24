@@ -102,9 +102,9 @@
 
 ### D-010 — Grove A0 sensors are deferred
 
-- **Status:** Accepted.
-- **Scope:** YL-69/YL-38 soil remains follow-on work and is not implemented. MAX4466 has been
-  dropped from the Grove plan. The LDR moved to the separately approved D7 RC interface in D-012.
+- **Status:** Accepted as the earlier boundary; YL-38 deferral superseded by D-015/V15-06.
+- **Scope:** MAX4466 remains dropped from the Grove plan. The LDR moved to the separately approved
+  D7 RC interface in D-012. YL-38 is now implemented only under D-015's raw/divided/switched rules.
 - **ADC constraint:** ESP8266 has one ADC channel. The bare chip input range is 0–1.0 V, while some
   NodeMCU-style boards add an input divider. The exact board circuit must be confirmed before any
   analog output is connected or an ADC architecture is selected.
@@ -120,7 +120,8 @@
   enough to starve Wi-Fi, MQTT, sensing or display work.
 - **Semantics:** The only valid value is uncalibrated `light_charge_us`; lower means brighter.
   Timeout, disconnected and saturated/immediate states are unavailable—not zero, lux or percent.
-- **Boundary:** A0 remains unused for a later YL-38 design. MAX4466 will not be used.
+- **Boundary:** This story leaves A0 unused; D-015/V15-06 later assigns it only to divided YL AO.
+  MAX4466 will not be used.
 
 ### D-013 — Grove reuses the ID-based MQTT contract with a thin ESP8266 transport
 
@@ -128,7 +129,8 @@
 - **Contract:** Grove uses product ID `atmosmesh-grove-v1.5`, station ID
   `atmosmesh-grove-0001`, retained availability/LWT, reconnect discovery replay and optional
   `light_charge_us`. Its four discovery entities are temperature, humidity, pressure and explicitly
-  uncalibrated RC charge/response time in microseconds.
+  uncalibrated RC charge/response time in microseconds. D-015/V15-06 extends this contract with a
+  fifth optional raw soil ADC diagnostic; it does not change the four original entities.
 - **Architecture:** Shared host-tested identity/topic/discovery/session utilities are parameterized;
   ESP8266WiFi/PubSubClient remains a thin product transport. Existing ESP32 wrappers and runtime
   behavior stay intact.
@@ -136,6 +138,36 @@
   Reconnect attempts use bounded backoff. DNS plus TCP share a 1000 ms transport budget and the
   MQTT response wait is separately bounded to one second. Pending state clears only after its state
   publish succeeds, not when an action is merely planned. Secrets remain generated and gitignored.
+
+### D-014 — Grove local health uses a two-channel polarity-aware LED
+
+- **Status:** Accepted from operator-installed wiring, 2026-08-24.
+- **Wiring:** Red=`D6`/GPIO12 and green=`D0`/GPIO16, each through its own approximately 330 Ω
+  resistor. Default is common-cathode (HIGH turns a channel on); build flag
+  `ATMOSMESH_GROVE_LED_COMMON_ANODE=1` selects common-anode (LOW turns a channel on). Startup must
+  state the compiled polarity and levels. No WS2812 library is used.
+- **Meaning:** Red means a core sensor or explicit acquisition fault. Amber (red+green) means core
+  sensors are valid but MQTT is offline or unconfigured. Green means core sensors and MQTT are
+  healthy. An uncalibrated/missing light or not-yet-sampled soil value alone is not a fault.
+
+### D-015 — Grove soil is raw, MOSFET-switched and sampled every 30 seconds
+
+- **Status:** Accepted from operator wiring contract, 2026-08-24.
+- **Power:** A high-side P-channel MOSFET switches YL-38 VCC: source=`3V3`, drain=YL VCC,
+  active-LOW gate=`D1`/GPIO5 through approximately 1 kΩ, and external 100 kΩ gate-to-source
+  pull-up. GPIO5 only drives the gate; it must never source YL-38 power. The device must be a
+  P-channel enhancement MOSFET with suitable logic-level behavior at `VGS=-2.5/-3.3 V`.
+  **No part number or pin order is approved yet:** confirm the exact marking and datasheet before
+  connecting source/drain/gate. Initialization establishes OFF before enabling the output. If YL
+  VCC is tied directly to 3V3, firmware cannot prevent continuous power and must not claim duty
+  cycling.
+- **Analog:** YL AO reaches A0 through 47 kΩ top / 15 kΩ bottom. Optional 100 nF (`104`) from A0 to
+  GND filters noise; DO is unused and ground is common. Raw counts depend on whether the specific
+  NodeMCU board also contains an onboard A0 divider, so values are `soil_adc_raw` only—never moisture
+  percent or calibrated moisture.
+- **Cadence:** The operator requested no more than 2 Hz. Soil changes slowly, so firmware uses a
+  conservative 30 s start-to-start interval, 100 ms settle and a small bounded averaged sample set,
+  then turns power off immediately. MQTT transport work is deferred while the sensor is powered.
 
 ## Additional accepted decision
 

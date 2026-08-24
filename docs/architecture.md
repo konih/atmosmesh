@@ -5,6 +5,8 @@
 AtmosMesh keeps the existing **AtmosMesh v1** ESP32 station entrypoint and full sensor/MQTT stack.
 **AtmosMesh Grove v1.5** is the smaller ESP8266 variant (`atmosmesh-grove-0001` by default) with a
 thin profiled entrypoint for its 128×32 OLED, BMP180, DHT11 and uncalibrated D7 RC light response.
+The Grove root also composes a polarity-aware D0/D6 status LED and cooperative D1-switched raw
+YL-38 ADC policy; neither adds calibrated moisture claims.
 PlatformIO source filters keep target transports/runtimes separate, while measurement validity,
 display decisions, MQTT identity/discovery/state formatting and reconnect sequencing are shared,
 host-testable utilities. This does not claim the legacy ESP32 composition root is thin/profile-driven.
@@ -16,7 +18,9 @@ version rules are in [ADR-0001](adr/0001-multi-product-firmware-composition.md).
 
 Grove v1.5 has its own ID-based MQTT product contract and a thin ESP8266WiFi/PubSubClient transport;
 hardware network validation remains pending. It does not inherit claims for ESP32-only SDS011,
-MQ135, PIR, VEML7700 or beeper devices. YL-69/YL-38 remains separately gated; MAX4466 is dropped.
+MQ135, PIR, VEML7700 or beeper devices. YL-38 remains hardware-gated on a provisional P-channel
+switch/divider design; exact MOSFET marking and datasheet pinout are still required. MAX4466 is
+dropped.
 
 ## Context
 
@@ -86,11 +90,14 @@ still run; Wi-Fi/MQTT stay off.
 | Discovery | `homeassistant/sensor/atmosmesh_grove_0001/<object_id>/config` (retained) |
 
 Grove state uses optional scalar keys `temperature_c`, `humidity_pct`, `pressure_hpa` and
-`light_charge_us`; invalid readings are omitted while valid numeric zero remains publishable. Home
-Assistant discovery covers exactly those four entities and is replayed on every connect. Light is
+`light_charge_us`, plus raw `soil_adc_raw`; invalid readings are omitted while valid numeric zero
+remains publishable. Home Assistant discovery covers exactly those five entities and is replayed on
+every connect. Light is
 an **uncalibrated RC charge time** in `µs`, lower meaning brighter; it is never lux/illuminance or
 percent. Both product builds use the same generated, gitignored secrets. Missing credentials or
 network/broker loss leaves local sensing and OLED work active.
+Soil is an uncalibrated ADC count with no moisture device class or percent claim. Pending state
+survives earlier discovery/availability failures, including the optional soil value.
 
 ## Deployment responsibilities
 

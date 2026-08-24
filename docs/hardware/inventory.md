@@ -27,6 +27,9 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** repeated; latest four samples, 24.6–24.7 °C and 984.3 hPa |
 | Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Communication pass:** valid frames observed (32.0→31.0 °C, 32% RH); not accuracy/calibration evidence |
 | Bare LDR RC | Digital RC timing | `3V3 → LDR → 1 kΩ → D7`/GPIO13 node; 100 nF node-to-GND | Installed; software/native build pass, hardware timing pending. Raw µs only, lower means brighter; never lux/percent |
+| Bi-color LED | Two digital channels | Red=`D6`/GPIO12, green=`D0`/GPIO16; separate ~330 Ω resistors | Installed per operator correction. Default common-cathode; compiled common-anode inversion available. Hardware color/polarity validation pending |
+| YL-38 + probe | Switched analog | AO→47 kΩ→A0, 15 kΩ A0→GND; optional 100 nF (`104`) A0→GND; DO unused | Raw ADC only. Software policy/build pass; hardware divider and sampling pending |
+| P-channel high-side switch | YL-38 VCC control | Intended source=3V3, drain=YL VCC, gate=`D1`/GPIO5 through ~1 kΩ, 100 kΩ gate-source pull-up | **Provisional:** no MOSFET part number recorded. Confirm P-channel enhancement behavior at VGS=-2.5/-3.3 V and exact datasheet pinout before wiring |
 
 ### Controlled Grove flash and boot (2026-08-24)
 
@@ -65,9 +68,9 @@ module pulls it low, the board enters ROM download mode. Firmware preserves the 
 The DHT11 later returned valid frames on D5/GPIO14 while BMP180 reported 25.6 °C and
 983.9–984.0 hPa. This is a communication pass, not DHT11 accuracy proof.
 
-YL-69/YL-38 remains deferred and A0 stays free for its later analog design. MAX4466 will not be
-used. The installed LDR avoids A0 through the bounded D7 RC timing circuit above; the new firmware
-reports only raw microseconds and explicit unavailable states, but has not yet been flashed.
+MAX4466 will not be used. The installed LDR uses bounded D7 RC timing; V15-06 assigns A0 only to the
+divided YL-38 AO path and exposes raw ADC counts. GPIO never powers the YL board. If its VCC is tied
+directly to 3V3, firmware cannot limit probe duty and must not claim corrosion control.
 
 After independent approval of the light/MQTT product diff at `e5d83e1` and green CI, an authorized
 follow-up upload rebuilt the image and generated secrets successfully. Before esptool opened the
@@ -75,6 +78,10 @@ port, `/dev/cu.usbserial-0001` disappeared; upload ended with `FileNotFoundError
 or write began, so zero bytes from `e5d83e1` reached the board and its prior firmware is unchanged.
 At that point `ls /dev/cu.*` showed no USB serial device and ioreg showed hubs only. Reconnect and
 confirm the serial port before retrying light/MQTT validation.
+
+The USB serial device later reappeared, but V15-06 implementation remains unflashed pending fresh
+independent review. Do not connect the provisional high-side switch until its exact MOSFET marking
+and datasheet source/drain/gate pinout are recorded.
 
 ## USB identity of the connected controller (2026-08-14)
 

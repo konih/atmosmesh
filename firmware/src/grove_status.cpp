@@ -33,16 +33,27 @@ GroveOledLines grove_oled_lines(const GroveReadings& readings) {
         std::snprintf(pressure, sizeof(pressure), "P ----.- hPa");
     }
 
-    char light[24];
-    if (readings.light.valid) {
-        std::snprintf(light, sizeof(light), "L %5luus D%d B%d",
-                      static_cast<unsigned long>(readings.light.charge_us), dht_ok(readings) ? 1 : 0,
-                      bmp_ok(readings) ? 1 : 0);
+    char status[32];
+    const char* light = readings.light.valid ? nullptr : "-----";
+    const char* soil = readings.soil.valid ? nullptr : "----";
+    if (readings.light.valid && readings.soil.valid) {
+        std::snprintf(status, sizeof(status), "L%luus S%u D%dB%d",
+                      static_cast<unsigned long>(readings.light.charge_us),
+                      static_cast<unsigned>(readings.soil.raw),
+                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
+    } else if (readings.light.valid) {
+        std::snprintf(status, sizeof(status), "L%luus S%s D%dB%d",
+                      static_cast<unsigned long>(readings.light.charge_us), soil,
+                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
+    } else if (readings.soil.valid) {
+        std::snprintf(status, sizeof(status), "L%sus S%u D%dB%d", light,
+                      static_cast<unsigned>(readings.soil.raw),
+                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
     } else {
-        std::snprintf(light, sizeof(light), "L -----us D%d B%d", dht_ok(readings) ? 1 : 0,
-                      bmp_ok(readings) ? 1 : 0);
+        std::snprintf(status, sizeof(status), "L%sus S%s D%dB%d", light, soil,
+                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
     }
-    return {"AtmosMesh Grove", environment, pressure, light};
+    return {"AtmosMesh Grove", environment, pressure, status};
 }
 
 std::string grove_health_text(const GroveReadings& readings) {
@@ -60,6 +71,10 @@ GroveBmpAction grove_bmp_action(bool address_present, bool initialized) {
 void invalidate_grove_bmp(GroveReadings& readings) {
     readings.bmp_temperature = {};
     readings.pressure = {};
+}
+
+bool grove_core_sensors_ok(const GroveReadings& readings) {
+    return dht_ok(readings) && bmp_ok(readings);
 }
 
 }  // namespace atmosmesh

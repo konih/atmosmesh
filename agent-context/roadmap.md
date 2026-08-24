@@ -29,7 +29,7 @@ the order or completion state of the RLS MVP above.
 | V1.5-3 | [V15-03](stories/V15-03.md) | Blocked | P0 | V15-02 and OLED visual confirmation | Identity, OLED, BMP180 and DHT11 validated on hardware |
 | V1.5-4 | [V15-04](stories/V15-04.md) | Blocked | P1 | Reviewed hardware validation | Bounded uncalibrated D7 RC light response |
 | V1.5-5 | [V15-05](stories/V15-05.md) | Blocked | P1 | Reviewed hardware/network validation | Grove MQTT state and Home Assistant discovery |
-| V1.5-6 | — | Planned | P2 | V15-04, approved A0/power design | YL-69/YL-38 evaluated without false claims |
+| V1.5-6 | [V15-06](stories/V15-06.md) | Blocked | P1 | V15-04, V15-05 software contracts | Bi-color health LED and duty-cycled raw YL-38 ADC |
 
 ## Milestones
 

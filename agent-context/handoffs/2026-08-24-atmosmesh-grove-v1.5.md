@@ -37,6 +37,13 @@ no USB serial device and ioreg showed hubs only; do not infer a firmware or boar
 
 Reconnect/power the USB serial device and confirm its port, then validate raw light timing across
 bright/dark conditions, timeout behavior, the four-line OLED page, Wi-Fi/broker-loss recovery,
-retained availability and all four Home Assistant entities. Prior DHT11 communication evidence on
-D5/GPIO14 remains valid, but is not an accuracy claim. A0 stays free for later YL-38 work; MAX4466
-is dropped.
+retained availability and the Grove Home Assistant entities. Prior DHT11 communication evidence on
+D5/GPIO14 remains valid, but is not an accuracy claim. MAX4466 is dropped.
+
+The USB serial device later reappeared. V15-06 adds the already-installed bi-color LED on
+red=D6/GPIO12 and green=D0/GPIO16, plus a cooperative YL-38 raw ADC policy using an active-low
+D1/GPIO5 high-side gate. Software must receive fresh independent review before the coordinator
+flashes it. Soil hardware remains blocked on the exact P-channel MOSFET marking and datasheet
+pinout; do not infer a device or pin order. Intended characteristics are P-channel enhancement,
+logic-level at VGS=-2.5/-3.3 V, source=3V3, drain=YL VCC, ~1 kΩ GPIO-to-gate and 100 kΩ
+gate-to-source pull-up.

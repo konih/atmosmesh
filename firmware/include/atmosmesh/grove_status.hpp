@@ -4,6 +4,7 @@
 #include <string>
 
 #include "atmosmesh/rc_light.hpp"
+#include "atmosmesh/soil_sampler.hpp"
 
 namespace atmosmesh {
 
@@ -18,6 +19,7 @@ struct GroveReadings {
     Measurement bmp_temperature{};
     Measurement pressure{};
     RcLightMeasurement light{};
+    SoilAdcMeasurement soil{};
 };
 
 enum class GroveBmpAction {
@@ -32,5 +34,6 @@ GroveOledLines grove_oled_lines(const GroveReadings& readings);
 std::string grove_health_text(const GroveReadings& readings);
 GroveBmpAction grove_bmp_action(bool address_present, bool initialized);
 void invalidate_grove_bmp(GroveReadings& readings);
+bool grove_core_sensors_ok(const GroveReadings& readings);
 
 }  // namespace atmosmesh

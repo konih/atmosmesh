@@ -16,6 +16,11 @@ inline std::uint32_t grove_mqtt_connect_budget_remaining_ms(std::uint32_t starte
                : kGroveMqttTransportConnectBudgetMs - elapsed_ms;
 }
 
+inline bool grove_network_work_allowed(bool light_acquisition_active,
+                                       bool soil_power_active) {
+    return !light_acquisition_active && !soil_power_active;
+}
+
 // ESP8266-only transport. The shared contract/session remains host-testable; this translation unit
 // is selected only by the Grove PlatformIO environment.
 bool grove_mqtt_runtime_begin();
