@@ -1,12 +1,17 @@
 # Firmware
 
-PlatformIO + Arduino builds two product variants from one project:
+PlatformIO + Arduino builds two independent, first-class products from one project:
 
-- **AtmosMesh v1** on `esp32dev`: the full ESP32 station hardware stack.
-- **AtmosMesh Grove v1.5** on `esp8266-grove`: a focused ESP8266 OLED/BMP180/DHT11 variant.
+| Product | Stable product ID | Composition root | Canonical environment |
+| --- | --- | --- | --- |
+| **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
+| **AtmosMesh Grove v1.5** — ESP8266 OLED/BMP180/DHT11 node | `atmosmesh-grove-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 
-PlatformIO source filters preserve the existing ESP32 `main.cpp` and select a separate thin,
-profiled Grove entrypoint. Grove health states and display formatting live under
+Neither product replaces the other. The composition model and version semantics are proposed in
+[ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
+
+PlatformIO source filters select the existing ESP32 runtime from its named composition root and a
+separate thin, profiled Grove root. Grove health states and display formatting live under
 `include/atmosmesh/` and are exercised by the same `native` host tests; Grove is not a wholesale
 copy of the ESP32 application. This slice does not refactor or describe the legacy ESP32 entrypoint
 as thin/profile-driven.
@@ -20,15 +25,19 @@ From `firmware/` (only after `scripts/with-agent-python` or the venv `bin` is fi
 
 ```bash
 pio test -e native          # host unit tests (required)
-pio run -e esp32dev         # build device image
-pio run -e esp8266-grove    # build Grove v1.5 image
-pio run -e esp32dev -t upload --upload-port /dev/cu.usbserial-0001
+pio run -e atmosmesh-v1             # canonical ESP32 product
+pio run -e atmosmesh-grove-v1_5     # canonical Grove product
+pio run -e esp32dev                  # compatibility environment
+pio run -e esp8266-grove             # compatibility environment
 pio device monitor --port /dev/cu.usbserial-0001 --baud 115200
 ```
 
-From the repository root use `task build` for ESP32 and `task build-grove` for Grove. The explicit
-`task flash-grove` command exists for later bring-up, but **must not be run without operator
-authorization**: uploading AtmosMesh replaces the board's currently working AT firmware.
+From the repository root use `task build-v1`, `task build-v1-5`, or `task build-all`. Canonical
+device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the existing
+`build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases.
+
+The operator authorized the Grove flash on 2026-08-24, but upload is intentionally left to the
+coordinator after fresh independent review. Until then its working AT firmware remains installed.
 
 ## AtmosMesh Grove v1.5 wiring
 
@@ -59,7 +68,7 @@ YL-69/YL-38 soil, the LDR and MAX4466 are deferred. They are not claimed as fitt
 There is one ADC channel, and the exact board-level A0 divider is unverified, so no analog output
 should be attached until V15-04 approves its voltage and channel-sharing design.
 
-## Bench OLED wiring (D-001)
+## AtmosMesh v1 bench OLED wiring (D-001)
 
 Mini I²C SSD1306 on the DevBoard (serial-proven 0x3C):
 
@@ -82,7 +91,7 @@ mux `0x2F`. Do not use `U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C` as the default �
 lights the top ~32 px of 128×64 glass. I²C clock is **100 kHz**. **OLED VCC = 3V3**; 5 V on
 VCC with pull-ups to VCC can kill GPIO5/4.
 
-## Sensor wiring (operator 2026-08-14)
+## AtmosMesh v1 sensor wiring (operator 2026-08-14)
 
 | Device | ESP32 | Notes |
 | --- | --- | --- |
@@ -119,7 +128,9 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 
 | Path | Role |
 | --- | --- |
-| `include/atmosmesh/` | Shared headers (pins, banner, I²C address pick) |
+| `include/atmosmesh/` | Shared headers, product metadata and host-testable contracts |
+| `src/products/atmosmesh_v1.cpp` | AtmosMesh v1 composition root; existing ESP32 runtime moved without behavior changes |
+| `src/products/atmosmesh_grove_v1_5.cpp` | Thin AtmosMesh Grove v1.5 composition root |
 | `src/display_text.cpp` | Host-testable OLED string clipping (128×64 / 128×32 pages) |
 | `src/oled_profile.cpp` | Host-testable controller/geometry/COM selection (SSD1306 vs SH1106) |
 | `src/oled_address.cpp` | Host-testable SSD1306 address selection (0x3C then 0x3D) |
@@ -133,15 +144,13 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `src/mqtt_contract.cpp` | Host-testable MQTT topics, state JSON, HA discovery payloads |
 | `src/mqtt_session.cpp` | Host-testable reconnect backoff and publish sequencing |
 | `src/mqtt_runtime.cpp` | ESP32-only async Wi-Fi + `esp_mqtt` (excluded from native) |
-| `include/atmosmesh/product_profile.hpp` | Host-tested Grove product identity and explicit pin/geometry profile |
+| `include/atmosmesh/product_profile.hpp` | Host-tested identity and explicit pin/geometry metadata for both products |
 | `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
 | `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
-| `src/main.cpp` | Existing ESP32 v1 entrypoint: full station hardware stack |
-| `src/grove_main.cpp` | Thin ESP8266 Grove v1.5 entrypoint: shared I²C OLED/BMP180 and DHT11 |
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |
 
-## MQTT / Wi-Fi credentials
+## AtmosMesh v1 MQTT / Wi-Fi credentials
 
 Preferred: put secrets in a **gitignored** `.envrc` at the main checkout (see `.envrc.example`):
 

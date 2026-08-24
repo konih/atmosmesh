@@ -6,8 +6,13 @@ AtmosMesh keeps the existing **AtmosMesh v1** ESP32 station entrypoint and full 
 **AtmosMesh Grove v1.5** is the smaller ESP8266 variant (`atmosmesh-grove-0001` by default) with a
 thin profiled entrypoint for its 128×32 OLED, BMP180 and DHT11. PlatformIO source filters keep the
 target runtimes separate, while Grove measurement validity and display/health decisions are
-host-testable shared utilities. This slice does not claim to make the legacy ESP32 `main.cpp` thin
-or profile-driven.
+host-testable shared utilities. This slice does not claim to make the legacy ESP32 composition root
+thin or profile-driven.
+
+Both composition roots are explicitly named under `firmware/src/products/`; the ESP32 source was
+moved there without behavior changes. Compile-time identity metadata now exists for both products,
+while incremental ESP32 adoption remains migration work. The full proposal, alternatives and
+version rules are in [ADR-0001](adr/0001-multi-product-firmware-composition.md).
 
 Grove v1.5 does not yet publish MQTT and does not inherit claims for ESP32-only SDS011, MQ135, PIR,
 VEML7700 or beeper devices. Soil, LDR and microphone support is a separately gated follow-on.

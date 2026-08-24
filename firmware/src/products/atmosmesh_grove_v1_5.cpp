@@ -1,3 +1,4 @@
+// AtmosMesh Grove v1.5 product composition root.
 #include <Arduino.h>
 #include <Adafruit_BMP085.h>
 #include <DHT.h>
