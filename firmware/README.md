@@ -69,8 +69,8 @@ product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 s
 Firmware deliberately calls `Wire.begin(4, 0)`; it does not silently rewrite the physical wiring.
 `D3` is GPIO0, an ESP8266 boot strap. It must stay **HIGH during reset**. If a module or fault holds
 SCL low, the board enters the ROM downloader rather than starting AtmosMesh. Moving SCL to D1/GPIO5
-would now conflict with the V15-06 soil gate and requires an explicit hardware/profile redesign; it
-is not the v1.5 wiring implemented here.
+would now conflict with the V15-06 soil control pin and requires an explicit hardware/profile
+redesign; it is not the v1.5 wiring implemented here.
 
 The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
 raw RC light/soil values plus DHT/BMP health bits (for example `L4321us S512 D1B1`). Missing soil
@@ -125,11 +125,11 @@ attenuation and raw counts depend on the exact board. Firmware therefore exposes
 `soil_adc_raw`, never calibrated moisture or percent.
 
 Firmware latches D1 HIGH before enabling OUTPUT, waits 30 seconds between cycle starts, then drives
-the gate LOW, settles 100 ms, takes five samples 5 ms apart, averages them, and returns the gate HIGH
-immediately. Normal power-on time is 120 ms / 30 s = 0.4%; the 250 ms fail-off deadline bounds the
-cooperative policy to 0.84% (rounded-up documented bound 0.9%). MQTT/DNS/TCP work is not started
-while YL power is active. Before the first completed cycle the field is unavailable/omitted; raw ADC
-zero after a completed cycle is a valid numeric reading.
+the PNP base control LOW, settles 100 ms, takes five samples 5 ms apart, averages them, and returns
+the control pin HIGH immediately. Normal power-on time is 120 ms / 30 s = 0.4%; the 250 ms fail-off
+deadline bounds the cooperative policy to 0.84% (rounded-up documented bound 0.9%). MQTT/DNS/TCP
+work is not started while YL power is active. Before the first completed cycle the field is
+unavailable/omitted; raw ADC zero after a completed cycle is a valid numeric reading.
 
 ### Grove MQTT contract
 
