@@ -24,7 +24,7 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 | Component | Interface | Grove wiring | Status |
 | --- | --- | --- | --- |
 | 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | **Initialization pass:** `oled: ok addr=0x3C geometry=128x32`; pixels not visually confirmed |
-| BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** five stable samples, 25.1 °C and 984.2–984.3 hPa |
+| BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** repeated; latest four samples, 24.6–24.7 °C and 984.3 hPa |
 | Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Runtime fail:** every observed read unavailable; exact joint/pin, rail orientation and pull-up remain unverified |
 
 ### Controlled Grove flash and boot (2026-08-24)
@@ -45,9 +45,17 @@ flashed or otherwise changed. For DHT11, do not infer a cause from the error alo
 DATA joint/pin, 3.3 V/GND orientation and a 4.7–10 kΩ pull-up (or resistor on the module). A serial
 OLED init line proves controller communication, not visible pixels.
 
-The captured `a681990` banner above had no separate stable product ID. A later reviewed source fix
-adds `product_id=atmosmesh-grove-v1.5` alongside the existing variant; that field still requires a
-future flash/monitor capture before it becomes hardware evidence.
+The captured `a681990` banner above had no separate stable product ID. After independent approval
+of final head `50ca2f3`, the coordinator ran `task flash-v1-5` again. Esptool identified the same
+ESP8266EX/4 MB board, wrote 287,952 bytes, verified the hash, hard-reset it and captured:
+
+```text
+product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 station_id=atmosmesh-grove-0001
+```
+
+The I²C configuration and power/boot warnings were correct. OLED initialization again passed at
+0x3C/128×32, but pixels remain visually unconfirmed. BMP180 passed four samples at 24.6–24.7 °C /
+984.3 hPa. DHT11 remained unavailable in all four observed cycles.
 
 `D3` is ESP8266 GPIO0, a boot strap. It must remain high during reset; if the I²C bus or a
 module pulls it low, the board enters ROM download mode. Firmware preserves the actual wiring with

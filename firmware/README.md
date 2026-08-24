@@ -81,9 +81,9 @@ should be attached until V15-04 approves its voltage and channel-sharing design.
 - BMP180: runtime passed with five stable 25.1 °C / 984.2–984.3 hPa samples.
 - DHT11: initialized on profile D5/GPIO14 but every observed read was unavailable. Verify the DATA
   joint/pin, 3.3 V/GND orientation and 4.7–10 kΩ pull-up/module resistor before another run.
-- The captured banner came from reviewed head `a681990` and contained product name, variant and
-  station ID, but no separate `product_id`. The follow-up build adds it; hardware observation awaits
-  a later reviewed flash.
+- The first captured banner from reviewed head `a681990` contained product name, variant and station
+  ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
+  four-field banner documented above.
 
 ## AtmosMesh v1 bench OLED wiring (D-001)
 

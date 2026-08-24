@@ -10,7 +10,7 @@ this dashboard records what changes between sessions.
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
-| [V15-03](stories/V15-03.md) | Blocked | Finish Grove identity/OLED/BMP180/DHT11 validation | Fix DHT; confirm OLED pixels; later capture `product_id` |
+| [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Fix DHT; confirm OLED pixels |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -25,8 +25,6 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 - Grove DHT11 returns unavailable on every observed cycle; DATA joint/pin, rail orientation and
   pull-up/module resistor need physical verification.
 - Grove OLED initialization passes at 0x3C/128×32, but visible pixels are not yet confirmed.
-- The flashed banner predates the separate stable `product_id` field; the corrected build awaits a
-  later reviewed flash/monitor capture.
 
 ## Next operator inputs
 
@@ -35,15 +33,15 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
 2. Enclose the AC/DC primary **before** applying 230 V. Measure DC out with no ESP32 attached.
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
 4. For Grove, inspect DHT11 DATA=D5/GPIO14, 3.3 V/GND and 4.7–10 kΩ pull-up/module resistor;
-   visually confirm whether the OLED shows the four-line page. On a later reviewed flash, capture
-   the explicit `product_id=atmosmesh-grove-v1.5` banner field.
+   visually confirm whether the OLED shows the four-line page.
 
 Do not connect the proposed complete circuit before these checks. Do not put mains on a breadboard.
 
 The separate **AtmosMesh Grove v1.5** board is an ESP8266EX with 4 MB flash. After authorization
 and independent review, the coordinator replaced its AT firmware with AtmosMesh Grove on
-2026-08-24. BMP180 passed runtime sampling; OLED initialized at 0x3C but pixels need visual proof;
-DHT11 returned unavailable on every observed cycle. Details and next checks are in V15-03.
+2026-08-24. A second reviewed flash confirmed the explicit stable product ID at runtime. BMP180
+passed runtime sampling; OLED initialized at 0x3C but pixels need visual proof; DHT11 returned
+unavailable on every observed cycle. Details and next checks are in V15-03.
 
 ## Key context
 
