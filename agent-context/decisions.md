@@ -77,8 +77,9 @@
   remains ID-based (default `atmosmesh-grove-0001`), never a room name.
 - **Architecture:** Grove has a thin target-specific entrypoint and explicit product profile. It
   shares native-tested health/display/domain utilities while PlatformIO source filters keep the
-  existing ESP32 entrypoint intact. This slice does not refactor the large legacy ESP32 `main.cpp`
-  into a thin profiled entrypoint and does not copy that hardware stack into the ESP8266 app.
+  existing ESP32 runtime behavior intact. This slice moves that large composition root to an
+  explicit product path but does not refactor it into a thin profiled entrypoint or copy its
+  hardware stack into the ESP8266 app.
 - **Boundary:** This first Grove slice measures DHT11 temperature/humidity and BMP180 pressure/
   temperature and renders a 128×32 SSD1306 display. It does not claim ESP32-only sensors.
 
@@ -94,7 +95,8 @@
   ROM download mode instead of starting AtmosMesh.
 - **DHT11 assumption:** DATA=`D5`/GPIO14 follows the agreed wiring proposal but has not been
   physically re-verified. It is a named profile constant, not an implicit library default.
-- **Flashing:** Current AT firmware is preserved until the operator explicitly authorizes flashing.
+- **Flashing:** Operator authorized replacement of the AT firmware on 2026-08-24. The coordinator
+  will flash only after fresh independent review; this implementation lane does not upload.
 
 ### D-010 — Grove analog sensors are deferred
 
@@ -106,6 +108,19 @@
   analog output is connected or an ADC architecture is selected.
 - **Claims:** LDR and microphone values remain relative unless calibrated. YL-69 corrosion control
   requires switched power; the three analog sources must never be tied together.
+
+## Proposed decisions
+
+### D-011 — One PlatformIO project with explicit product composition roots
+
+- **Status:** Proposed in [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
+- **Decision:** AtmosMesh v1 and Grove v1.5 remain independent, first-class products. Each has one
+  named composition root, canonical build environment and compile-time identity profile. Shared
+  host-testable code remains outside product roots.
+- **Compatibility:** `esp32dev`, `esp8266-grove`, `task build` and `task build-grove` remain aliases
+  during migration. Product IDs describe hardware contracts and do not change with routine fixes.
+- **Boundary:** Moving the ESP32 root does not authorize behavior changes or claim it is already a
+  thin composition layer. Shared extraction remains incremental work.
 
 ## Open decisions
 

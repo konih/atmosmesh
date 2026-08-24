@@ -31,43 +31,79 @@ tasks:
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio test -e native"
 
-  build:
-    desc: Build ESP32 firmware (`pio run -e esp32dev`)
+  build-v1:
+    desc: Build AtmosMesh v1 for ESP32 (`pio run -e atmosmesh-v1`)
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-v1"
+
+  build-v1-5:
+    desc: Build AtmosMesh Grove v1.5 (`pio run -e atmosmesh-grove-v1_5`)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5"
+
+  build-all:
+    desc: Build every first-class AtmosMesh firmware product
+    cmds:
+      - task: build-v1
+      - task: build-v1-5
+
+  build:
+    desc: Compatibility alias for build-v1 (AtmosMesh v1 / ESP32)
+    cmds:
+      - task: build-v1
 
   build-grove:
-    desc: Build AtmosMesh Grove v1.5 for the 4 MB ESP8266 (`pio run -e esp8266-grove`)
-    dir: firmware
+    desc: Compatibility alias for build-v1-5 (AtmosMesh Grove v1.5)
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove"
+      - task: build-v1-5
 
-  flash:
-    desc: Upload to ESP_PORT (default /dev/cu.usbserial-0001). OLED SDA is GPIO5, SCL GPIO4.
+  flash-v1:
+    desc: Upload AtmosMesh v1 to ESP_PORT (default /dev/cu.usbserial-0001)
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t upload --upload-port {{.ESP_PORT}}"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-v1 -t upload --upload-port {{.ESP_PORT}}"
+
+  flash-v1-5:
+    desc: Upload Grove v1.5 to ESP_PORT; replaces installed AT firmware; use reviewed image only
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5 -t upload --upload-port {{.ESP_PORT}}"
+
+  flash:
+    desc: Compatibility alias for flash-v1
+    cmds:
+      - task: flash-v1
 
   flash-grove:
-    desc: Upload Grove to ESP_PORT; DESTRUCTIVE to its installed AT firmware; authorization required
+    desc: Compatibility alias for flash-v1-5
+    cmds:
+      - task: flash-v1-5
+
+  monitor-v1:
+    desc: Serial monitor for AtmosMesh v1 at 115200 on ESP_PORT
     dir: firmware
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove -t upload --upload-port {{.ESP_PORT}}"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  monitor-v1-5:
+    desc: Serial monitor for AtmosMesh Grove v1.5 at 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
 
   monitor:
-    desc: Serial monitor 115200 on ESP_PORT
-    dir: firmware
+    desc: Compatibility alias for monitor-v1
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+      - task: monitor-v1
 
   monitor-grove:
-    desc: Serial monitor for AtmosMesh Grove at 115200 on ESP_PORT
-    dir: firmware
+    desc: Compatibility alias for monitor-v1-5
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+      - task: monitor-v1-5
 
   run:
     desc: Flash then open the serial monitor
@@ -85,14 +121,24 @@ tasks:
     cmds:
       - git diff --check
 
-  clean:
-    desc: Clean ESP32 build artifacts
+  clean-v1:
+    desc: Clean AtmosMesh v1 build artifacts
     dir: firmware
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp32dev -t clean"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-v1 -t clean"
+
+  clean-v1-5:
+    desc: Clean AtmosMesh Grove v1.5 build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5 -t clean"
+
+  clean:
+    desc: Compatibility alias for clean-v1
+    cmds:
+      - task: clean-v1
 
   clean-grove:
-    desc: Clean AtmosMesh Grove ESP8266 build artifacts
-    dir: firmware
+    desc: Compatibility alias for clean-v1-5
     cmds:
-      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e esp8266-grove -t clean"
+      - task: clean-v1-5

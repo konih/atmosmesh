@@ -7,7 +7,7 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | Component | Intended role | Supply | Interface | Verification status |
 | --- | --- | --- | --- | --- |
 | ESP-WROOM-32 devboard | Controller, Wi-Fi, MQTT | Station: `VIN`/`5V` from the 5 V rail. Bench: USB until PSU is enclosed and measured | 3.3-V GPIO | USB probe 2026-08-14: ESP32-D0WDQ6 rev 1.0, 4 MB flash, CP2102, MAC `ac:67:b2:37:26:78`. `VIN`/`5V` silkscreen still pending |
-| ESP8266EX / ESP8266MOD, NodeMCU-style D labels | **AtmosMesh Grove v1.5** controller | USB; fitted modules from `3V3` | 3.3-V GPIO | Read-only probe 2026-08-23: ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader responds and installed AT firmware answers `OK`. Do not flash without explicit authorization |
+| ESP8266EX / ESP8266MOD, NodeMCU-style D labels | **AtmosMesh Grove v1.5** controller | USB; fitted modules from `3V3` | 3.3-V GPIO | Read-only probe 2026-08-23: ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader responds and installed AT firmware answers `OK`. Flash authorized 2026-08-24; coordinator waits for fresh review |
 | SDS011 (Nova; board often labelled d011v2) | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART2 9600 8N1, 3.3-V TTL | **GPIO16/17 only.** Never RX0/TX0 (GPIO3/1) |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
@@ -235,8 +235,9 @@ channel now proven half-broken — treat it as good evidence, not proof.
 
 ### Firmware issues found in the same capture
 
-- `firmware/src/main.cpp:315` — the SDS011 no-frame log is emitted every `loop()` iteration with
-  no rate limit: **~93 lines/s, 96.6 % of all serial output**. It buries every other subsystem.
+- `firmware/src/products/atmosmesh_v1.cpp` — the SDS011 no-frame log is emitted every `loop()`
+  iteration with no rate limit: **~93 lines/s, 96.6 % of all serial output**. It buries every other
+  subsystem.
   MQ135 (gated at 2 s by `kAm2302MinIntervalMs`) appears at roughly 1 line per 300. Needs a
   `millis()` throttle.
 - `firmware/src/display_text.cpp:85` — `(void)mq135_raw_adc;` discards the MQ135 value, so it

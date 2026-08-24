@@ -5,6 +5,20 @@
 #include "atmosmesh/grove_status.hpp"
 #include "atmosmesh/product_profile.hpp"
 
+void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
+    const auto& profile = atmosmesh::atmosmesh_v1_profile();
+    TEST_ASSERT_EQUAL_STRING("AtmosMesh", profile.product_name);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-v1", profile.product_variant);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-0001", profile.station_id);
+    TEST_ASSERT_EQUAL_INT(5, profile.i2c_sda_gpio);
+    TEST_ASSERT_EQUAL_INT(4, profile.i2c_scl_gpio);
+    TEST_ASSERT_TRUE(profile.i2c_sda_is_bootstrap);
+    TEST_ASSERT_FALSE(profile.i2c_scl_is_bootstrap);
+    TEST_ASSERT_EQUAL_INT(18, profile.dht_data_gpio);
+    TEST_ASSERT_EQUAL_INT(128, profile.oled_width_px);
+    TEST_ASSERT_EQUAL_INT(64, profile.oled_height_px);
+}
+
 void test_grove_profile_is_id_based_and_matches_wiring() {
     const auto& profile = atmosmesh::grove_profile();
     TEST_ASSERT_EQUAL_STRING("AtmosMesh Grove", profile.product_name);
@@ -12,6 +26,7 @@ void test_grove_profile_is_id_based_and_matches_wiring() {
     TEST_ASSERT_EQUAL_STRING("atmosmesh-grove-0001", profile.station_id);
     TEST_ASSERT_EQUAL_INT(4, profile.i2c_sda_gpio);
     TEST_ASSERT_EQUAL_INT(0, profile.i2c_scl_gpio);
+    TEST_ASSERT_FALSE(profile.i2c_sda_is_bootstrap);
     TEST_ASSERT_TRUE(profile.i2c_scl_is_bootstrap);
     TEST_ASSERT_EQUAL_INT(14, profile.dht_data_gpio);
     TEST_ASSERT_EQUAL_INT(128, profile.oled_width_px);
@@ -73,7 +88,8 @@ void test_grove_bmp_presence_rejects_cached_plausible_values_and_recovers() {
                       atmosmesh::grove_bmp_action(true, true));
 }
 
-void register_grove_variant_tests() {
+void register_product_variant_tests() {
+    RUN_TEST(test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins);
     RUN_TEST(test_grove_profile_is_id_based_and_matches_wiring);
     RUN_TEST(test_grove_page_formats_valid_measurements);
     RUN_TEST(test_grove_page_never_turns_missing_into_zero);

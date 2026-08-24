@@ -1,3 +1,5 @@
+// AtmosMesh v1 product composition root. Moved intact from src/main.cpp; keep behavior changes in
+// their own tested stories rather than mixing them into the multi-product structural migration.
 #include <Arduino.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_VEML7700.h>

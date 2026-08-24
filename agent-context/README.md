@@ -10,7 +10,7 @@ this dashboard records what changes between sessions.
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
-| [V15-03](stories/V15-03.md) | Blocked | Validate Grove OLED/BMP180/DHT11 on hardware | Explicit authorization to replace AT firmware |
+| [V15-03](stories/V15-03.md) | Blocked | Validate Grove OLED/BMP180/DHT11 on hardware | Fresh review, then coordinator flash/monitor |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -34,7 +34,8 @@ Do not connect the proposed complete circuit before these checks. Do not put mai
 
 The separate **AtmosMesh Grove v1.5** board was probed read-only as an ESP8266EX with 4 MB flash
 and working AT firmware. Its 3.3 V OLED/BMP180/DHT11 software slice is documented in V15-01–03.
-Do not flash it without explicit operator authorization: doing so replaces its current AT firmware.
+The operator authorized replacing AT firmware on 2026-08-24, but the coordinator will flash only
+after fresh independent review; implementation agents must not upload it.
 
 ## Key context
 
@@ -47,6 +48,7 @@ Do not flash it without explicit operator authorization: doing so replaces its c
 | Power architecture | [../docs/hardware/power.md](../docs/hardware/power.md) |
 | Datasheets / spec comparison | [../docs/hardware/datasheets/](../docs/hardware/datasheets/), [../docs/hardware/spec-comparison.md](../docs/hardware/spec-comparison.md) |
 | System architecture | [../docs/architecture.md](../docs/architecture.md) |
+| Architecture decisions | [../docs/adr/](../docs/adr/) |
 | Firmware | [../firmware/README.md](../firmware/README.md) |
 
 ## Workflow

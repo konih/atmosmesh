@@ -14,7 +14,7 @@
 #include "atmosmesh/sds011_frame.hpp"
 #include "atmosmesh/veml7700_text.hpp"
 
-void register_grove_variant_tests();
+void register_product_variant_tests();
 
 void test_clip_truncates_to_oled_width() {
     const std::string clipped = atmosmesh::clip_oled_line("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -614,7 +614,7 @@ void test_debounce_ignores_glitch_under_50ms() {
 
 int main() {
     UNITY_BEGIN();
-    register_grove_variant_tests();
+    register_product_variant_tests();
     RUN_TEST(test_clip_truncates_to_oled_width);
     RUN_TEST(test_clip_keeps_short_text);
     RUN_TEST(test_oled_page_counts_for_64_48_and_32);
