@@ -86,8 +86,8 @@
 ### D-009 — Grove v1.5 wiring and boot constraint
 
 - **Status:** Accepted from operator wiring plus read-only board probe, 2026-08-23/24.
-- **Controller evidence:** ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader and existing AT
-  firmware respond. NodeMCU-style D labels are used.
+- **Controller evidence:** ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader and AT firmware
+  responded before the authorized AtmosMesh replacement. NodeMCU-style D labels are used.
 - **I²C:** OLED and BMP180 share SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0. Firmware must explicitly call
   `Wire.begin(4, 0)` and target the 128×32 display. All three modules use 3.3 V.
 - **Boot caveat:** `D3`/GPIO0 is a boot strap and must remain high during reset. The present wiring
@@ -95,8 +95,9 @@
   ROM download mode instead of starting AtmosMesh.
 - **DHT11 assumption:** DATA=`D5`/GPIO14 follows the agreed wiring proposal but has not been
   physically re-verified. It is a named profile constant, not an implicit library default.
-- **Flashing:** Operator authorized replacement of the AT firmware on 2026-08-24. The coordinator
-  will flash only after fresh independent review; this implementation lane does not upload.
+- **Flashing:** After operator authorization and independent review, the coordinator successfully
+  flashed AtmosMesh Grove on 2026-08-24. The former AT firmware was replaced; AtmosMesh v1 and its
+  ESP32 were untouched.
 
 ### D-010 — Grove analog sensors are deferred
 
@@ -109,11 +110,12 @@
 - **Claims:** LDR and microphone values remain relative unless calibrated. YL-69 corrosion control
   requires switched power; the three analog sources must never be tied together.
 
-## Proposed decisions
+## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots
 
-- **Status:** Proposed in [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
+- **Status:** Accepted after independent review; see
+  [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
 - **Decision:** AtmosMesh v1 and Grove v1.5 remain independent, first-class products. Each has one
   named composition root, canonical build environment and compile-time identity profile. Shared
   host-testable code remains outside product roots.

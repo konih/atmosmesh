@@ -36,8 +36,9 @@ From the repository root use `task build-v1`, `task build-v1-5`, or `task build-
 device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the existing
 `build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases.
 
-The operator authorized the Grove flash on 2026-08-24, but upload is intentionally left to the
-coordinator after fresh independent review. Until then its working AT firmware remains installed.
+After explicit authorization and independent review, the coordinator flashed AtmosMesh Grove on
+2026-08-24. The former AT firmware was replaced. Do not flash again merely to diagnose DHT11; the
+remaining checks are physical wiring/pull-up inspection and visual OLED confirmation.
 
 ## AtmosMesh Grove v1.5 wiring
 
@@ -67,6 +68,13 @@ the product/station, exact pins, GPIO0 warning and every init/read state.
 YL-69/YL-38 soil, the LDR and MAX4466 are deferred. They are not claimed as fitted or working.
 There is one ADC channel, and the exact board-level A0 divider is unverified, so no analog output
 should be attached until V15-04 approves its voltage and channel-sharing design.
+
+### Controlled hardware result (2026-08-24)
+
+- OLED: controller initialization passed at 0x3C as 128×32; pixels remain visually unconfirmed.
+- BMP180: runtime passed with five stable 25.1 °C / 984.2–984.3 hPa samples.
+- DHT11: initialized on profile D5/GPIO14 but every observed read was unavailable. Verify the DATA
+  joint/pin, 3.3 V/GND orientation and 4.7–10 kΩ pull-up/module resistor before another run.
 
 ## AtmosMesh v1 bench OLED wiring (D-001)
 

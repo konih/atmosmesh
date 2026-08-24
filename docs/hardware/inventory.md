@@ -7,7 +7,7 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | Component | Intended role | Supply | Interface | Verification status |
 | --- | --- | --- | --- | --- |
 | ESP-WROOM-32 devboard | Controller, Wi-Fi, MQTT | Station: `VIN`/`5V` from the 5 V rail. Bench: USB until PSU is enclosed and measured | 3.3-V GPIO | USB probe 2026-08-14: ESP32-D0WDQ6 rev 1.0, 4 MB flash, CP2102, MAC `ac:67:b2:37:26:78`. `VIN`/`5V` silkscreen still pending |
-| ESP8266EX / ESP8266MOD, NodeMCU-style D labels | **AtmosMesh Grove v1.5** controller | USB; fitted modules from `3V3` | 3.3-V GPIO | Read-only probe 2026-08-23: ESP8266EX, 26 MHz crystal, 4 MB flash; ROM loader responds and installed AT firmware answers `OK`. Flash authorized 2026-08-24; coordinator waits for fresh review |
+| ESP8266EX / ESP8266MOD, NodeMCU-style D labels | **AtmosMesh Grove v1.5** controller | USB; fitted modules from `3V3` | 3.3-V GPIO | Probe: ESP8266EX, 26 MHz, 4 MB. Reviewed AtmosMesh Grove image flashed and booted 2026-08-24; former AT firmware replaced under authorization |
 | SDS011 (Nova; board often labelled d011v2) | PM2.5 and PM10 | 5 V (4.7–5.3 V, > 1 W) | UART2 9600 8N1, 3.3-V TTL | **GPIO16/17 only.** Never RX0/TX0 (GPIO3/1) |
 | DHT22 / AM2302 | Temperature and humidity | **3V3** | Single-wire data on GPIO18 | Operator: data = D18/GPIO18. Idle-high; 10 kΩ pull-up to 3V3 if the module has none |
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
@@ -23,9 +23,27 @@ This is a separate ESP8266 product variant, not a replacement for the ESP32 stat
 
 | Component | Interface | Grove wiring | Status |
 | --- | --- | --- | --- |
-| 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | Operator reports wired; runtime not yet tested |
-| BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | Operator reports wired; runtime not yet tested |
-| Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | Module is wired; DATA pin follows the agreed profile but still needs physical verification |
+| 128×32 SSD1306 OLED | I²C, normally 0x3C (0x3D fallback) | SDA=`D2`/GPIO4, SCL=`D3`/GPIO0, VCC=`3V3` | **Initialization pass:** `oled: ok addr=0x3C geometry=128x32`; pixels not visually confirmed |
+| BMP180 | I²C, 0x77 | Shares SDA=`D2`/GPIO4 and SCL=`D3`/GPIO0, VCC=`3V3` | **Runtime pass:** five stable samples, 25.1 °C and 984.2–984.3 hPa |
+| Blue DHT11 | Single-wire | DATA=`D5`/GPIO14, VCC=`3V3` | **Runtime fail:** every observed read unavailable; exact joint/pin, rail orientation and pull-up remain unverified |
+
+### Controlled Grove flash and boot (2026-08-24)
+
+With explicit authorization and independent approval of head `a681990`, the coordinator ran
+`ESP_PORT=/dev/cu.usbserial-0001 task flash-v1-5`. Esptool identified the same ESP8266EX, 26 MHz
+crystal and 4 MB flash recorded earlier, wrote 287,920 bytes, verified the hash and hard-reset the
+board. Boot reported:
+
+```text
+product=AtmosMesh Grove variant=atmosmesh-v1.5 station_id=atmosmesh-grove-0001
+i2c: SDA=D2/GPIO4 SCL=D3/GPIO0 clock=100000 Hz
+boot-warning: D3/GPIO0 must remain HIGH during reset
+```
+
+This replaced the working AT firmware under authorization. AtmosMesh v1 and its ESP32 were not
+flashed or otherwise changed. For DHT11, do not infer a cause from the error alone: verify actual
+DATA joint/pin, 3.3 V/GND orientation and a 4.7–10 kΩ pull-up (or resistor on the module). A serial
+OLED init line proves controller communication, not visible pixels.
 
 `D3` is ESP8266 GPIO0, a boot strap. It must remain high during reset; if the I²C bus or a
 module pulls it low, the board enters ROM download mode. Firmware preserves the actual wiring with
