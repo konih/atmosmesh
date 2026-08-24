@@ -2,10 +2,10 @@
 
 PlatformIO + Arduino builds two independent, first-class products from one project:
 
-| Product | Stable product ID | Composition root | Canonical environment |
-| --- | --- | --- | --- |
-| **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
-| **AtmosMesh Grove v1.5** — ESP8266 OLED/BMP180/DHT11 node | `atmosmesh-grove-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
+| Product | Stable product ID | Product variant | Composition root | Canonical environment |
+| --- | --- | --- | --- | --- |
+| **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `esp32-full-station` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
+| **AtmosMesh Grove v1.5** — ESP8266 OLED/BMP180/DHT11 node | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 
 Neither product replaces the other. The composition model and version semantics are defined by the
 accepted [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).

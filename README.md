@@ -22,10 +22,10 @@ compact ESP8266 Grove node are both first-class products; neither supersedes the
 
 ## Firmware products
 
-| Product | Product ID | Controller | Sensor/display scope | Canonical build |
-| --- | --- | --- | --- | --- |
-| **AtmosMesh v1** | `atmosmesh-v1` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` |
-| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11 | `task build-v1-5` |
+| Product | Product ID | Product variant | Controller | Sensor/display scope | Canonical build |
+| --- | --- | --- | --- | --- | --- |
+| **AtmosMesh v1** | `atmosmesh-v1` | `esp32-full-station` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` |
+| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11 | `task build-v1-5` |
 
 The products share one PlatformIO project and host-tested core, with explicit composition roots
 instead of copied firmware trees. See [ADR-0001](docs/adr/0001-multi-product-firmware-composition.md).

@@ -32,16 +32,18 @@ Use **one PlatformIO project** with four explicit layers:
 
 The two product contracts are:
 
-| Product | Stable product ID | Default station ID | Composition root | Canonical environment |
-| --- | --- | --- | --- | --- |
-| AtmosMesh v1 | `atmosmesh-v1` | `atmosmesh-0001` | `products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
-| AtmosMesh Grove v1.5 | `atmosmesh-grove-v1.5` | `atmosmesh-grove-0001` | `products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
+| Product | Stable product ID | Product variant | Default station ID | Composition root | Canonical environment |
+| --- | --- | --- | --- | --- | --- |
+| AtmosMesh v1 | `atmosmesh-v1` | `esp32-full-station` | `atmosmesh-0001` | `products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
+| AtmosMesh Grove v1.5 | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `atmosmesh-grove-0001` | `products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 
-Product IDs are stable API identifiers and are not room names. The `v1` / `v1.5` suffix identifies
-a hardware/product contract, not a repository release number. Backward-compatible firmware fixes
-do not change it. A new suffix is required when wiring, required hardware, persisted protocol, or
-operator expectations become incompatible. Software releases may use independent semantic tags in
-the future without changing product IDs.
+Product IDs are stable API identifiers and are not room names. Product variants describe the
+hardware/firmware shape within that contract; product ID, product variant and station ID are
+separate values. The `v1` / `v1.5` suffix in a product ID identifies a hardware/product contract,
+not a repository release number. Backward-compatible firmware fixes do not change it. A new suffix
+is required when wiring, required hardware, persisted protocol, or operator expectations become
+incompatible. Software releases may use independent semantic tags in the future without changing
+product IDs.
 
 A future variant is added by:
 

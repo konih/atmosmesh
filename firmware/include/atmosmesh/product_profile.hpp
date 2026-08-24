@@ -20,7 +20,7 @@ struct ProductProfile {
 // The legacy ESP32 composition root consumes its existing pin constants; this metadata makes the
 // product contract explicit without changing that runtime in the structural migration.
 inline constexpr ProductProfile kAtmosMeshV1Profile{
-    "AtmosMesh",     "atmosmesh-v1", "atmosmesh-v1",
+    "AtmosMesh",     "atmosmesh-v1", "esp32-full-station",
     "atmosmesh-0001", 5,              4,
     true,             false,          18,
     128,              64,
