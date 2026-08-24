@@ -2,11 +2,10 @@
 
 ## In flight
 
-| Lane | Owner | Branch | Scope |
-| --- | --- | --- | --- |
-| AtmosMesh Grove v1.5 | implementation agent | `codex/atmosmesh-grove-v1-5` | Stories and decisions first, then reusable firmware-variant architecture and ESP8266 OLED/BMP180/DHT11 bring-up |
+None.
 
 ## PR open
 
-None.
-
+| Lane | PR | State | Hardware follow-up |
+| --- | --- | --- | --- |
+| AtmosMesh Grove v1.5 | [#3](https://github.com/konih/atmosmesh/pull/3) | Awaiting independent review; do not merge in this lane | V15-03 remains blocked on explicit authorization to replace AT firmware |
