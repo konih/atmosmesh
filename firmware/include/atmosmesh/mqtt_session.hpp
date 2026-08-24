@@ -46,6 +46,7 @@ void mqtt_session_note_connect(MqttSession& session);
 void mqtt_session_use_contract(MqttSession& session, const MqttProductContract& contract);
 void mqtt_session_queue_state(MqttSession& session, const MqttStationState& state);
 void mqtt_session_queue_payload(MqttSession& session, std::string payload);
+void mqtt_session_note_publish_success(MqttSession& session, MqttSessionActionKind kind);
 
 // Pure tick: returns ordered publish actions for this slice. Does not block.
 // When disconnected, returns empty — never invents publish work for a dead link.

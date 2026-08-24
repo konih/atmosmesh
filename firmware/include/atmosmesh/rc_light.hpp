@@ -47,6 +47,9 @@ struct RcLightStep {
 
 RcLightStep rc_light_begin(RcLightState& state, std::uint32_t now_us);
 RcLightStep rc_light_tick(RcLightState& state, std::uint32_t now_us, bool input_high);
+// Call synchronously after applying ReleaseInput. This distinguishes an already-HIGH/saturated
+// line from a small but valid charge time observed on a later cooperative loop tick.
+RcLightStep rc_light_note_released_level(RcLightState& state, bool input_high);
 bool rc_light_active(const RcLightState& state);
 std::string rc_light_serial_text(const RcLightState& state);
 

@@ -87,8 +87,13 @@ void service_light_measurement() {
     }
     const bool input_high = light_state.phase == atmosmesh::RcLightPhase::Charging &&
                             digitalRead(profile.light_rc_gpio) == HIGH;
-    const auto step = atmosmesh::rc_light_tick(light_state, micros(), input_high);
+    const auto now_us = micros();
+    auto step = atmosmesh::rc_light_tick(light_state, now_us, input_high);
     apply_light_pin_action(step.pin_action);
+    if (step.pin_action == atmosmesh::RcLightPinAction::ReleaseInput) {
+        step = atmosmesh::rc_light_note_released_level(
+            light_state, digitalRead(profile.light_rc_gpio) == HIGH);
+    }
     if (!step.completed) {
         return;
     }
