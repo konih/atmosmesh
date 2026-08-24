@@ -168,6 +168,13 @@ two seconds before the reconnect backoff resumes local work.
 
 ### Controlled hardware result (2026-08-24)
 
+- Latest reviewed head `4e4a820` flashed successfully: esptool wrote 310,224 bytes, verified the
+  hash and hard-reset the ESP8266EX/26 MHz board. More than 30 seconds of serial reported
+  `mqtt: connected`, logical LED status `green/healthy`, DHT11 25.0 °C / 36% RH, BMP180
+  25.3–25.7 °C / 982.1–982.4 hPa, raw light 420–492 µs and
+  `soil: ok adc_raw=214 samples=5 power=off`. These are firmware/runtime diagnostics only: broker
+  receipt/HA entities, visible LED colour/polarity and the visible four-row OLED layout remain
+  operator-unconfirmed.
 - OLED: controller initialization passed at 0x3C as 128×32; pixels remain visually unconfirmed.
 - BMP180: runtime passed repeatedly; latest paired observation was 25.6 °C / 983.9–984.0 hPa.
 - DHT11: later reported 32.0 °C / 32% RH then 31.0 °C / 32% RH on D5/GPIO14. This proves

@@ -57,5 +57,9 @@ power-off, calibration, MQTT broker/HA receipt and OLED pixels remain pending.
 V15-07 responds to the observed `L401us S214 D1B1` page. The host-tested replacement removes the
 product and health-bit rows and uses four labelled lines: DHT11 temperature/humidity, BMP180
 pressure, raw RC light microseconds and raw soil ADC. Serial diagnostics, the LED health policy and
-the exact five-entity Grove MQTT/HA contract remain intact. This display change is not flashed and
-requires fresh independent review.
+the exact five-entity Grove MQTT/HA contract remain intact. Independent review approved cumulative
+head `4e4a820`, which the coordinator flashed successfully. More than 30 seconds of serial showed
+`mqtt: connected`, logical LED status `green/healthy`, DHT11 25.0 °C / 36% RH, BMP180
+25.3–25.7 °C / 982.1–982.4 hPa, raw light 420–492 µs and raw soil ADC 214 with five samples and
+software `power=off`. Broker-side receipt/HA entities, visible LED colour/polarity and visible OLED
+pixels/layout were not observed and remain pending operator confirmation.
