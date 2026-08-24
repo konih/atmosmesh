@@ -72,9 +72,21 @@ SCL low, the board enters the ROM downloader rather than starting AtmosMesh. Mov
 would now conflict with the V15-06 soil control pin and requires an explicit hardware/profile
 redesign; it is not the v1.5 wiring implemented here.
 
-The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
-raw RC light/soil values plus DHT/BMP health bits (for example `L4321us S512 D1B1`). Missing soil
-renders `S----`; a completed ADC value of zero renders `S0`. Neither is moisture percent.
+The 32-pixel display uses all four rows for labelled measurements, for example:
+
+```text
+T:25.0C RH:36%
+P:982.7hPa
+Light:401us
+Soil:214
+```
+
+The page has no product row or anonymous health bits; identity and detailed health remain on serial
+and the bi-color LED. Missing values retain their labels (`T:--`, `RH:--`, `P:ERR`, `Light:--`,
+`Soil:--`), while valid numeric zero remains visible. Temperature is DHT11 `temperature_c`; BMP
+temperature is not added to the public display/MQTT contract. Light stays raw microseconds and soil
+stays raw ADC, never lux or moisture percent. Each line is bounded to 21 characters for the 5×7
+font on the 128-pixel display.
 Every sensor cycle probes BMP180 address 0x77: loss immediately invalidates the prior sample, while
 return triggers reinitialization before a value can become valid again. Serial startup identifies
 the product/station, exact pins, GPIO0 warning and every init/read state.

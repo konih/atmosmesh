@@ -53,3 +53,9 @@ Over more than 60 seconds, serial showed two soil cycles about 30 seconds apart,
 24.4–24.5 °C / 982.6–982.8 hPa and uncalibrated light timing was 389–452 µs. This is a raw sampling
 and software OFF-action pass only. LED colors/polarity, switched-rail voltage/current, physical
 power-off, calibration, MQTT broker/HA receipt and OLED pixels remain pending.
+
+V15-07 responds to the observed `L401us S214 D1B1` page. The host-tested replacement removes the
+product and health-bit rows and uses four labelled lines: DHT11 temperature/humidity, BMP180
+pressure, raw RC light microseconds and raw soil ADC. Serial diagnostics, the LED health policy and
+the exact five-entity Grove MQTT/HA contract remain intact. This display change is not flashed and
+requires fresh independent review.

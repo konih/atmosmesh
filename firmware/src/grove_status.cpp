@@ -16,44 +16,46 @@ bool bmp_ok(const GroveReadings& readings) {
 }  // namespace
 
 GroveOledLines grove_oled_lines(const GroveReadings& readings) {
-    char environment[24];
-    if (dht_ok(readings)) {
-        std::snprintf(environment, sizeof(environment), "T %.1fC  H %.0f%%",
+    // The 5x7 OLED font fits at least 21 characters across 128 pixels. Bound every line to that
+    // contract even if a corrupt/out-of-range sensor value formats longer than expected.
+    char environment[22];
+    if (readings.dht_temperature.valid && readings.humidity.valid) {
+        std::snprintf(environment, sizeof(environment), "T:%.1fC RH:%.0f%%",
                       static_cast<double>(readings.dht_temperature.value),
                       static_cast<double>(readings.humidity.value));
+    } else if (readings.dht_temperature.valid) {
+        std::snprintf(environment, sizeof(environment), "T:%.1fC RH:--",
+                      static_cast<double>(readings.dht_temperature.value));
+    } else if (readings.humidity.valid) {
+        std::snprintf(environment, sizeof(environment), "T:-- RH:%.0f%%",
+                      static_cast<double>(readings.humidity.value));
     } else {
-        std::snprintf(environment, sizeof(environment), "T --.-C  H --%%");
+        std::snprintf(environment, sizeof(environment), "T:-- RH:--");
     }
 
-    char pressure[24];
-    if (bmp_ok(readings)) {
-        std::snprintf(pressure, sizeof(pressure), "P %.1f hPa",
+    char pressure[22];
+    if (readings.pressure.valid) {
+        std::snprintf(pressure, sizeof(pressure), "P:%.1fhPa",
                       static_cast<double>(readings.pressure.value));
     } else {
-        std::snprintf(pressure, sizeof(pressure), "P ----.- hPa");
+        std::snprintf(pressure, sizeof(pressure), "P:ERR");
     }
 
-    char status[32];
-    const char* light = readings.light.valid ? nullptr : "-----";
-    const char* soil = readings.soil.valid ? nullptr : "----";
-    if (readings.light.valid && readings.soil.valid) {
-        std::snprintf(status, sizeof(status), "L%luus S%u D%dB%d",
-                      static_cast<unsigned long>(readings.light.charge_us),
-                      static_cast<unsigned>(readings.soil.raw),
-                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
-    } else if (readings.light.valid) {
-        std::snprintf(status, sizeof(status), "L%luus S%s D%dB%d",
-                      static_cast<unsigned long>(readings.light.charge_us), soil,
-                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
-    } else if (readings.soil.valid) {
-        std::snprintf(status, sizeof(status), "L%sus S%u D%dB%d", light,
-                      static_cast<unsigned>(readings.soil.raw),
-                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
+    char light[22];
+    if (readings.light.valid) {
+        std::snprintf(light, sizeof(light), "Light:%luus",
+                      static_cast<unsigned long>(readings.light.charge_us));
     } else {
-        std::snprintf(status, sizeof(status), "L%sus S%s D%dB%d", light, soil,
-                      dht_ok(readings) ? 1 : 0, bmp_ok(readings) ? 1 : 0);
+        std::snprintf(light, sizeof(light), "Light:--");
     }
-    return {"AtmosMesh Grove", environment, pressure, status};
+
+    char soil[22];
+    if (readings.soil.valid) {
+        std::snprintf(soil, sizeof(soil), "Soil:%u", static_cast<unsigned>(readings.soil.raw));
+    } else {
+        std::snprintf(soil, sizeof(soil), "Soil:--");
+    }
+    return {environment, pressure, light, soil};
 }
 
 std::string grove_health_text(const GroveReadings& readings) {

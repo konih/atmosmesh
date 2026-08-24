@@ -14,6 +14,7 @@ this dashboard records what changes between sessions.
 | [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Bright/dark/saturation/timeout evidence |
 | [V15-05](stories/V15-05.md) | Blocked | Validate Grove MQTT and HA discovery | Broker/HA/reconnect evidence |
 | [V15-06](stories/V15-06.md) | Blocked | Add bi-color status and duty-cycled raw soil ADC | LED and switched-rail electrical validation |
+| [V15-07](stories/V15-07.md) | Blocked | Replace cryptic Grove OLED rows with labelled measurements | Fresh review, flash and visual confirmation |
 OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 idle-high is usually OK for flash.
 
 ## Current blockers
@@ -38,7 +39,7 @@ OLED VCC must be **3.3 V**. OLED SDA is GPIO5, SCL GPIO4 (0x3C proven). GPIO5 id
    BMP280, DHT22, SDS011 plus adapter/cable, MQ135, and the `5V07 / 12V04` AC/DC (AC pads vs DC pads).
 2. Enclose the AC/DC primary **before** applying 230 V. Measure DC out with no ESP32 attached.
 3. Record whether a dummy-load measurement is possible and the observed voltage/ripple.
-4. For Grove, visually confirm whether the OLED shows the four-line page.
+4. For Grove, after V15-07 review/flash, visually confirm the four labelled measurement rows.
 5. Exercise the Grove LDR under bright/dark and saturation/timeout conditions.
 6. Verify the bi-color LED colors/polarity, YL switched-rail voltage/current and physical power-off,
    then confirm MQTT broker/HA receipt and reconnect behavior.
