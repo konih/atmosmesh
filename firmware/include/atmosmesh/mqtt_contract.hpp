@@ -48,6 +48,7 @@ struct GroveMqttState {
     MqttReading humidity_pct;
     MqttReading pressure_hpa;
     MqttReading light_charge_us;
+    MqttReading soil_adc_raw;
 };
 
 enum class MqttProductKind {

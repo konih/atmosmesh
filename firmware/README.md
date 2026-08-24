@@ -38,7 +38,8 @@ device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the 
 
 After explicit authorization and independent review, the coordinator flashed AtmosMesh Grove on
 2026-08-24. The former AT firmware was replaced. The later RC-light/MQTT image described below has
-not been flashed; physical validation waits for fresh independent review and a coordinator upload.
+not been flashed. The newer LED/soil image also remains software-only; physical validation waits
+for fresh independent review and a coordinator upload.
 
 ## AtmosMesh Grove v1.5 wiring
 
@@ -59,16 +60,21 @@ product=AtmosMesh Grove product_id=atmosmesh-grove-v1.5 variant=atmosmesh-v1.5 s
 | BMP180 | SCL | `D3` / GPIO0 | Shared bus |
 | DHT11 | DATA | `D5` / GPIO14 | Valid communication observed; readings remain uncalibrated |
 | Bare LDR RC | Measurement node | `D7` / GPIO13 | `3V3 → LDR → 1 kΩ → node`; 100 nF node-to-GND |
+| Bi-color LED red | Color channel | `D6` / GPIO12 | Separate ~330 Ω resistor |
+| Bi-color LED green | Color channel | `D0` / GPIO16 | Separate ~330 Ω resistor |
+| YL-38 high-side switch | P-channel gate | `D1` / GPIO5 | Active LOW via ~1 kΩ; external 100 kΩ gate-to-source pull-up |
+| YL-38 | AO | `A0` through 47 kΩ / 15 kΩ | Optional 100 nF (`104`) A0-to-GND; DO unused |
 | All modules | VCC/GND | `3V3` / GND | Never power their GPIO pull-ups from 5 V |
 
 Firmware deliberately calls `Wire.begin(4, 0)`; it does not silently rewrite the physical wiring.
 `D3` is GPIO0, an ESP8266 boot strap. It must stay **HIGH during reset**. If a module or fault holds
 SCL low, the board enters the ROM downloader rather than starting AtmosMesh. Moving SCL to D1/GPIO5
-is a possible later hardware revision, not the v1.5 wiring implemented here.
+would now conflict with the V15-06 soil gate and requires an explicit hardware/profile redesign; it
+is not the v1.5 wiring implemented here.
 
 The 32-pixel display uses four compact rows: product, DHT temperature/humidity, BMP pressure, and
-raw RC light time plus DHT/BMP health bits (for example `L  4321us D1 B1`). Missing light renders
-as `L -----us`, never numeric zero, lux or percent.
+raw RC light/soil values plus DHT/BMP health bits (for example `L4321us S512 D1B1`). Missing soil
+renders `S----`; a completed ADC value of zero renders `S0`. Neither is moisture percent.
 Every sensor cycle probes BMP180 address 0x77: loss immediately invalidates the prior sample, while
 return triggers reinitialization before a value can become valid again. Serial startup identifies
 the product/station, exact pins, GPIO0 warning and every init/read state.
@@ -76,12 +82,56 @@ the product/station, exact pins, GPIO0 warning and every init/read state.
 The LDR is uncalibrated digital RC timing: firmware discharges D7 for 1 ms, releases it as an input,
 then advances a cooperative time-to-high state machine with a 200 ms hard timeout. A valid
 `light_charge_us` value is raw microseconds and **lower means brighter**. Immediate/saturated,
-timeout or disconnected states are unavailable. A0 remains free for a later YL-38 analog design;
-YL-69/YL-38 is not implemented, and MAX4466 has been dropped.
+timeout or disconnected states are unavailable. MAX4466 remains dropped.
 
 The firmware samples D7 synchronously immediately after changing it from driven-low to input. If
 the released line is already HIGH, that cycle is saturated/unavailable rather than a small plausible
 charge time. Normal charge timing continues cooperatively on subsequent loop ticks.
+
+### Bi-color health LED
+
+Default compiled wiring is common-cathode: red D6/GPIO12 and green D0/GPIO16 are active HIGH.
+Each channel requires its own approximately 330 Ω resistor. Define
+`ATMOSMESH_GROVE_LED_COMMON_ANODE=1` in the Grove build flags to invert both channels for a
+common-anode LED; startup prints the exact compiled polarity and HIGH/LOW levels. No WS2812 library
+is used.
+
+Common-anode verification build (does not flash):
+
+```bash
+PLATFORMIO_BUILD_FLAGS="-DATMOSMESH_GROVE_LED_COMMON_ANODE=1" task build-v1-5
+```
+
+| Color | Meaning |
+| --- | --- |
+| Red | DHT/BMP invalid, or an explicit light/soil acquisition timeout/failure |
+| Amber (red + green) | Core local sensors valid; MQTT offline or unconfigured |
+| Green | Core local sensors valid and MQTT connected |
+
+A light/soil value that is merely uncalibrated, missing before its first sample, or immediately
+saturated does not by itself turn the LED red.
+
+### YL-38 raw ADC and switched power
+
+The high-side switch design is **provisional until the exact MOSFET marking and datasheet pinout are
+confirmed**. Use a P-channel enhancement MOSFET with suitable logic-level behavior at
+`VGS=-2.5/-3.3 V`; do not infer source/drain/gate order. The intended net is source=3V3,
+drain=YL-38 VCC, gate=D1/GPIO5 through approximately 1 kΩ, with an external 100 kΩ gate-to-source
+pull-up. GPIO5 drives only the gate and is active LOW—never power the YL board from a GPIO. If YL
+VCC is wired directly to 3V3, firmware cannot prevent continuous power and makes no duty-cycle claim.
+
+YL AO reaches A0 through a conservative 47 kΩ top / 15 kΩ bottom divider; optional 100 nF (`104`)
+from A0 to GND filters noise. Grounds are common and YL DO is unused. This divider keeps 3.3 V AO
+near 0.80 V for a bare 1.0 V ESP8266 ADC. Some NodeMCU boards already divide A0, so the combined
+attenuation and raw counts depend on the exact board. Firmware therefore exposes only
+`soil_adc_raw`, never calibrated moisture or percent.
+
+Firmware latches D1 HIGH before enabling OUTPUT, waits 30 seconds between cycle starts, then drives
+the gate LOW, settles 100 ms, takes five samples 5 ms apart, averages them, and returns the gate HIGH
+immediately. Normal power-on time is 120 ms / 30 s = 0.4%; the 250 ms fail-off deadline bounds the
+cooperative policy to 0.84% (rounded-up documented bound 0.9%). MQTT/DNS/TCP work is not started
+while YL power is active. Before the first completed cycle the field is unavailable/omitted; raw ADC
+zero after a completed cycle is a valid numeric reading.
 
 ### Grove MQTT contract
 
@@ -94,11 +144,13 @@ and sensors/OLED continue.
 | State | `home/air/atmosmesh-grove-0001/state` (not retained) |
 | Availability/LWT | `home/air/atmosmesh-grove-0001/availability` (`online`/`offline`, retained) |
 | Discovery | `homeassistant/sensor/atmosmesh_grove_0001/<object_id>/config` (retained) |
-| Entities | `temperature_c`, `humidity_pct`, `pressure_hpa`, `light_charge_us` |
+| Entities | `temperature_c`, `humidity_pct`, `pressure_hpa`, `light_charge_us`, `soil_adc_raw` |
 
 State omits invalid values, so missing is distinct from a valid numeric zero. The light entity is
-named **Uncalibrated RC Light Charge Time**, uses `µs`, and has no illuminance device class. Every
-connect replays discovery, followed by retained online availability and any pending state. Broker
+named **Uncalibrated RC Light Charge Time**, uses `µs`, and has no illuminance device class.
+The soil entity is **Soil Probe ADC Raw**, uses `ADC count`, and has no moisture device class,
+percentage or calibration claim. Every connect replays discovery, followed by retained online
+availability and any pending state. Broker
 retries back off from 1 to 30 seconds. DNS lookup and TCP connection share a 1000 ms transport
 budget instead of the ESP8266 core's roughly five-second default. PubSubClient's subsequent MQTT
 response wait is separately bounded to one second, so a complete failed attempt can occupy roughly
@@ -111,6 +163,8 @@ two seconds before the reconnect backoff resumes local work.
 - DHT11: later reported 32.0 °C / 32% RH then 31.0 °C / 32% RH on D5/GPIO14. This proves
   communication, not accuracy or calibration.
 - RC light and Grove MQTT: software/native/build validation only; no hardware claim yet.
+- Bi-color LED and YL-38: software/native/build validation only; no hardware claim yet. The
+  P-channel device marking/pinout is still required before wiring the high-side switch.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.
@@ -195,6 +249,8 @@ The part is **not fitted yet**: boot logs `veml7700: not found (ok until fitted)
 | `include/atmosmesh/product_profile.hpp` | Host-tested identity and explicit pin/geometry metadata for both products |
 | `src/grove_status.cpp` | Shared, host-tested Grove missing/value/health formatting |
 | `src/rc_light.cpp` | Host-tested cooperative RC discharge/time-to-high policy |
+| `src/soil_sampler.cpp` | Host-tested cooperative active-low power/sample/fail-off policy |
+| `src/status_led.cpp` | Host-tested health/color/polarity mapping |
 | `include/atmosmesh/secrets.hpp.example` | Copy to gitignored `secrets.hpp` for Wi-Fi/MQTT |
 | `test/test_native/` | Unity sensor/OLED tests (`pio test -e native`) |
 | `test/test_mqtt/` | Unity MQTT contract/session tests |

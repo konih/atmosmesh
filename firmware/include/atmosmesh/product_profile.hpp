@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef ATMOSMESH_GROVE_LED_COMMON_ANODE
+#define ATMOSMESH_GROVE_LED_COMMON_ANODE 0
+#endif
+
 namespace atmosmesh {
 
 struct ProductProfile {
@@ -15,6 +19,10 @@ struct ProductProfile {
     int oled_width_px;
     int oled_height_px;
     int light_rc_gpio;
+    int status_led_red_gpio;
+    int status_led_green_gpio;
+    int soil_power_gate_gpio;
+    bool status_led_common_anode;
 };
 
 // AtmosMesh v1: existing ESP32 station identity and already-established display/DHT pins.
@@ -25,19 +33,24 @@ inline constexpr ProductProfile kAtmosMeshV1Profile{
     "atmosmesh-0001", 5,              4,
     true,             false,          18,
     128,              64,             -1,
+    -1,               -1,             -1,
+    false,
 };
 
 inline constexpr const ProductProfile& atmosmesh_v1_profile() {
     return kAtmosMeshV1Profile;
 }
 
-// AtmosMesh Grove v1.5: NodeMCU labels D2=GPIO4, D3=GPIO0, D5=GPIO14.
+// AtmosMesh Grove v1.5: D2=GPIO4, D3=GPIO0, D5=GPIO14, D7=GPIO13,
+// LED red D6=GPIO12 / green D0=GPIO16, soil gate D1=GPIO5.
 // GPIO0 must remain high during reset or the ESP8266 enters ROM download mode.
 inline constexpr ProductProfile kGroveProfile{
     "AtmosMesh Grove",      "atmosmesh-grove-v1.5", "atmosmesh-v1.5",
     "atmosmesh-grove-0001", 4,                       0,
     false,                    true,                    14,
     128,                      32,                      13,
+    12,                       16,                      5,
+    ATMOSMESH_GROVE_LED_COMMON_ANODE != 0,
 };
 
 inline constexpr const ProductProfile& grove_profile() {

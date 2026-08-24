@@ -25,7 +25,7 @@ compact ESP8266 Grove node are both first-class products; neither supersedes the
 | Product | Product ID | Product variant | Controller | Sensor/display scope | Canonical build |
 | --- | --- | --- | --- | --- | --- |
 | **AtmosMesh v1** | `atmosmesh-v1` | `esp32-full-station` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` |
-| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11, uncalibrated D7 RC light, MQTT | `task build-v1-5` |
+| **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11, uncalibrated D7 RC light, D0/D6 status LED, duty-cycled raw YL-38 ADC, MQTT | `task build-v1-5` |
 
 The products share one PlatformIO project and host-tested core, with explicit composition roots
 instead of copied firmware trees. See [ADR-0001](docs/adr/0001-multi-product-firmware-composition.md).
@@ -121,7 +121,9 @@ SDS011 UART2, MQ135 ADC, PIR, and beeper. MQTT, Home Assistant, and the cluster
 path are still ahead. Grove v1.5 hardware has runtime communication evidence for BMP180 and DHT11;
 OLED controller initialization passed but pixels need visual confirmation. Cooperative D7 RC light
 timing and Grove MQTT/HA discovery are implemented and host/build-tested but await reviewed hardware
-validation ([roadmap](agent-context/roadmap.md)).
+validation. The status LED/soil extension is software-only pending fresh review; its provisional
+P-channel MOSFET requires an exact marking and datasheet pinout before wiring
+([roadmap](agent-context/roadmap.md)).
 
 ## License and contributors
 
