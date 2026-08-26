@@ -30,12 +30,17 @@ Use **one PlatformIO project** with four explicit layers:
 4. Canonical PlatformIO environments and Task targets use product names. Compatibility aliases
    remain while existing operator/CI workflows migrate.
 
-The two product contracts are:
+The product contracts are:
 
 | Product | Stable product ID | Product variant | Default station ID | Composition root | Canonical environment |
 | --- | --- | --- | --- | --- | --- |
 | AtmosMesh v1 | `atmosmesh-v1` | `esp32-full-station` | `atmosmesh-0001` | `products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
 | AtmosMesh Grove v1.5 | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `atmosmesh-grove-0001` | `products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
+| AtmosMesh Aqua | `atmosmesh-aqua-v1` | `esp8266-aqua-station` | `atmosmesh-aqua-0001` | `products/atmosmesh_aqua_v1.cpp` | `atmosmesh-aqua-v1` |
+
+AtmosMesh Aqua was added under this same process (story AQ-01, D-020); see that story's evidence
+for its own build/test verification. This ADR's Context/Evidence sections below predate Aqua and
+describe the original two-product decision.
 
 Product IDs are stable API identifiers and are not room names. Product variants describe the
 hardware/firmware shape within that contract; product ID, product variant and station ID are
@@ -105,8 +110,8 @@ stories. No big-bang rewrite is required to accept this ADR.
 ## Validation
 
 - `task test` compiles shared host-testable utilities once and excludes `src/products/*`.
-- `task build-v1` and `task build-v1-5` each build one canonical product.
-- `task build-all` builds both canonical products.
+- `task build-v1`, `task build-v1-5` and `task build-aqua` each build one canonical product.
+- `task build-all` builds all canonical products.
 - Compatibility `task build` and `task build-grove` remain green.
 - PlatformIO verbose/source-filter inspection confirms each device environment selects exactly one
   product composition root.

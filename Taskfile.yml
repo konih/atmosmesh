@@ -45,11 +45,19 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5"
 
+  build-aqua:
+    desc: Build AtmosMesh Aqua (`pio run -e atmosmesh-aqua-v1`)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1"
+
   build-all:
     desc: Build every first-class AtmosMesh firmware product
     cmds:
       - task: build-v1
       - task: build-v1-5
+      - task: build-aqua
 
   build:
     desc: Compatibility alias for build-v1 (AtmosMesh v1 / ESP32)
@@ -85,6 +93,13 @@ tasks:
     cmds:
       - task: flash-v1-5
 
+  flash-aqua:
+    desc: Upload AtmosMesh Aqua to ESP_PORT; use reviewed image only
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1 -t upload --upload-port {{.ESP_PORT}}"
+
   monitor-v1:
     desc: Serial monitor for AtmosMesh v1 at 115200 on ESP_PORT
     dir: firmware
@@ -106,6 +121,12 @@ tasks:
     desc: Compatibility alias for monitor-v1-5
     cmds:
       - task: monitor-v1-5
+
+  monitor-aqua:
+    desc: Serial monitor for AtmosMesh Aqua at 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
 
   run:
     desc: Flash then open the serial monitor
@@ -144,3 +165,9 @@ tasks:
     desc: Compatibility alias for clean-v1-5
     cmds:
       - task: clean-v1-5
+
+  clean-aqua:
+    desc: Clean AtmosMesh Aqua build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1 -t clean"

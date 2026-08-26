@@ -36,8 +36,4 @@ AquaOledLines aqua_oled_lines(const AquaReadings& readings) {
     return {temperature, humidity, water, status};
 }
 
-bool aqua_core_sensors_ok(const AquaReadings& readings) {
-    return readings.temperature.valid && readings.humidity.valid;
-}
-
 }  // namespace atmosmesh

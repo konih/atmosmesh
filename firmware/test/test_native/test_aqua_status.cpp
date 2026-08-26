@@ -38,20 +38,10 @@ void test_aqua_water_raw_zero_is_shown_not_hidden() {
     TEST_ASSERT_EQUAL_STRING("Water:0", lines[2].c_str());
 }
 
-void test_aqua_core_sensors_ok_requires_both_temperature_and_humidity() {
-    atmosmesh::AquaReadings readings{};
-    TEST_ASSERT_FALSE(atmosmesh::aqua_core_sensors_ok(readings));
-    readings.temperature = {true, 21.0F};
-    TEST_ASSERT_FALSE(atmosmesh::aqua_core_sensors_ok(readings));
-    readings.humidity = {true, 40.0F};
-    TEST_ASSERT_TRUE(atmosmesh::aqua_core_sensors_ok(readings));
-}
-
 }  // namespace
 
 void register_aqua_status_tests() {
     RUN_TEST(test_aqua_page_formats_valid_measurements);
     RUN_TEST(test_aqua_page_never_turns_missing_into_zero);
     RUN_TEST(test_aqua_water_raw_zero_is_shown_not_hidden);
-    RUN_TEST(test_aqua_core_sensors_ok_requires_both_temperature_and_humidity);
 }

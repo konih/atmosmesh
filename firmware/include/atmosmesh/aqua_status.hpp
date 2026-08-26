@@ -21,6 +21,5 @@ struct AquaReadings {
 using AquaOledLines = std::array<std::string, 4>;
 
 AquaOledLines aqua_oled_lines(const AquaReadings& readings);
-bool aqua_core_sensors_ok(const AquaReadings& readings);
 
 }  // namespace atmosmesh
