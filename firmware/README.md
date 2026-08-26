@@ -171,16 +171,24 @@ A light value that is merely uncalibrated or immediately saturated does not by i
 red. Before the first soil sample, and after a valid raw sample without validated calibration, the
 LED stays amber rather than guessing moisture.
 
-Soil calibration is compile-time metadata and is disabled by default. The four macros are
+Soil calibration is compile-time metadata. The four macros are
 `ATMOSMESH_GROVE_SOIL_CALIBRATION_ENABLED` (`0`/`1`),
 `ATMOSMESH_GROVE_SOIL_RAW_DIRECTION` (`1` higher-is-wetter, `2` lower-is-wetter),
 `ATMOSMESH_GROVE_SOIL_DRY_CUTOFF_RAW`, and
 `ATMOSMESH_GROVE_SOIL_ACCEPTABLE_CUTOFF_RAW`. Both cutoffs must be raw ADC values in `0..1023`.
 Higher-is-wetter requires `dry < acceptable`; lower-is-wetter requires `dry > acceptable`.
 Unknown direction, out-of-range/equal cutoffs, or direction-inconsistent ordering fails safe to
-uncalibrated amber. Do not enable this until controlled dry/wet observations establish direction
-and thresholds. Serial reports `soil-led-status`, reason, raw value, validation, direction and
+uncalibrated amber. Serial reports `soil-led-status`, reason, raw value, validation, direction and
 cutoffs. MQTT and Home Assistant remain raw-only.
+
+The canonical `atmosmesh-grove-v1_5` environment (and its `esp8266-grove`,
+`-visual-diagnostic`, and `-common-cathode` variants) compiles with calibration **enabled**,
+from operator dry/wet observation, 2026-08-26: `ATMOSMESH_GROVE_SOIL_RAW_DIRECTION=2`
+(lower-is-wetter), `ATMOSMESH_GROVE_SOIL_DRY_CUTOFF_RAW=200`,
+`ATMOSMESH_GROVE_SOIL_ACCEPTABLE_CUTOFF_RAW=100` — raw ADC 200+ reads dry (red), raw ADC 100
+or below reads well-watered (green), the band between reads needs-watering (amber). The
+`native` host-test environment keeps calibration disabled, so its default-disabled unit tests
+still exercise the fail-safe path.
 
 ### YL-38 raw ADC and switched power
 

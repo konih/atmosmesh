@@ -249,6 +249,21 @@
 - **Boundary:** This decision is Aqua-specific. It does not amend D-016, and it does not change
   Grove v1.5's or AtmosMesh v1's own OLED pages.
 
+### D-021 — Grove soil calibration enabled with operator-supplied thresholds
+
+- **Status:** Accepted from operator calibration request, 2026-08-26.
+- **Values:** `lower-is-wetter`, dry cutoff raw ADC `200`, acceptable cutoff raw ADC `100` — raw
+  200 or higher is `dry` (red), raw 100 or lower is `acceptable`/well-watered (green), the band
+  between is `needs-watering` (amber). Satisfies D-018's `dry > acceptable` ordering rule for the
+  lower-is-wetter direction.
+- **Scope:** Enabled only on the canonical `atmosmesh-grove-v1_5` PlatformIO environment (and its
+  `esp8266-grove`, `-visual-diagnostic`, `-common-cathode` variants) via `firmware/platformio.ini`
+  build flags. `env:native` keeps calibration compiled disabled so
+  `test_soil_calibration_defaults_disabled_and_validates_both_directions` still exercises the
+  fail-safe default.
+- **Supersedes:** D-018's "thresholds remain disabled until operator measurements establish
+  direction and cutoffs" — that measurement is this decision.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots
