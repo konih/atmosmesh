@@ -3,6 +3,7 @@
 
 #include <unity.h>
 
+#include "atmosmesh/aqua_mqtt_runtime.hpp"
 #include "atmosmesh/grove_status.hpp"
 #include "atmosmesh/grove_mqtt_runtime.hpp"
 #include "atmosmesh/product_profile.hpp"
@@ -209,6 +210,18 @@ void test_grove_dns_and_tcp_share_one_bounded_connect_budget() {
     TEST_ASSERT_FALSE(atmosmesh::grove_network_work_allowed(false, true));
 }
 
+void test_aqua_dns_and_tcp_share_one_bounded_connect_budget() {
+    TEST_ASSERT_EQUAL_UINT32(1000U, atmosmesh::kAquaMqttTransportConnectBudgetMs);
+    TEST_ASSERT_EQUAL_UINT32(
+        750U, atmosmesh::aqua_mqtt_connect_budget_remaining_ms(1000U, 1250U));
+    TEST_ASSERT_EQUAL_UINT32(
+        0U, atmosmesh::aqua_mqtt_connect_budget_remaining_ms(1000U, 2000U));
+    TEST_ASSERT_EQUAL_UINT32(
+        0U, atmosmesh::aqua_mqtt_connect_budget_remaining_ms(1000U, 2500U));
+    TEST_ASSERT_TRUE(atmosmesh::aqua_network_work_allowed(false));
+    TEST_ASSERT_FALSE(atmosmesh::aqua_network_work_allowed(true));
+}
+
 void test_rc_light_timeout_is_unavailable_and_never_zero() {
     atmosmesh::RcLightState state{};
     atmosmesh::rc_light_begin(state, 1000U);
@@ -384,6 +397,7 @@ void register_product_variant_tests() {
     RUN_TEST(test_rc_light_timeout_is_unavailable_and_never_zero);
     RUN_TEST(test_rc_light_rejects_high_first_seen_after_hard_timeout);
     RUN_TEST(test_grove_dns_and_tcp_share_one_bounded_connect_budget);
+    RUN_TEST(test_aqua_dns_and_tcp_share_one_bounded_connect_budget);
     RUN_TEST(test_grove_oled_shows_raw_light_or_explicit_missing);
     RUN_TEST(test_status_led_maps_health_and_polarity_deterministically);
     RUN_TEST(test_soil_sampler_is_cooperative_bounded_and_accepts_raw_zero);
