@@ -178,6 +178,35 @@
 - **Boundary:** The page does not add BMP temperature to the public contract, convert light to lux,
   convert soil to moisture, or change AtmosMesh v1.
 
+### D-019 — MQTT remains AtmosMesh's sole transport; ESPHome native API declined
+
+- **Status:** Accepted; see
+  [ADR-0002](../docs/adr/0002-mqtt-vs-esphome-native-api-transport.md).
+- **Trigger:** Answers OQ-001's revisit condition — operator asked for ESPHome's native API
+  (Home Assistant's direct protobuf/Noise protocol, not MQTT) as a second, switchable transport.
+- **Decision:** MQTT (D-007/D-013) stays the only transport across all products, including the new
+  Aqua variant. Declined both hand-rolling the native API protocol and adopting the one real
+  existing device-side library found (`BentuinoESPHomeAPI`: AGPL-3.0 vs. this project's MIT
+  license, ~2.5 months old, unaudited vendored crypto, and an ESP8266 RAM footprint that does not
+  fit alongside Aqua's own sensors/OLED/MQTT).
+- **If revisited:** Any future transport choice is compile-time-switchable only (a second
+  canonical PlatformIO environment), never a runtime toggle — two resident network stacks do not
+  fit in ESP8266 RAM. See ADR-0002's three explicit revisit triggers.
+
+### D-020 — Aqua live OLED uses a 4-row layout at 6×10, distinct from D-016
+
+- **Status:** Accepted as part of AQ-01 implementation, 2026-08-26.
+- **Page:** The 128×64 live page reuses AtmosMesh v1's existing
+  `U8G2_SSD1306_128X64_ALT0_F_HW_I2C` constructor (no new duplicated constructor path) with the
+  `u8g2_font_6x10_tf` font at baselines 14/28/42/56 px — taking advantage of the doubled vertical
+  resolution over Grove's 128×32 glass rather than packing eight thin rows. Rows: SHT41
+  temperature, SHT41 humidity, raw water-probe ADC, and an MQTT connectivity status line.
+- **Missing values:** Each missing value keeps its metric label (`T:--`, `RH:--`, `Water:--`) and
+  is never rendered as numeric zero, mirroring D-016's rule. `aqua_oled_lines()`
+  (`aqua_status.hpp/cpp`) is host-tested the same way `grove_oled_lines()` is.
+- **Boundary:** This decision is Aqua-specific. It does not amend D-016, and it does not change
+  Grove v1.5's or AtmosMesh v1's own OLED pages.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots
@@ -199,9 +228,12 @@
 
 ### OQ-001 — Firmware framework
 
-- **Status:** Resolved by D-006 — PlatformIO + Arduino (`esp32dev`), native Unity tests.
+- **Status:** Resolved by D-006 — PlatformIO + Arduino (`esp32dev`), native Unity tests. Revisit
+  trigger fired 2026-08-26 (operator asked for ESPHome native API alongside MQTT) and was
+  evaluated in [D-019](#d-019--mqtt-remains-atmosmeshs-sole-transport-esphome-native-api-declined)
+  / ADR-0002 — still resolved, not reopened.
 - **Revisit if:** ESPHome would materially simplify the full station (MQTT, HA discovery) after the
-  bench sensors work.
+  bench sensors work. See ADR-0002's three specific revisit triggers for what would change this.
 
 ### OQ-002 — Kubernetes packaging
 

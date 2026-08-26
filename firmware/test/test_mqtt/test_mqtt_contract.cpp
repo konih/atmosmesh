@@ -353,6 +353,105 @@ void test_pending_state_survives_failure_before_state_publish_and_clears_only_on
     TEST_ASSERT_TRUE(session.pending_state_payload.empty());
 }
 
+void test_aqua_contract_uses_stable_ids_and_separate_topics() {
+    const auto& contract = atmosmesh::mqtt_aqua_contract();
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-aqua-v1", contract.product_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-aqua-0001", contract.station_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh_aqua_0001", contract.discovery_node);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-aqua-0001/state", contract.state_topic);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-aqua-0001/availability",
+                             contract.availability_topic);
+}
+
+void test_aqua_will_is_retained_offline_on_product_availability_topic() {
+    const auto will = atmosmesh::mqtt_will_config(atmosmesh::mqtt_aqua_contract());
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-aqua-0001/availability", will.topic);
+    TEST_ASSERT_EQUAL_STRING("offline", will.payload);
+    TEST_ASSERT_EQUAL_INT(0, will.qos);
+    TEST_ASSERT_TRUE(will.retained);
+}
+
+void test_aqua_state_omits_missing_readings_and_never_carries_pressure() {
+    atmosmesh::AquaMqttState state{};
+    state.temperature_c = {0.0F, false, 0};
+    state.humidity_pct = {0.0F, false, 0};
+    state.water_adc_raw = {0.0F, false, 0};
+
+    std::string json = atmosmesh::aqua_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"station_id\":\"atmosmesh-aqua-0001\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"product_id\":\"atmosmesh-aqua-v1\""));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("temperature_c\":"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("humidity_pct\":"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("water_adc_raw\":"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("pressure"));
+
+    state.temperature_c = {23.4F, true, 0};
+    state.humidity_pct = {48.0F, true, 0};
+    state.water_adc_raw = {0.0F, true, 0};
+    json = atmosmesh::aqua_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"temperature_c\":23.4"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"humidity_pct\":48.0"));
+    // A raw zero reading is a valid measurement, not a missing one.
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"water_adc_raw\":0"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("pressure"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("moisture"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("level"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"level\""));
+}
+
+void test_aqua_discovery_has_exactly_three_entities_and_no_pressure() {
+    const auto& contract = atmosmesh::mqtt_aqua_contract();
+    TEST_ASSERT_EQUAL_INT(3, static_cast<int>(atmosmesh::mqtt_discovery_config_count(contract)));
+    bool saw_temperature = false;
+    bool saw_humidity = false;
+    bool saw_water = false;
+    for (std::size_t i = 0; i < atmosmesh::mqtt_discovery_config_count(contract); ++i) {
+        const auto cfg = atmosmesh::mqtt_discovery_config_at(contract, i);
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.topic.find("atmosmesh_aqua_0001"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find(contract.state_topic));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find(contract.availability_topic));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("atmosmesh-aqua-0001_"));
+        TEST_ASSERT_LESS_THAN_UINT32(768U, static_cast<std::uint32_t>(cfg.payload.size()));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("pressure"));
+        if (std::string(cfg.object_id) == "temperature_c") {
+            saw_temperature = true;
+        } else if (std::string(cfg.object_id) == "humidity_pct") {
+            saw_humidity = true;
+        } else if (std::string(cfg.object_id) == "water_adc_raw") {
+            saw_water = true;
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("Water Probe ADC Raw"));
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("ADC count"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("device_class"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("moisture"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("level"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("%"));
+        }
+    }
+    TEST_ASSERT_TRUE(saw_temperature);
+    TEST_ASSERT_TRUE(saw_humidity);
+    TEST_ASSERT_TRUE(saw_water);
+}
+
+void test_aqua_session_replays_retained_discovery_and_availability_on_reconnect() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_use_contract(session, atmosmesh::mqtt_aqua_contract());
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::AquaMqttState state{};
+    state.temperature_c = {21.0F, true, 0};
+    atmosmesh::mqtt_session_queue_payload(session, atmosmesh::aqua_mqtt_state_json(state));
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 0);
+    TEST_ASSERT_EQUAL_INT(5, static_cast<int>(actions.size()));
+    for (std::size_t i = 0; i < 3; ++i) {
+        TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions[i].kind);
+        TEST_ASSERT_TRUE(actions[i].retained);
+    }
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
+                      actions[3].kind);
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[4].kind);
+    TEST_ASSERT_FALSE(actions[4].retained);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_mqtt_ids_and_topics_are_station_not_room);
@@ -369,5 +468,10 @@ int main() {
     RUN_TEST(test_grove_discovery_has_five_truthful_entities);
     RUN_TEST(test_grove_session_replays_retained_discovery_and_availability_on_reconnect);
     RUN_TEST(test_pending_state_survives_failure_before_state_publish_and_clears_only_on_success);
+    RUN_TEST(test_aqua_contract_uses_stable_ids_and_separate_topics);
+    RUN_TEST(test_aqua_will_is_retained_offline_on_product_availability_topic);
+    RUN_TEST(test_aqua_state_omits_missing_readings_and_never_carries_pressure);
+    RUN_TEST(test_aqua_discovery_has_exactly_three_entities_and_no_pressure);
+    RUN_TEST(test_aqua_session_replays_retained_discovery_and_availability_on_reconnect);
     return UNITY_END();
 }

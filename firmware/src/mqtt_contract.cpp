@@ -50,6 +50,16 @@ constexpr DiscoverySpec kGroveDiscoverySpecs[] = {
      "{{ value_json.soil_adc_raw | default(none) }}"},
 };
 
+// No pressure entity: SHT41 does not measure pressure (D-019/ADR-0002, story AQ-01).
+constexpr DiscoverySpec kAquaDiscoverySpecs[] = {
+    {"sensor", "temperature_c", "Temperature", "temperature", "\u00B0C",
+     "{{ value_json.temperature_c | default(none) }}"},
+    {"sensor", "humidity_pct", "Humidity", "humidity", "%",
+     "{{ value_json.humidity_pct | default(none) }}"},
+    {"sensor", "water_adc_raw", "Water Probe ADC Raw", nullptr, "ADC count",
+     "{{ value_json.water_adc_raw | default(none) }}"},
+};
+
 constexpr MqttProductContract kV1Contract{
     MqttProductKind::AtmosMeshV1,
     kMqttDeviceId,
@@ -70,6 +80,16 @@ constexpr MqttProductContract kGroveContract{
     "home/air/atmosmesh-grove-0001/availability",
 };
 
+constexpr MqttProductContract kAquaContract{
+    MqttProductKind::AtmosMeshAquaV1,
+    "atmosmesh-aqua-v1",
+    "atmosmesh-aqua-0001",
+    "atmosmesh_aqua_0001",
+    "AtmosMesh Aqua 0001",
+    "home/air/atmosmesh-aqua-0001/state",
+    "home/air/atmosmesh-aqua-0001/availability",
+};
+
 struct DiscoverySpecRange {
     const DiscoverySpec* specs;
     std::size_t count;
@@ -79,6 +99,9 @@ DiscoverySpecRange discovery_specs(const MqttProductContract& contract) {
     if (contract.kind == MqttProductKind::AtmosMeshGroveV1_5) {
         return {kGroveDiscoverySpecs,
                 sizeof(kGroveDiscoverySpecs) / sizeof(kGroveDiscoverySpecs[0])};
+    }
+    if (contract.kind == MqttProductKind::AtmosMeshAquaV1) {
+        return {kAquaDiscoverySpecs, sizeof(kAquaDiscoverySpecs) / sizeof(kAquaDiscoverySpecs[0])};
     }
     return {kV1DiscoverySpecs, sizeof(kV1DiscoverySpecs) / sizeof(kV1DiscoverySpecs[0])};
 }
@@ -189,12 +212,26 @@ std::string grove_mqtt_state_json(const GroveMqttState& state) {
     return out;
 }
 
+std::string aqua_mqtt_state_json(const AquaMqttState& state) {
+    std::string out = "{\"station_id\":\"atmosmesh-aqua-0001\",";
+    out += "\"product_id\":\"atmosmesh-aqua-v1\"";
+    append_optional_number(out, "temperature_c", state.temperature_c, "%.1f");
+    append_optional_number(out, "humidity_pct", state.humidity_pct, "%.1f");
+    append_optional_number(out, "water_adc_raw", state.water_adc_raw, "%.0f");
+    out += '}';
+    return out;
+}
+
 const MqttProductContract& mqtt_v1_contract() {
     return kV1Contract;
 }
 
 const MqttProductContract& mqtt_grove_contract() {
     return kGroveContract;
+}
+
+const MqttProductContract& mqtt_aqua_contract() {
+    return kAquaContract;
 }
 
 MqttWillConfig mqtt_will_config(const MqttProductContract& contract) {

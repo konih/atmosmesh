@@ -51,9 +51,17 @@ struct GroveMqttState {
     MqttReading soil_adc_raw;
 };
 
+// No pressure entity: SHT41 does not measure pressure. See D-019/ADR-0002 and story AQ-01.
+struct AquaMqttState {
+    MqttReading temperature_c;
+    MqttReading humidity_pct;
+    MqttReading water_adc_raw;
+};
+
 enum class MqttProductKind {
     AtmosMeshV1,
     AtmosMeshGroveV1_5,
+    AtmosMeshAquaV1,
 };
 
 struct MqttProductContract {
@@ -82,8 +90,10 @@ struct MqttWillConfig {
 
 std::string mqtt_state_json(const MqttStationState& state);
 std::string grove_mqtt_state_json(const GroveMqttState& state);
+std::string aqua_mqtt_state_json(const AquaMqttState& state);
 const MqttProductContract& mqtt_v1_contract();
 const MqttProductContract& mqtt_grove_contract();
+const MqttProductContract& mqtt_aqua_contract();
 MqttWillConfig mqtt_will_config(const MqttProductContract& contract);
 std::string mqtt_discovery_device_json();
 std::string mqtt_discovery_device_json(const MqttProductContract& contract);

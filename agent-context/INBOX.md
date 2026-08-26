@@ -4,6 +4,57 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ---
 
+## DECISION — AQ-01 software implemented; wiring still blocked (2026-08-26)
+
+Operator approved story AQ-01 and asked implementation to start, in parallel with soldering the
+ESP8266MOD board. Implemented and verified at the software level only — no hardware was touched or
+flashed:
+
+- New `AtmosMesh Aqua` product: `product_profile.hpp` gained an Aqua profile (designated
+  initializers now, all three profiles — check any future diff carefully for field-order drift);
+  `sht4x_frame.hpp/cpp` (new, CRC-verified SHT41 decoder, host-tested against Sensirion's published
+  CRC test vector); `aqua_status.hpp/cpp` (new, 4-row OLED text formatting, host-tested); reused
+  `soil_sampler.hpp/cpp` as-is for the water probe (not forked); `mqtt_contract.hpp/cpp` gained
+  `MqttProductKind::AtmosMeshAquaV1` (3 entities, no pressure); new `aqua_mqtt_runtime.cpp` (ESP8266
+  transport, cloned from Grove's); new `products/atmosmesh_aqua_v1.cpp` composition root; new
+  `[env:atmosmesh-aqua-v1]` in `platformio.ini`. New decision [D-020](decisions.md) records the
+  OLED page layout.
+- Verified 2026-08-26: `pio test -e native` 109/109 passed, `task check` clean; `atmosmesh-aqua-v1`,
+  `atmosmesh-v1`/`esp32dev`, `atmosmesh-grove-v1_5`/`esp8266-grove` all build clean. Grove's own
+  pins/behavior/tests are unchanged, but its **binary is not byte-identical**: measured against a
+  pre-change worktree, RAM +576 B (41.9%→42.6%) and flash +2536 B (29.1%→29.3%), because Grove
+  links the shared `mqtt_contract.cpp`, which now also carries Aqua's contract literals — same
+  pre-existing pattern already puts Grove's contract data inside the v1 ESP32 build. Full detail in
+  [AQ-01](stories/AQ-01.md).
+- **Not done, and deliberately not done:** nothing has been flashed. AQ-01's own acceptance
+  criterion 1 (photograph the board and water-probe hardware to resolve two open identity
+  questions) is still open, and independent review is still required before any flash. The operator
+  was told, separately, to check for the A0-divider resistors before soldering the water probe (a
+  bare ESP-12 module's A0 is 0–1.0 V; a NodeMCU-style board's A0 header is 0–3.3 V) — not yet
+  confirmed either way.
+- Needs a human read of the diff (profile struct layout change touches all three products) before
+  merging. `agent-context/roadmap.md` now has an Aqua-variant table; not previously present.
+- Unrelated: an untracked `hardware/kicad/atmosmesh-bench/AtmosmeshAqua/` directory with an active
+  KiCad lock file exists in the working tree. This session did not create it and did not touch it —
+  flagging since it's untracked, in case it's a KiCad session's in-progress work that should be
+  committed separately.
+
+## DECISION — ADR-0002 / D-019: MQTT-only, ESPHome native API declined (2026-08-26)
+
+Operator asked for ESPHome's native API as a second, switchable transport alongside MQTT for a
+new hardware variant (ESP8266MOD + SHT41 + 128×64 OLED + 3-pin water probe). `/design-architecture`
+produced [ADR-0002](../docs/adr/0002-mqtt-vs-esphome-native-api-transport.md) recommending
+MQTT-only for now — the only real device-side library found (`BentuinoESPHomeAPI`) is AGPL-3.0
+(conflicts with this repo's MIT license), ~2.5 months old with unaudited vendored crypto, and its
+own RAM footprint alone doesn't leave headroom for Aqua's sensors/OLED/MQTT on one ESP8266.
+Operator approved; recorded as **Accepted** in decisions.md D-019. Also drafted story
+[AQ-01](stories/AQ-01.md) for the new "AtmosMesh Aqua" product variant — **Proposed**, not Ready:
+board identity (bare ESP-12 module vs. NodeMCU-style) and water-probe identity (no DO pin — likely
+not a YL-38) are unconfirmed and gate all wiring. Needs a human read of the ADR and story before
+either is treated as final; roadmap.md has not yet been updated with an Aqua milestone/row.
+
+---
+
 ## Operator note — no mic/clap; VEML7700 on Wire1 (2026-08-14)
 
 **Live firmware is `main`:** **no microphone, no clap.** GPIO22 and GPIO35 are free. PIR GPIO33,

@@ -30,6 +30,7 @@ void test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins() {
     TEST_ASSERT_EQUAL_INT(-1, profile.status_led_red_gpio);
     TEST_ASSERT_EQUAL_INT(-1, profile.status_led_green_gpio);
     TEST_ASSERT_EQUAL_INT(-1, profile.soil_power_control_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.water_power_control_gpio);
 }
 
 void test_grove_profile_is_id_based_and_matches_wiring() {
@@ -52,6 +53,31 @@ void test_grove_profile_is_id_based_and_matches_wiring() {
     TEST_ASSERT_EQUAL_INT(12, profile.status_led_red_gpio);
     TEST_ASSERT_EQUAL_INT(16, profile.status_led_green_gpio);
     TEST_ASSERT_EQUAL_INT(5, profile.soil_power_control_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.water_power_control_gpio);
+    TEST_ASSERT_FALSE(profile.status_led_common_anode);
+}
+
+void test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins() {
+    const auto& profile = atmosmesh::aqua_profile();
+    TEST_ASSERT_EQUAL_STRING("AtmosMesh Aqua", profile.product_name);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-aqua-v1", profile.product_id);
+    TEST_ASSERT_EQUAL_STRING("esp8266-aqua-station", profile.product_variant);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-aqua-0001", profile.station_id);
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.product_variant));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_id, profile.station_id));
+    TEST_ASSERT_NOT_EQUAL(0, std::strcmp(profile.product_variant, profile.station_id));
+    TEST_ASSERT_EQUAL_INT(4, profile.i2c_sda_gpio);
+    TEST_ASSERT_EQUAL_INT(5, profile.i2c_scl_gpio);
+    TEST_ASSERT_FALSE(profile.i2c_sda_is_bootstrap);
+    TEST_ASSERT_FALSE(profile.i2c_scl_is_bootstrap);
+    TEST_ASSERT_EQUAL_INT(-1, profile.dht_data_gpio);
+    TEST_ASSERT_EQUAL_INT(128, profile.oled_width_px);
+    TEST_ASSERT_EQUAL_INT(64, profile.oled_height_px);
+    TEST_ASSERT_EQUAL_INT(-1, profile.light_rc_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.status_led_red_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.status_led_green_gpio);
+    TEST_ASSERT_EQUAL_INT(-1, profile.soil_power_control_gpio);
+    TEST_ASSERT_EQUAL_INT(14, profile.water_power_control_gpio);
     TEST_ASSERT_FALSE(profile.status_led_common_anode);
 }
 
@@ -347,6 +373,7 @@ void test_soil_sampler_deadlines_are_millis_wraparound_safe() {
 void register_product_variant_tests() {
     RUN_TEST(test_atmosmesh_v1_profile_has_stable_identity_and_existing_pins);
     RUN_TEST(test_grove_profile_is_id_based_and_matches_wiring);
+    RUN_TEST(test_aqua_profile_is_id_based_and_uses_non_bootstrap_i2c_pins);
     RUN_TEST(test_grove_page_formats_valid_measurements);
     RUN_TEST(test_grove_page_never_turns_missing_into_zero);
     RUN_TEST(test_grove_partial_failure_is_explicit);

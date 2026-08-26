@@ -32,6 +32,15 @@ the order or completion state of the RLS MVP above.
 | V1.5-6 | [V15-06](stories/V15-06.md) | Blocked | P1 | V15-04, V15-05 software contracts | Bi-color health LED and duty-cycled raw YL-38 ADC |
 | V1.5-7 | [V15-07](stories/V15-07.md) | Blocked | P1 | Operator visual confirmation | Descriptive four-row Grove OLED page |
 
+## AtmosMesh Aqua variant
+
+A third, independent ESP8266 product variant (SHT41 + genuine 128×64 OLED + duty-cycled water
+probe). Its work does not change the order or completion state of the RLS MVP or Grove above.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| Aqua-1 | [AQ-01](stories/AQ-01.md) | In flight | P2 | ADR-0001, D-019/ADR-0002 | Aqua product composition root, host-tested and build-verified; hardware wiring blocked on photo evidence |
+
 ## Milestones
 
 ### M1 — Hardware approved
