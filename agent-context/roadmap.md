@@ -39,7 +39,7 @@ probe). Its work does not change the order or completion state of the RLS MVP or
 
 | Order | Story | Status | Priority | Depends on | Outcome |
 | ---: | --- | --- | --- | --- | --- |
-| Aqua-1 | [AQ-01](stories/AQ-01.md) | In flight | P2 | ADR-0001, D-019/ADR-0002 | Aqua product composition root, host-tested and build-verified; hardware wiring blocked on photo evidence |
+| Aqua-1 | [AQ-01](stories/AQ-01.md) | In flight | P2 | ADR-0001, D-019/ADR-0002 | Aqua product composition root, host-tested, build-verified, independently reviewed and merged to `main`; hardware wiring/flashing blocked on photo evidence |
 
 ## Milestones
 
