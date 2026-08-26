@@ -4,6 +4,49 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ---
 
+## DECISION — AQ-01 software merged to main after 3 independent-review rounds (2026-08-26)
+
+Landed AtmosMesh Aqua's software (SHT41 + 128×64 OLED + water probe, MQTT-only) at `0e84e35` via
+local rebase + ff-merge + `git push origin main` (no branch protection on this repo, confirmed via
+`gh api .../branches/main/protection` → 404 and `gh api .../rulesets` → `[]`, so no PR needed).
+
+Three fresh, coordinator-dispatched reviewer rounds (each with zero memory of the prior round, each
+independently re-running the full gate matrix) on `lane/aq-01-aqua-software`:
+- **Round 1 — REQUEST CHANGES.** F1 (P1: ADR-0001 step 4 requires Task build/flash/monitor/clean
+  targets for the new canonical env; `build-all` was undercounting products), F2 (P2: ADR-0001's own
+  product matrix table was stale), F3 (P2: dead, never-called `aqua_core_sensors_ok()`). Fixed.
+- **Round 2 — REQUEST CHANGES.** F5 (P1): `aqua_mqtt_connect_budget_remaining_ms()` and
+  `aqua_network_work_allowed()` were live, adapted production logic (Grove's two-condition network
+  gate narrowed to Aqua's one-condition gate) with zero test coverage — the header wasn't even
+  compiled by `pio test -e native`. Fixed with a test mirroring Grove's existing coverage.
+- **Round 3 — APPROVE**, no P0/P1. Confirmed all prior fixes genuinely landed (not cosmetic),
+  line-diffed the MQTT runtime port against Grove's original and found zero dropped logic,
+  re-verified GPIO fail-safe ordering and the full v1/Grove struct-literal field audit from source.
+
+**Chose** to merge on this verdict per `/agent-loop-local`'s local merge gate (full gate matrix green
++ independent APPROVE + operator-authored work) — because: the operator explicitly authorized
+push-to-main and PR-merge for this repo in-session before this pass started, and scoped the pass to
+"AtmosMesh Aqua — software" specifically (hardware wiring is separately and explicitly out of scope,
+still gated on AQ-01's own open questions 1–2, unresolved by this merge).
+
+**Not done by this merge:** no wiring, no flashing, no photo evidence captured. AtmosMesh v1 and
+Grove v1.5 are behaviorally unchanged (Grove's binary size grew slightly — RAM +576 B, flash
++2536 B — because it links the shared `mqtt_contract.cpp`, which now also carries Aqua's contract
+data; documented and measured against a pre-change baseline in AQ-01.md).
+
+CI (`firmware`, `CodeQL`) is running on merge commit `0e84e35` — watched in background, non-blocking.
+
+**Revert:** `git revert 0e84e35 74aa9a7 97f3c0d b70639e --no-commit` then commit, or
+`git reset --hard 797aabd` if no one has pulled `main` since (destructive — check first).
+
+## Open — untracked KiCad directory, not created or touched by this pass
+
+`hardware/kicad/atmosmesh-bench/AtmosmeshAqua/` is untracked with an active KiCad lock file,
+observed first on 2026-08-26. Not part of this software lane's scope; flagging for whoever owns
+that KiCad session.
+
+---
+
 ## DECISION — AQ-01 software implemented; wiring still blocked (2026-08-26)
 
 Operator approved story AQ-01 and asked implementation to start, in parallel with soldering the
