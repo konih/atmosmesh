@@ -241,6 +241,11 @@ void draw_right(int right_x, int y, const char* s, std::uint8_t size, std::uint1
 }
 
 void draw_status_dots() {
+    // Guarded here rather than at each call site: while the bus-fault splash is up there is no
+    // title bar to draw into, and every caller would otherwise need to remember that.
+    if (!title_drawn) {
+        return;
+    }
     tft.fillCircle(kW - 66, 9, 3, sht_present ? kGreen : kRed);
     draw_text(kW - 60, 5, "T", 1, sht_present ? kGreen : kRed);
     tft.fillCircle(kW - 44, 9, 3, veml_present ? kGreen : kRed);
@@ -259,9 +264,9 @@ void draw_title(bool alarm) {
         draw_text(6, 5, "ATMOSMESH", 1, kTitleText);
         draw_text(66, 5, "ROOM", 1, kCyan);
     }
-    draw_status_dots();
     title_alarm_shown = alarm;
-    title_drawn = true;
+    title_drawn = true;   // set before the dots, which refuse to draw without a title bar
+    draw_status_dots();
 }
 
 void draw_chrome() {
@@ -432,9 +437,7 @@ void drain_sds011(unsigned long now) {
             if (!sds_have_sample) {
                 sds_have_sample = true;
                 Serial.println(atmosmesh::format_sds011_listen_log().c_str());
-                if (title_drawn) {
-                    draw_status_dots();
-                }
+                draw_status_dots();
             }
         }
     }

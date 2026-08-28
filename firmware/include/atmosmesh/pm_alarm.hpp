@@ -33,8 +33,9 @@ public:
     bool update(float pm25_ug_m3, float pm10_ug_m3, unsigned long now_ms);
 
     // No valid frame for a while. The level goes back to Unknown so that silence is never
-    // displayed as clean air, and so the next High reading announces itself instead of being
-    // swallowed by a re-announce timer left running from before the sensor vanished.
+    // displayed as clean air. The re-announce timer keeps running across the gap on purpose: a
+    // sensor that drops out every few seconds in genuinely bad air would otherwise beep once per
+    // recovery. A dropout that outlasts the interval still announces on return.
     void mark_no_data();
 
     PmLevel level() const { return level_; }

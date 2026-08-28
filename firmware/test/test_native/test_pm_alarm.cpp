@@ -92,12 +92,32 @@ void test_pm_alarm_no_data_is_unknown_not_good() {
     TEST_ASSERT_TRUE(alarm.level() == PmLevel::Unknown);
 }
 
-void test_pm_alarm_announces_afresh_after_a_dropout() {
+void test_pm_alarm_flapping_sensor_does_not_beep_once_per_dropout() {
+    PmAlarm alarm;
+    TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 1000UL));
+    // A sensor dropping out and returning every two seconds, with the air high throughout.
+    // Losing frames must not become a way to earn an extra beep.
+    for (unsigned long t = 2000UL; t <= 28000UL; t += 2000UL) {
+        alarm.mark_no_data();
+        TEST_ASSERT_FALSE(alarm.update(40.0F, 10.0F, t));
+    }
+}
+
+void test_pm_alarm_announces_after_a_dropout_longer_than_the_interval() {
     PmAlarm alarm;
     TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 1000UL));
     alarm.mark_no_data();
-    // The sensor came back still dirty. That must beep, not be swallowed by the old timer.
-    TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 2000UL));
+    // Gone long enough that the room has genuinely not been told in a while.
+    TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 61000UL));
+}
+
+void test_pm_alarm_clean_air_between_events_still_announces_immediately() {
+    PmAlarm alarm;
+    TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 1000UL));
+    TEST_ASSERT_FALSE(alarm.update(5.0F, 5.0F, 2000UL));
+    // Known-clean air in between makes the next rise a new event, not a repeat, so the
+    // re-announce interval must not suppress it.
+    TEST_ASSERT_TRUE(alarm.update(40.0F, 10.0F, 3000UL));
 }
 
 void test_pm_alarm_unknown_plus_band_reading_is_good() {
@@ -130,7 +150,9 @@ void register_pm_alarm_tests() {
     RUN_TEST(test_pm_alarm_pm10_alone_can_raise_it);
     RUN_TEST(test_pm_alarm_clearing_needs_both_channels_calm);
     RUN_TEST(test_pm_alarm_no_data_is_unknown_not_good);
-    RUN_TEST(test_pm_alarm_announces_afresh_after_a_dropout);
+    RUN_TEST(test_pm_alarm_flapping_sensor_does_not_beep_once_per_dropout);
+    RUN_TEST(test_pm_alarm_announces_after_a_dropout_longer_than_the_interval);
+    RUN_TEST(test_pm_alarm_clean_air_between_events_still_announces_immediately);
     RUN_TEST(test_pm_alarm_unknown_plus_band_reading_is_good);
     RUN_TEST(test_pm_alarm_survives_millis_rollover);
 }
