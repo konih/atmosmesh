@@ -49,8 +49,41 @@ Sds011Sample Sds011Stream::feed(std::uint8_t byte) {
         return {};
     }
 
+    const Sds011Sample sample = parse_sds011_frame(buf_);
+    if (sample.ok) {
+        filled_ = 0;
+        return sample;
+    }
+
+    // A dropped byte or a truncated report leaves a real header sitting inside these ten bytes.
+    // Throwing the whole buffer away costs the next report as well, so re-anchor instead.
+    resync_after(1);
+    return {};
+}
+
+void Sds011Stream::resync_after(std::size_t start) {
+    std::size_t from = start;
+    while (from < filled_) {
+        std::size_t head = from;
+        while (head < filled_ && buf_[head] != kSds011Head) {
+            ++head;
+        }
+        if (head >= filled_) {
+            break;
+        }
+        // If the command byte is already in hand and is wrong, this 0xAA was payload, not a head.
+        if (filled_ - head >= 2 && buf_[head + 1] != kSds011QueryCmd) {
+            from = head + 1;
+            continue;
+        }
+        const std::size_t kept = filled_ - head;
+        for (std::size_t i = 0; i < kept; ++i) {
+            buf_[i] = buf_[head + i];
+        }
+        filled_ = kept;
+        return;
+    }
     filled_ = 0;
-    return parse_sds011_frame(buf_);
 }
 
 std::string format_sds011_listen_log() {

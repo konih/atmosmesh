@@ -16,6 +16,8 @@
 
 void register_product_variant_tests();
 void register_sht41_frame_tests();
+void register_sds011_frame_tests();
+void register_pm_alarm_tests();
 void register_aqua_status_tests();
 
 void test_clip_truncates_to_oled_width() {
@@ -618,6 +620,8 @@ int main() {
     UNITY_BEGIN();
     register_product_variant_tests();
     register_sht41_frame_tests();
+    register_sds011_frame_tests();
+    register_pm_alarm_tests();
     register_aqua_status_tests();
     RUN_TEST(test_clip_truncates_to_oled_width);
     RUN_TEST(test_clip_keeps_short_text);

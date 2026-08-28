@@ -218,8 +218,18 @@ The NPN prevents PIR output voltage from reaching GPIO33 directly and inverts th
 | inactive/output low | off | HIGH |
 | active/output high | on | LOW |
 
-Firmware must therefore treat GPIO33 LOW as motion. Verify the actual transistor's C/B/E order
-with a datasheet or diode-test measurement; do not trust flat-face folklore.
+Firmware must therefore treat GPIO33 LOW as motion **once this carrier exists**. Verify the actual
+transistor's C/B/E order with a datasheet or diode-test measurement; do not trust flat-face folklore.
+
+Until then the module's OUT reaches GPIO33 directly on the dev board and motion is HIGH, so
+`atmosmesh-room-v1` defaults to active-high and switches with `-DATMOSMESH_ROOM_PIR_ACTIVE_LOW`.
+Building the carrier means setting that flag; leaving it unset on a built carrier inverts occupancy
+without failing anything, which is why the polarity is a named flag rather than a constant.
+
+> **The protection is part of the transistor, not just the inversion.** `Q_PIR` is what keeps PIR
+> output voltage off GPIO33, and this module's supply and output swing are still unmeasured. On a
+> direct dev-board wire that protection is absent: measure OUT idle and triggered before trusting
+> it to a GPIO, or run the module from 3.3 V if it will.
 
 ### SDS011 particulate sensor (`J_SDS`)
 

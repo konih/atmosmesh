@@ -29,6 +29,11 @@ public:
     Sds011Sample feed(std::uint8_t byte);
 
 private:
+    // Ten buffered bytes that do not parse mean the stream desynchronized. Discarding all ten
+    // would swallow whatever real header sits among them and lose the following report too, so
+    // the buffer is re-anchored onto the earliest plausible header at or after `start`.
+    void resync_after(std::size_t start);
+
     std::uint8_t buf_[kSds011FrameSize]{};
     std::size_t filled_{0};
 };
