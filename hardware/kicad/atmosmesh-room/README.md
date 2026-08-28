@@ -66,6 +66,10 @@ supplies the only I²C pull-ups it has.
   GPIO16/RX2, GPIO17/TX2 to sensor RXD — each through a 1 kΩ series resistor that bounds a driver
   fight to about 3.3 mA. The generator refuses both a straight-through UART and a diode on that
   rail.
+- Three indicator LEDs show which domains are live. `D_LED_SDS` and `D_LED_PIR` draw **through**
+  their own default-open jumpers, so a lit LED is direct evidence that the jumper it reports on is
+  closed. Use red or green: a blue or white LED's ~3.0 V forward drop leaves too little across
+  `R_LED_3V3` on the 3.3 V rail.
 - No Zener clamp is used. This is now positively evidenced rather than assumed: the Zener
   assortment in `docs/elektronik-inventar.md` is the 1N47xx series starting at **1N4733 = 5.1 V**,
   which clamps far too late to protect a 3.3 V GPIO. A 3.3 V part (1N4728) is not held.

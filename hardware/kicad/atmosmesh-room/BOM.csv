@@ -12,6 +12,9 @@ R_SDA R_SCL,2,330R,Axial THT 7.62 mm,"External I2C short-current limiting and ed
 R_PU_SDA R_PU_SCL,2,3.3k,Axial THT 7.62 mm,"External I2C pull-ups. REQUIRED: the TFT board is SPI and has no onboard I2C device. 3k3 not 4k7 - see the sizing table in wiring.md"
 R_PIR_IN R_PIR_PU,2,10k,Axial THT 7.62 mm,PIR base limit and GPIO33 pull-up
 R_PIR_PD,1,100k,Axial THT 7.62 mm,PIR base-emitter pull-down
+R_LED_3V3,1,470R,Axial THT 7.62 mm,"3V3 live indicator series resistor; about 2.8 mA"
+R_LED_SDS R_LED_PIR,2,1k,Axial THT 7.62 mm,"5 V domain live indicator series resistors; about 3 mA each"
+D_LED_3V3 D_LED_SDS D_LED_PIR,3,LED 3mm or 5mm,THT,"RED or GREEN only - blue/white Vf ~3.0 V is too high for the 3V3 indicator. Cathode = short lead/flat to GND"
 R_BEEP_S,1,100R,Axial THT 7.62 mm,"Series protection GPIO25 to buzzer S. If silent step 100->47->22R measuring under 20 mA; wire link is a last resort"
 Q_PIR,1,2N3904,TO-92 CBE,"Verify actual lead order; PIR active-low interface"
 D_PIR,1,1N5819,Axial THT 7.62 mm,"Series in PIR 5 V only; band/cathode toward protected PIR rail"

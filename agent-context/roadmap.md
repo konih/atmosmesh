@@ -54,7 +54,7 @@ MVP order.
 | Room-1 | [ROOM-01](stories/ROOM-01.md) | Blocked | P1 | Row-spacing and 5 V measurements | Protected carrier and complete build plan; energising remains blocked until the row spacing and both 5 V modules are measured |
 | Room-2 | [ROOM-02](stories/ROOM-02.md) | Blocked | P1 | ROOM-01 + VIN and 5 V budget measurements | SDS011 with crossed, series-protected UART and a diodeless default-open 5 V rail |
 | Room-3 | [ROOM-03](stories/ROOM-03.md) | Ready to solder | P1 | ROOM-01, ROOM-02 | 31×27 perfboard build plan with its own mutation-proved gate; the KiCad PCB is parked |
-| Room-4 | [ROOM-04](stories/ROOM-04.md) | Proposed | P2 | ROOM-02, ROOM-03 | IRLZ34N low-side switch to duty-cycle the SDS011 laser against its 8000 h life |
+| Room-4 | [ROOM-04](stories/ROOM-04.md) | Proposed | P2 | ROOM-02, ROOM-03 | Firmware duty-cycling via the SDS011's own hibernation command; the MOSFET switch was rejected on topology (D-030) |
 
 ## Milestones
 

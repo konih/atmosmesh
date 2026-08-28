@@ -403,6 +403,37 @@
   1N4733 (5.1 V). That is too late for a 3.3 V GPIO and no 1N4728 is held, so the "no Zener clamp"
   rule stands on evidence rather than assumption.
 
+### D-029 — Each supply domain gets a live indicator; the 5 V ones report through their own jumper
+
+- **Status:** Accepted 2026-08-28, after the LED and E24 resistor stock was recorded.
+- **Rule:** `D_LED_3V3` (470 Ω), `D_LED_SDS` and `D_LED_PIR` (1 kΩ each) indicate their rails.
+- **Why:** both 5 V jumpers are default-open and the build plan requires them to stay open until
+  measurements are recorded. There was no way to see whether a domain was live — on the one board
+  in this project whose entire risk story is an unverified 5 V rail.
+- **Topology matters:** the 5 V indicators are fed from `SDS_5V_PROTECTED` and `PIR_5V_PROTECTED`,
+  i.e. *downstream* of their jumpers. A lit LED is therefore direct evidence that the jumper it
+  reports on is closed, not merely that the board has power.
+- **Colour is a constraint, not a preference:** the sizing assumes a forward voltage near 2.0 V. A
+  blue or white LED drops about 3.0 V, leaving 0.3 V across `R_LED_3V3` on the 3.3 V rail — about
+  0.6 mA, which reads as dead. Red or green only.
+- **Cost:** about 3 mA per indicator, negligible against a rail already budgeted near 650 mA peak.
+
+### D-030 — The SDS011 duty-cycles itself; no power switch is fitted
+
+- **Status:** Accepted 2026-08-28, replacing the IRLZ34N proposal in ROOM-04.
+- **Rule:** no MOSFET, no relay, no switched SDS011 supply. Duty-cycling is a firmware task using
+  the sensor's own hibernation command.
+- **Evidence:** `docs/hardware/datasheets/nova-sds011.pdf` lists "Manual hibernation (Sleep and wake
+  up)" and "Timed hibernate (Cycle to work)" under Extended functionality, with sleep current below
+  4 mA annotated "Lase&Fan sleep".
+- **Why the MOSFET was rejected, independently of that:** a low-side switch opens the ground return
+  while VCC stays at 5 V. That does not de-power the load — its ground floats up until current stops
+  and the sensor sits partially biased. High-side switching is required and no P-channel part is in
+  stock. This is recorded because the proposal was written into ROOM-04 before the topology was
+  checked, and the same mistake is easy to repeat.
+- **Boundary:** the byte-level command frames are not in the datasheet held here. Obtain Nova's
+  separate control-protocol document before writing firmware; do not guess frame formats.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

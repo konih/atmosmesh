@@ -48,6 +48,27 @@ them fitted. After assembly, measure the unpowered resistance from SDA to 3.3 V 
 then verify idle-high voltage when powered.
 
 
+### Domain indicators
+
+Both 5 V jumpers are default-open, and the build plan tells you to leave them open until the
+measurements are recorded. Until now there was no way to see whether a domain was live.
+
+| LED | Rail | Resistor | Current | Lit means |
+| --- | --- | --- | ---: | --- |
+| `D_LED_3V3` | `+3V3` | `R_LED_3V3` 470 Ω | ~2.8 mA | the board has 3.3 V |
+| `D_LED_SDS` | `SDS_5V_PROTECTED` | `R_LED_SDS` 1 kΩ | ~3.0 mA | `JP_SDS_5V` is **closed** |
+| `D_LED_PIR` | `PIR_5V_PROTECTED` | `R_LED_PIR` 1 kΩ | ~3.0 mA | `JP_PIR_5V` is **closed** |
+
+Each 5 V indicator draws through its own jumper. That is the feature, not a side effect: the LED
+cannot light unless the jumper it reports on is actually closed.
+
+> **Use a red or green LED, not blue or white.** The sizing assumes a forward voltage near 2.0 V.
+> A blue or white LED drops about 3.0 V, which leaves 0.3 V across `R_LED_3V3` on the 3.3 V rail —
+> roughly 0.6 mA, and it will look dead. On the 5 V rails a blue LED still works but runs dim.
+
+Anode to the rail through the resistor, cathode to GND. On a bare LED the **short lead and the flat
+on the rim are the cathode**; do not infer polarity from lead length alone on a used part.
+
 ### Resistor sizing
 
 The operator holds a complete E24 kit, so every value below is the electrically chosen one, not the
@@ -61,6 +82,8 @@ nearest thing in a drawer.
 | `R_PIR_IN` | 10 kΩ | Base drive for `Q_PIR`. Collector current is only 3.3 V / 10 kΩ = 0.33 mA through `R_PIR_PU`, needing ~33 µA of base current for a forced β of 10. 10 kΩ supplies (3.3 − 0.7) / 10 kΩ = 260 µA — deep saturation with 8× margin, while loading the PIR output with a quarter of a milliamp. |
 | `R_PIR_PU` | 10 kΩ | Collector pull-up holding GPIO33 high when the PIR is idle. Keeps `Q_PIR` collector current at 0.33 mA, which is what makes the 10 kΩ base resistor comfortable. |
 | `R_PIR_PD` | 100 kΩ | Defines `Q_PIR`'s base if the PIR output floats or is removed. Ten times `R_PIR_IN`, so it costs about 9% of the base drive and cannot prevent turn-on. |
+| `R_LED_3V3` | 470 Ω | 3.3 V rail less a ~2.0 V red LED leaves 1.3 V; 1.3 V / 470 Ω = 2.8 mA. Bright enough to read across a room, negligible against the rail budget. |
+| `R_LED_SDS`, `R_LED_PIR` | 1 kΩ | 5 V rail less a ~2.0 V LED leaves 3.0 V; 3.0 V / 1 kΩ = 3.0 mA. Deliberately the same order as the 3.3 V indicator so all three read at similar brightness. |
 | `R_BEEP_S` | 100 Ω | A deliberate compromise while the module's internals are unconfirmed — see the step-down rule above. If `J_BEEP` is a buffered logic input, anything from 100 Ω to 1 kΩ behaves identically and 100 Ω is simply the safe end. |
 
 ### Five-pin VEML7700 connector
@@ -251,7 +274,11 @@ minimum before any USB droop is counted. The jumper provides the same isolation 
 The SDS011 ripple specification is < 20 mV, and `C6` is **470 µF** to meet it. The electrolytic
 assortment runs to 1000 µF, so this is no longer a stock compromise — an earlier 10 µF value was
 never shown to hold 20 mV against a fan load. Still measure the rail with a scope during
-commissioning; a chosen value is not a measured one.
+commissioning with the HANTEK DSO2D15 recorded in
+[`elektronik-inventar.md`](../../../docs/elektronik-inventar.md); a chosen value is not a measured
+one. The same instrument settles the other assumption on this board: `R_PU_SDA`/`R_PU_SCL` were
+sized against an *assumed* ~200 pF of bus capacitance, and the real I²C rise time can be measured
+once the perfboard exists.
 
 > **Close `JP_SDS_5V` before applying USB power, not while live.** Closing it onto a charged rail
 > dumps the inrush of a discharged 470 µF into the shared 5 V supply and can brown out the ESP32.

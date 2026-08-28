@@ -443,6 +443,35 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 
 **Hinweis:** Diese Liste beschreibt den Inhalt des dokumentierten 40-in-1-Sets. Noch nicht jedes einzelne Modul wurde physisch gegengeprüft.
 
+## Messtechnik und Hilfsmittel (Ergänzung 28. August 2026)
+
+- 1× HANTEK DSO2D15 Digitaloszilloskop
+  - vom Operator als `DS02D15` genannt; die Hantek-Typbezeichnung lautet DSO2D15
+  - Serie DSO2000, zwei Kanäle, `D`-Variante mit integriertem Funktionsgenerator
+  - konkrete Bandbreite, Abtastrate und Generatorumfang am Gerät ablesen und hier nachtragen
+
+  **Konstruktive Folge: zwei offene Punkte des Room-Designs sind damit tatsächlich messbar.**
+
+  1. Die SDS011-Welligkeitsgrenze von < 20 mV gegen den laufenden Lüfter. Diese Prüfung war bisher
+     als „mit einem Oszilloskop messen" formuliert, ohne dass ein Gerät erfasst war.
+  2. Die I²C-Flankenzeit. `R_PU_SDA`/`R_PU_SCL` wurden mit 3,3 kΩ gegen eine **angenommene**
+     Buskapazität von rund 200 pF ausgelegt (Widerstandstabelle in
+     `hardware/kicad/atmosmesh-room/wiring.md`). Am fertigen Lochrasteraufbau lässt sich die
+     tatsächliche Anstiegszeit messen und die Annahme bestätigen oder korrigieren.
+
+- IC-Fassungssortiment (DIP)
+  - verschiedene Polzahlen
+  - für das Room-Design derzeit nicht erforderlich; es enthält keinen DIP-Baustein
+  - relevant, sobald ein DIP-IC verbaut wird: Fassung statt direktem Einlöten erlaubt Tausch ohne
+    Auslöten
+
+- Schrumpfschlauch-Sortiment
+  - verschiedene Durchmesser
+  - **für den Lochrasteraufbau direkt relevant:** alle 5-V-führenden Litzen und Modul-Anschlussdrähte
+    isolieren und zugentlasten. Die 5-V-Domäne ist auf dem Room-Board bewusst räumlich abgetrennt;
+    ein abgerutschter 5-V-Draht auf einen GPIO ist genau der Fehler, gegen den das gesamte
+    Schutzkonzept ausgelegt ist
+
 ## Noch offen / später prüfen
 
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren

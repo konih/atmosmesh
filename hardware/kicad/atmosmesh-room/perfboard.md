@@ -50,6 +50,11 @@ U1 occupies **rows 8 and 18, columns 2–16** — 15 holes along each row, 10 pi
 | PIR block | 25–31 | 15–27 | `J_PIR`, `JP_PIR_5V`, `D_PIR`, `Q_PIR`, `R_PIR_IN`, `R_PIR_PD`, `R_PIR_PU`, `C5` |
 | SDS011 block | 17–24 | 15–27 | `J_SDS`, `JP_SDS_5V`, `R_SDS_RX`, `R_SDS_TX`, `C6`, `C7` |
 | Buzzer | 17–24 | 8–14 | `J_BEEP`, `R_BEEP_S` |
+| Indicators | 25–31 | 1–7 | `D_LED_3V3`, `R_LED_3V3`, `D_LED_SDS`, `R_LED_SDS`, `D_LED_PIR`, `R_LED_PIR` |
+
+Put the three indicator LEDs together at one visible edge and label them on the board. They are
+only useful if you can read them at a glance while the board is powered — grouping them beats
+placing each one next to its own circuit.
 
 Keep the 5 V domain physically fenced to the PIR and SDS011 blocks so that a slipped 5 V strand cannot land on
 a 3.3 V or GPIO joint. `J_VEML` goes at the row-1 edge with an opaque divider between it and the
@@ -58,7 +63,7 @@ the buzzer.
 
 ## Hole budget
 
-U1 reserves a 15 × 11 block of the 31 × 27 grid. That leaves 837 − 165 = 672 holes for 31 further
+U1 reserves a 15 × 11 block of the 31 × 27 grid. That leaves 837 − 165 = 672 holes for 37 further
 parts and their wiring, which is not tight.
 
 ## Build order
@@ -69,9 +74,14 @@ parts and their wiring, which is not tight.
 4. Fit the I²C branch: `R_SDA`, `R_SCL`, `R_PU_SDA`, `R_PU_SCL`, then `J_VEML` and `J_SHT`.
 5. Fit the decoupling: `C1`, `C2`, `C3`, `C4`. Observe polarity on `C2`.
 6. Fit the buzzer: `R_BEEP_S`, then `J_BEEP`.
-7. Fit the 5 V domain last, jumpers **left open**: `J_PIR`, `J_SDS`, `D_PIR`, `Q_PIR`, the PIR
+7. Sleeve every 5 V-carrying lead and module flying lead in heat shrink before fitting it. A 5 V
+   strand that slips onto a GPIO is the exact failure the whole protection scheme is built against,
+   and fencing the domains only helps if the wires stay where you put them.
+8. Fit the 5 V domain last, jumpers **left open**: `J_PIR`, `J_SDS`, `D_PIR`, `Q_PIR`, the PIR
    resistors, `R_SDS_RX`, `R_SDS_TX`, `C5`, `C6`, `C7`.
-8. Fit the test-point pairs.
+9. Fit the test-point pairs.
+10. Fit the indicator LEDs and their resistors. Observe LED polarity: the flat/short lead is the
+   cathode and goes to GND.
 
 Then follow the unpowered checks, staged commissioning and stop conditions in
 [wiring.md](wiring.md) unchanged. Both 5 V jumpers stay open until the measurements named there and

@@ -161,6 +161,20 @@ parts = [
          ("SDS_5V_PROTECTED", "GND"), 126.0, 112.0),
     Part("C7", "100nF", "Device:C", "room:C_Disc_P5.00mm", 7800, 5900,
          ("SDS_5V_PROTECTED", "GND"), 131.0, 108.0),
+    # Domain indicators. Both 5 V jumpers are default-open and there is otherwise no way to see
+    # whether a domain is live. Each 5 V LED draws through its own jumper, which is the point.
+    Part("R_LED_3V3", "470R", "Device:R", "room:R_Axial_P7.62mm", 6000, 6400,
+         ("+3V3", "LED_3V3_A"), 110.0, 117.0),
+    Part("D_LED_3V3", "LED RED 3V3 LIVE", "atmosmesh:LED", "room:D_Axial_P7.62mm", 6900, 6400,
+         ("GND", "LED_3V3_A"), 123.0, 117.0),
+    Part("R_LED_SDS", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 6900,
+         ("SDS_5V_PROTECTED", "LED_SDS_A"), 154.0, 88.0),
+    Part("D_LED_SDS", "LED SDS 5V LIVE", "atmosmesh:LED", "room:D_Axial_P7.62mm", 6900, 6900,
+         ("GND", "LED_SDS_A"), 154.0, 92.0),
+    Part("R_LED_PIR", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 7400,
+         ("PIR_5V_PROTECTED", "LED_PIR_A"), 152.0, 118.0),
+    Part("D_LED_PIR", "LED PIR 5V LIVE", "atmosmesh:LED", "room:D_Axial_P7.62mm", 6900, 7400,
+         ("GND", "LED_PIR_A"), 162.0, 118.0),
     Part("TP_3V3", "3V3/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 5800, 4700, ("+3V3", "GND"), 134.0, 116.0),
     Part("TP_5V", "5V/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6200, 4700, ("+5V_USB_CONFIRMED", "GND"), 141.0, 116.0),
     Part("TP_GND", "GND/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6600, 4700, ("GND", "GND"), 148.0, 116.0),
@@ -197,6 +211,12 @@ DESCRIPTION_BY_REF = {
     "R_SDS_TX": "1 kilohm between GPIO17/TX2 and the SDS011 RXD input",
     "C6": "470 uF protected SDS011 5V bulk; sized for the fan against the 20 mV ripple limit; observe polarity",
     "C7": "100 nF SDS011 5V high-frequency decoupling",
+    "R_LED_3V3": "470 ohm for the 3V3 live indicator; about 2.8 mA with a red LED",
+    "D_LED_3V3": "3V3 live indicator; use RED or GREEN, never blue or white at this resistor value",
+    "R_LED_SDS": "1 kilohm for the SDS011 5V live indicator; about 3 mA. Draws through JP_SDS_5V",
+    "D_LED_SDS": "SDS011 5V domain live indicator; lit means the default-open jumper is closed",
+    "R_LED_PIR": "1 kilohm for the PIR 5V live indicator; about 3 mA. Draws through JP_PIR_5V",
+    "D_LED_PIR": "PIR 5V domain live indicator; lit means the default-open jumper is closed",
     "TP_3V3": "3V3 and GND paired through-hole measurement points",
     "TP_5V": "Confirmed USB 5V and GND paired through-hole measurement points",
     "TP_GND": "Paired GND through-hole continuity points",
@@ -269,7 +289,8 @@ def write_native_schematic() -> pathlib.Path:
     diode = stock_symbol("D", "Device")
     schottky = stock_symbol("D_Schottky", "Device")
     npn_cbe = stock_symbol("Q_NPN_CBE", "Transistor_BJT")
-    extra_symbols = [conn_01x05, diode, schottky, npn_cbe]
+    led = stock_symbol("LED", "Device")
+    extra_symbols = [conn_01x05, diode, schottky, npn_cbe, led]
 
     needed_names = {part.lib.split(":")[-1] for part in parts}
     needed_names.discard(SOCKET_SYMBOL)
@@ -304,7 +325,7 @@ def write_native_schematic() -> pathlib.Path:
     conn_01x05_template.entryName = "Conn_01x05"
     conn_01x05_template.pins = {str(index): "" for index in range(1, 6)}
     template_by_name["Conn_01x05"] = conn_01x05_template
-    for entry, pin_count, base in (("D", 2, "R"), ("D_Schottky", 2, "R"),
+    for entry, pin_count, base in (("D", 2, "R"), ("D_Schottky", 2, "R"), ("LED", 2, "R"),
                                    ("Q_NPN_CBE", 3, "Conn_01x03")):
         template = deepcopy(template_by_name[base])
         template.libraryNickname = "atmosmesh"
@@ -538,9 +559,10 @@ def write_board(netlist_path: pathlib.Path) -> None:
         (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9),
         (140, 107, "NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART", 0.8),
         (169, 102, "5V DOMAIN", 1.0),
+        (140, 110, "LED LIT = THAT 5V DOMAIN IS LIVE", 0.8),
         (120, 118, "SDS011 5V - NO DIODE - UART CROSSED", 0.8),
         (166, 65, "BUZZER S/VCC/-", 0.8),
-        (108, 89, "SHT41 - KEEP FROM HEAT", 0.8),
+        (112, 89, "SHT41 - KEEP FROM HEAT", 0.8),
         (113, 66, "SHIELD FROM LCD", 0.8),
         (140, 118.5, "PARKED - PERFBOARD BUILD - DO NOT ORDER", 1.0),
     ]
