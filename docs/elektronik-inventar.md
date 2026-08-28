@@ -33,10 +33,22 @@
 
 ## Sensoren
 
-- 1× SHT41
+- 4× SHT41 (Stückzahl korrigiert am 28. August 2026, zuvor 1×)
   - digitaler Temperatur- und Luftfeuchtigkeitssensor
-  - I²C
+  - I²C, feste Adresse **0x44** (Variante SHT4x-Bxxx: 0x45)
+  - Breakout-Pinreihenfolge operator-bestätigt: **VIN / GND / SCL / SDA**
   - am 25. August 2026 als eingetroffen erfasst
+- 4× VEML7700 (Ergänzung 28. August 2026)
+  - Umgebungslichtsensor, Lux
+  - I²C, **feste Adresse 0x10**
+  - Breakout-Pinreihenfolge operator-bestätigt: **VIN / 3Vo / GND / SCL / SDA**; `3Vo` ist der
+    Reglerausgang des Breakouts und bleibt unbeschaltet
+
+> **Beide Typen haben eine feste I²C-Adresse.** Zwei VEML7700 oder zwei SHT41 der gleichen Variante
+> können deshalb *nicht* an denselben Bus. Die Mehrfachbestände sind Ersatz beziehungsweise
+> ermöglichen parallele Aufbauten — Room, Aqua und Bench — nicht mehrere gleiche Sensoren an einem
+> Bus. Für mehrere Sensoren desselben Typs wäre ein I²C-Multiplexer nötig; ein solcher ist im
+> Bestand nicht erfasst.
 - 1× Nova Fitness SDS011 Feinstaubsensor
   - PM2.5 / PM10
   - zusammen mit USB-Adapter/Kabel USB2TT004
