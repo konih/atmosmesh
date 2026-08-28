@@ -50,8 +50,7 @@ def main() -> int:
         'VERIFY 30-PIN / 25.4mm ROWS',
         'NO COPPER / PARTS - ANTENNA',
         '5V DOMAIN',
-        'FIT MAGNETIC ONLY',
-        'DNP PIEZO',
+        'BUZZER S/VCC/-',
         'SHT41 - KEEP FROM HEAT',
         'SHIELD FROM LCD',
     ):
@@ -60,7 +59,7 @@ def main() -> int:
     required_nets = {
         '+3V3', '+5V_USB_CONFIRMED', 'GND', 'SDA_EXT', 'SCL_EXT',
         'GPIO21_SDA', 'GPIO22_SCL', 'GPIO25_BEEP', 'GPIO33_PIR_N',
-        'PIR_BASE', 'BEEP_BASE', 'PIR_5V_PROTECTED',
+        'PIR_BASE', 'BEEP_S', 'PIR_5V_PROTECTED',
     }
     pcb_nets = set(re.findall(r'\(net \d+ "([^"]+)"\)', pcb))
     require(required_nets <= pcb_nets,
@@ -68,7 +67,7 @@ def main() -> int:
 
     for reference in (
         'U1', 'J_VEML', 'J_SHT', 'J_PIR', 'J_BEEP', 'JP_PIR_5V',
-        'Q_PIR', 'Q_BEEP', 'D_PIR', 'D_BEEP', 'R_SDA', 'R_SCL',
+        'Q_PIR', 'D_PIR', 'R_SDA', 'R_SCL', 'R_BEEP_S',
         'TP_3V3', 'TP_5V', 'TP_GND', 'TP_SDA', 'TP_SCL',
     ):
         require(f'"Reference" "{reference}"' in pcb,
@@ -98,8 +97,8 @@ def main() -> int:
             "sensor power must be direct 3V3 without series supply resistors")
     require('VEML7700 VIN/3Vo/GND/SCL/SDA' in sch,
             "schematic must use the confirmed five-pin VEML7700 header")
-    require('DNP / FIT MAGNETIC ONLY' in sch,
-            "schematic must mark the buzzer flyback diode conditional")
+    require('BEEP_BASE' not in sch and 'BEEP_LOW' not in sch,
+            "the buzzer low-side driver is gone: the Keyes module carries its own")
 
     upper = readme.upper()
     for warning in (

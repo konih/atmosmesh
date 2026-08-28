@@ -53,9 +53,11 @@ supplies the only I²C pull-ups it has.
 - PIR power can come only from a confirmed USB/5 V pin, through `JP_PIR_5V` which is **DEFAULT
   OPEN**, then a 1N5819. PIR OUT drives a 2N3904 through 10 kΩ; GPIO33 sees only the collector and a
   10 kΩ pull-up to 3.3 V. Motion logic is active-low.
-- The likely piezo buzzer starts from 3.3 V and uses an NPN low-side driver. `D_BEEP` is DNP for a
-  piezo; fit 1N4001 only if a magnetic buzzer is positively identified, with its band/cathode at
-  3.3 V.
+- The buzzer is a confirmed Keyes 3-pin module, header order `S`/`VCC`/`−`. GPIO25 drives `S`
+  directly through `R_BEEP_S` 100 Ω, active HIGH, exactly as AtmosMesh v1 drives the same part. The
+  low-side NPN and flyback diode are gone: an internally-driven module keeps the inductive kick
+  behind its own transistor. If the buzzer stays silent the module may be unbuffered — see the
+  measurement rule in `wiring.md` before changing anything.
 - No Zener clamp is used. The known inventory starts at 5.1 V, which clamps too late for a 3.3 V
   GPIO.
 

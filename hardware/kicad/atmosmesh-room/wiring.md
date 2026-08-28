@@ -177,77 +177,37 @@ The NPN prevents PIR output voltage from reaching GPIO33 directly and inverts th
 Firmware must therefore treat GPIO33 LOW as motion. Verify the actual transistor's C/B/E order
 with a datasheet or diode-test measurement; do not trust flat-face folklore.
 
-### Buzzer driver
+### Buzzer (`J_BEEP`)
+
+Operator-confirmed 2026-08-28: a no-name **Keyes 3-pin breakout**, black cylinder with a single
+hole, header order **S / VCC / −**. It is the same part AtmosMesh v1 drives, and v1 drives it
+directly from GPIO25 with a 50 ms `digitalWrite(HIGH)` — so it behaves as an *active* module with
+its own driver, and needs no external transistor.
+
+| Pin | Module label | Carrier net |
+| ---: | --- | --- |
+| 1 | `S` | `BEEP_S`, from GPIO25 through `R_BEEP_S` 100 Ω |
+| 2 | (unlabelled) `VCC` | direct 3.3 V |
+| 3 | `−` | GND |
 
 ```text
-3.3 V ── buzzer +
-buzzer - ── Q_BEEP collector
-Q_BEEP emitter ── GND
-GPIO25 ── R_BEEP_IN 2.2 kΩ ── Q_BEEP base
-Q_BEEP base ── R_BEEP_PD 100 kΩ ── GND
+GPIO25 (pad 8) ── R_BEEP_S 100 Ω ── S
+                              3V3 ── VCC
+                              GND ── −
 ```
 
-Keep the transistor even though the black cylinder is likely piezo. It protects GPIO25 from load
-current and keeps the buzzer off during reset. `D_BEEP` is **DNP** for a piezo buzzer. Fit a 1N4001
-only after confirming a magnetic buzzer; then place it across the buzzer with band/cathode at 3.3 V
-and anode at Q_BEEP collector.
+Logic is **active HIGH**, matching v1. There is no flyback diode: an internally-driven module keeps
+the inductive kick behind its own transistor, so it never reaches the header.
 
-Initial identification drive: 3.3 V only, 250 ms maximum. A continuous tone with steady HIGH
-suggests an active buzzer; only clicks suggest a passive piezo requiring roughly 2–4 kHz PWM.
-Disconnect if the transistor or buzzer warms or current is unexpectedly high.
+> **If the buzzer is silent, do not raise the drive — lower the resistor.** Some Keyes buzzer boards
+> put the sounder straight across `S` and `−` with no onboard transistor. On such a module 100 Ω
+> drops most of the supply and it will barely click. Replace `R_BEEP_S` with a wire link, then
+> measure the current into `S` during a beep. It must stay **under 20 mA**; the ESP32 GPIO absolute
+> maximum is 40 mA. If it exceeds 20 mA, fit a low-side NPN on the `−` pin instead of driving `S`
+> harder.
 
-## Double-sided through-hole board layout
-
-- Mount the Ideaspark board in female sockets; do not solder the controller directly.
-- Leave the antenna end at or beyond the carrier edge. No wire, copper fill, component, mounting
-  hardware or enclosure metal may occupy the marked antenna region.
-- Put `J_VEML` at the light-facing edge and add an opaque divider between sensor and TFT.
-- Put `J_SHT` at a ventilated edge and thermally isolate it from the controller and buzzer.
-- Put the PIR and beeper at enclosure edges; keep the 5 V PIR region visually separated.
-- Use the component side for sockets, keyed connectors and insulated crossovers. Use the solder side
-  for short point-to-point links and wider ground/power buses.
-- Use black for GND, orange for 3.3 V, red for confirmed 5 V, blue for SDA and yellow for SCL.
-- Label `VIN`, `3Vo NC`, `GND`, `SCL`, `SDA`, `3V3`, `5V`, and both transistor orientations on silk
-  or with permanent wire labels.
-- Check whether the chosen protoboard has isolated pads or connected strips. Cut unwanted strips
-  before fitting components and confirm each cut with a meter.
-
-## Assembly sequence
-
-1. Print the schematic and BOM. Mark the physical board's component side and solder side.
-2. Measure the Ideaspark row spacing, overall outline, antenna end and USB overhang. Compare every
-   controller label against `U1`; stop on any mismatch.
-3. Photograph both sides of SHT41, PIR and buzzer markings. Record each connector order.
-4. Fit only the four mounting holes, controller sockets and empty keyed module connectors. Check
-   mechanical clearance without inserting modules.
-5. Fit resistors and the default-open jumper. Meter every value before soldering; verify no solder
-   bridge across `JP_PIR_5V`.
-6. Identify transistor leads, then fit Q_PIR and Q_BEEP. Record the measured C/B/E order.
-7. Fit `D_PIR`; verify band orientation twice. Leave `D_BEEP` empty and mark it DNP.
-8. Fit `C1`, `C3`, `C4` as 220 nF. Fit polarized `C2` and `C5` only after checking polarity.
-9. Install ground and 3.3 V buses. Install the physically separated 5 V PIR path last.
-10. Wire I²C and signal nets. Keep exposed solder-side links short; use insulated wire for every
-    crossing. Do not route beneath the antenna.
-11. Clean flux, inspect both faces with magnification and photograph the completed unpowered board.
-
-## Unpowered acceptance checks
-
-Perform these with the ESP32 and every module removed and `JP_PIR_5V` open.
-
-1. Confirm no continuity between 5 V and 3.3 V.
-2. Confirm neither power rail is shorted to GND. Capacitor charging may make the resistance climb;
-   a persistent near-zero reading is a fault.
-3. Confirm `J_VEML.2` (`3Vo`) has no continuity to any carrier net.
-4. Confirm `J_VEML.1` and `J_SHT.1` connect directly to `TP_3V3` without diode/resistor drop.
-5. Confirm GPIO21 reaches external SDA only through 330 Ω; GPIO22 reaches external SCL only
-   through 330 Ω. Neither may connect to 5 V.
-6. Confirm GPIO33 connects only to Q_PIR collector and the 10 kΩ 3.3 V pull-up.
-7. Confirm GPIO25 reaches only the 2.2 kΩ buzzer base resistor.
-8. Confirm transistor emitters and pull-down bottoms reach GND.
-9. Confirm `D_PIR` direction and both electrolytic polarities.
-10. Confirm every reserved boot/UART pin is unloaded.
-
-## Staged power and commissioning
+`R_BEEP_S` starts at 100 Ω deliberately: the protective value is the default, and the bench
+measurement is what authorises reducing it.
 
 ### Stage 1 — controller alone
 

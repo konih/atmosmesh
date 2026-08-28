@@ -320,6 +320,24 @@
   now confidently reach the wrong pin. Hence the silkscreen and the two gates.
 - **Still unverified:** the physical row spacing. 25.4 mm remains an assumption to be measured.
 
+### D-025 — The Room buzzer is driven straight from GPIO25, with no low-side transistor
+
+- **Status:** Accepted 2026-08-28 on operator identification, superseding the low-side-NPN bullet
+  inside ROOM-01's acceptance criteria.
+- **Part:** a no-name **Keyes 3-pin breakout**, black cylinder with a single hole, header order
+  **S / VCC / −**. It is the same part AtmosMesh v1 uses.
+- **Rule:** `S` is driven from GPIO25 through `R_BEEP_S` 100 Ω, `VCC` takes 3.3 V, `−` takes GND.
+  Logic is active HIGH. `Q_BEEP`, `R_BEEP_IN`, `R_BEEP_PD` and the `D_BEEP` flyback are removed.
+- **Why:** `firmware/README.md` records v1 driving this part with a bare 50 ms
+  `digitalWrite(HIGH)` on GPIO25, so it is an active module with its own driver. The previous design
+  presented a 2-pin header and switched the load's low side, which does not match a 3-pin S/VCC/−
+  module at all — `S` would have been left unconnected. No flyback is fitted because an
+  internally-driven module keeps the inductive kick behind its own transistor.
+- **Residual risk and its bench rule:** some Keyes buzzer boards put the sounder straight across
+  `S` and `−` with no onboard transistor. On such a module 100 Ω makes it barely click. The
+  resistor therefore starts at the *protective* value; only a measured current under 20 mA
+  authorises replacing it with a wire link. The ESP32 GPIO absolute maximum is 40 mA.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

@@ -34,7 +34,8 @@ measurements establish the exact hardware.
 - [x] PIR 5 V is default-open and reverse-feed protected; its signal reaches GPIO33 only through
       the active-low 2N3904 interface and 3.3 V pull-up.
 - [x] Buzzer uses a low-side NPN driver; the flyback footprint is DNP unless a magnetic buzzer is
-      confirmed.
+      confirmed. **Superseded 2026-08-28 by D-025** — the part is a confirmed Keyes 3-pin S/VCC/−
+      active module, so GPIO25 drives `S` directly and the driver and flyback are removed.
 - [x] Board and documentation visibly block energising until the controller row spacing and both
       5 V modules' supply voltage and output swing are measured.
 - [x] A complete through-hole placement, assembly, unpowered-test, commissioning and stop-condition
@@ -91,3 +92,6 @@ measurements establish the exact hardware.
   injecting a rogue `GPIO18_*` net fails the validator; renaming `R_PU_SDA` fails the pull-up
   assertion. A first attempt at the reserved-GPIO mutation tripped the required-nets check instead
   and proved nothing, so it was redone in isolation.
+- 2026-08-28: Operator identified the buzzer as a no-name Keyes 3-pin breakout, S / VCC / −, the
+  same part AtmosMesh v1 drives active-HIGH from GPIO25. The carrier's 2-pin low-side-NPN design
+  could not have worked with it: the module's `S` input had no connection at all. Rebuilt per D-025.
