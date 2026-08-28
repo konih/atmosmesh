@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "atmosmesh")(type "KiCad")(uri "${KIPRJMOD}/atmosmesh.kicad_sym")(options "")(descr "Vendored ROOM-01 symbols"))
+)

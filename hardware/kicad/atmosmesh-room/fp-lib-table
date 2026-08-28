@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "room")(type "KiCad")(uri "${KIPRJMOD}/room.pretty")(options "")(descr "ROOM-01 THT footprints"))
+)

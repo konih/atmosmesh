@@ -3,12 +3,13 @@
 Committed live context for humans and coding agents. Stable constraints live in `../AGENTS.md`;
 this dashboard records what changes between sessions.
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-08-28
 
 ## Active work
 
 | Story | Status | Objective | Next action |
 | --- | --- | --- | --- |
+| [ROOM-01](stories/ROOM-01.md) | Blocked | Protected 60×80 mm room-station carrier and complete build plan | Obtain exact controller/SHT41/PIR/buzzer front/back photos before routing or fabrication |
 | [RLS-01](stories/RLS-01.md) | Ready | Identify exact hardware and approve a safe wiring table | Photos + enclosed 5 V measurement |
 | [V15-03](stories/V15-03.md) | Blocked | Finish Grove OLED/BMP180/DHT11 validation | Confirm OLED pixels |
 | [V15-04](stories/V15-04.md) | Blocked | Validate bounded uncalibrated D7 RC light response | Bright/dark/saturation/timeout evidence |

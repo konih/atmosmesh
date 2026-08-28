@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""Generate the deterministic KiCad source project for ROOM-01.
+
+The generated KiCad files remain editable in KiCad. This generator exists so the provisional
+carrier can be reproduced and structurally checked before exact board photographs are available.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import subprocess
+import uuid
+import xml.etree.ElementTree as ET
+from copy import deepcopy
+from dataclasses import dataclass
+
+from kiutils.items.common import Effects, Font, Justify, Position, Property
+from kiutils.schematic import (
+    GlobalLabel,
+    HierarchicalSheetInstance,
+    NoConnect,
+    Schematic,
+    SymbolProjectInstance,
+    SymbolProjectPath,
+    Text,
+    TitleBlock,
+)
+from kiutils.symbol import SymbolLib
+
+
+ROOT = pathlib.Path(__file__).resolve().parent
+NS = uuid.UUID("80876e59-a826-4d7b-8a94-c1547d3238c0")
+
+
+def uid(name: str) -> str:
+    return str(uuid.uuid5(NS, name))
+
+
+@dataclass(frozen=True)
+class Part:
+    ref: str
+    value: str
+    lib: str
+    footprint: str
+    sx: int
+    sy: int
+    pin_nets: tuple[str | None, ...]
+    bx: float
+    by: float
+    rotation: float = 0
+
+
+parts = [
+    Part("U1", "IDEASPARK_30PIN_PROVISIONAL", "atmosmesh:ESP32_DevKit_V1_Socket", "room:Ideaspark_30Pin_Provisional", 3900, 3000,
+         (None, None, None, None, None, None, "GPIO33_PIR_N", "GPIO25_BEEP", None, None, None, None, None, "GND", "+5V_USB_CONFIRMED",
+          None, "GPIO22_SCL", None, None, "GPIO21_SDA", None, None, None, None, None, None, None, None, "GND", "+3V3"), 124.0, 68.0),
+    Part("J_VEML", "VEML7700 VIN/3Vo/GND/SCL/SDA", "atmosmesh:Conn_01x05", "room:PinHeader_1x05_P2.54mm", 1200, 2100,
+         ("+3V3", None, "GND", "SCL_EXT", "SDA_EXT"), 103.5, 70.0),
+    Part("J_SHT", "SHT41_3V3", "Connector_Generic:Conn_01x04", "room:PinHeader_1x04_P2.54mm", 1200, 4200,
+         ("+3V3", "GND", "SDA_EXT", "SCL_EXT"), 103.5, 91.0),
+    Part("J_PIR", "DSUN_PIR", "Connector_Generic:Conn_01x03", "room:PinHeader_1x03_P2.54mm", 8200, 4200,
+         ("PIR_5V_PROTECTED", "GND", "PIR_OUT"), 176.0, 105.0),
+    Part("J_BEEP", "PIEZO_PROVISIONAL", "Connector_Generic:Conn_01x02", "room:PinHeader_1x02_P2.54mm", 8200, 1800,
+         ("+3V3", "BEEP_LOW"), 176.0, 73.0),
+    Part("JP_PIR_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 3500,
+         ("+5V_USB_CONFIRMED", "PIR_5V_RAW"), 158.0, 108.0),
+    Part("D_PIR", "1N5819", "atmosmesh:R", "room:D_Axial_P7.62mm", 7400, 3500,
+         ("PIR_5V_PROTECTED", "PIR_5V_RAW"), 165.0, 108.0),
+    Part("Q_PIR", "2N3904 C/B/E", "atmosmesh:Conn_01x03", "room:TO92_CBE", 6800, 4300,
+         ("GPIO33_PIR_N", "PIR_BASE", "GND"), 160.0, 99.0),
+    Part("R_PIR_IN", "10k", "Device:R", "room:R_Axial_P7.62mm", 6000, 4300,
+         ("PIR_OUT", "PIR_BASE"), 170.0, 99.0),
+    Part("R_PIR_PD", "100k", "Device:R", "room:R_Axial_P7.62mm", 6800, 4800,
+         ("PIR_BASE", "GND"), 160.0, 115.0),
+    Part("R_PIR_PU", "10k", "Device:R", "room:R_Axial_P7.62mm", 6800, 3800,
+         ("+3V3", "GPIO33_PIR_N"), 154.0, 94.0),
+    Part("C5", "10uF", "Device:C_Polarized", "room:C_Radial_P2.00mm", 7800, 3800,
+         ("PIR_5V_PROTECTED", "GND"), 172.0, 113.0),
+    Part("Q_BEEP", "2N2222_OR_S8050 C/B/E", "atmosmesh:Conn_01x03", "room:TO92_CBE", 6800, 2100,
+         ("BEEP_LOW", "BEEP_BASE", "GND"), 165.0, 76.0),
+    Part("R_BEEP_IN", "2.2k", "Device:R", "room:R_Axial_P7.62mm", 6000, 2100,
+         ("GPIO25_BEEP", "BEEP_BASE"), 155.0, 80.0),
+    Part("R_BEEP_PD", "100k", "Device:R", "room:R_Axial_P7.62mm", 6800, 2600,
+         ("BEEP_BASE", "GND"), 165.0, 85.0),
+    Part("D_BEEP", "DNP / FIT MAGNETIC ONLY", "atmosmesh:R", "room:D_Axial_P7.62mm", 7600, 2100,
+         ("+3V3", "BEEP_LOW"), 168.0, 68.0),
+    Part("R_SDA", "330R", "Device:R", "room:R_Axial_P7.62mm", 2300, 2700,
+         ("SDA_EXT", "GPIO21_SDA"), 111.0, 83.0),
+    Part("R_SCL", "330R", "Device:R", "room:R_Axial_P7.62mm", 2300, 3200,
+         ("SCL_EXT", "GPIO22_SCL"), 111.0, 87.0),
+    Part("C3", "220nF", "Device:C", "room:C_Disc_P5.00mm", 1900, 2200,
+         ("+3V3", "GND"), 108.0, 73.0),
+    Part("C4", "220nF", "Device:C", "room:C_Disc_P5.00mm", 1900, 4500,
+         ("+3V3", "GND"), 108.0, 94.0),
+    Part("C2", "10-47uF", "Device:C_Polarized", "room:C_Radial_P2.00mm", 5400, 4200,
+         ("+3V3", "GND"), 143.0, 112.0),
+    Part("C1", "220nF", "Device:C", "room:C_Disc_P5.00mm", 5400, 4500,
+         ("+3V3", "GND"), 149.0, 112.0),
+    Part("TP_3V3", "3V3/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 5800, 4700, ("+3V3", "GND"), 134.0, 116.0),
+    Part("TP_5V", "5V/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6200, 4700, ("+5V_USB_CONFIRMED", "GND"), 141.0, 116.0),
+    Part("TP_GND", "GND/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6600, 4700, ("GND", "GND"), 148.0, 116.0),
+    Part("TP_SDA", "SDA/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 2600, 3900, ("SDA_EXT", "GND"), 103.5, 83.0),
+    Part("TP_SCL", "SCL/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 3000, 3900, ("SCL_EXT", "GND"), 118.0, 93.0),
+]
+
+
+def pin_offsets(symbol) -> dict[str, Position]:
+    result = {}
+    for unit in symbol.units:
+        for pin in unit.pins:
+            result[pin.number] = pin.position
+    return result
+
+
+def write_native_schematic() -> pathlib.Path:
+    source_path = ROOT.parent / "atmosmesh-bench" / "atmosmesh-bench.kicad_sch"
+    source = Schematic().from_file(str(source_path))
+    root_uuid = uid("schematic-root")
+    sheet = Schematic(uuid=root_uuid)
+    sheet.paper.paperSize = "A3"
+    sheet.titleBlock = TitleBlock(
+        title="AtmosMesh Room protected carrier", date="2026-08-28",
+        revision="PROVISIONAL A", company="AtmosMesh",
+        comments={1: "DO NOT FABRICATE - verify exact Ideaspark board and all module pinouts",
+                  2: "GPIO21 SDA / GPIO22 SCL; no 5 V on any GPIO or 3V3",
+                  3: "60x80 mm two-layer THT carrier", 4: "ROOM-01"},
+    )
+    stock_symbol_candidates = [
+        pathlib.Path("/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/Connector_Generic.kicad_sym"),
+        pathlib.Path("/usr/share/kicad/symbols/Connector_Generic.kicad_sym"),
+    ]
+    stock_symbol_path = next((path for path in stock_symbol_candidates if path.is_file()), None)
+    if stock_symbol_path is None:
+        raise RuntimeError("KiCad Connector_Generic.kicad_sym not found; KiCad 10 is required")
+    stock_symbols = SymbolLib().from_file(str(stock_symbol_path))
+    conn_01x05 = deepcopy(next(item for item in stock_symbols.symbols if item.entryName == "Conn_01x05"))
+    conn_01x05.libraryNickname = "atmosmesh"
+
+    local_symbol_path = ROOT / "atmosmesh.kicad_sym"
+    local_symbols = SymbolLib().from_file(str(local_symbol_path))
+    if not any(item.entryName == "Conn_01x05" for item in local_symbols.symbols):
+        local_symbols.symbols.append(deepcopy(conn_01x05))
+        local_symbols.to_file(str(local_symbol_path))
+
+    needed_names = {part.lib.split(":")[-1] for part in parts}
+    sheet.libSymbols = [deepcopy(item) for item in source.libSymbols if item.entryName in needed_names]
+    sheet.libSymbols.append(deepcopy(conn_01x05))
+    lib_by_name = {item.entryName: item for item in sheet.libSymbols}
+    for unit in lib_by_name["ESP32_DevKit_V1_Socket"].units:
+        for pin in unit.pins:
+            pin.electricalType = "passive"
+    template_by_name = {}
+    for item in source.schematicSymbols:
+        template_by_name.setdefault(item.entryName, item)
+    conn_01x05_template = deepcopy(template_by_name["Conn_01x04"])
+    conn_01x05_template.entryName = "Conn_01x05"
+    conn_01x05_template.pins = {str(index): "" for index in range(1, 6)}
+    template_by_name["Conn_01x05"] = conn_01x05_template
+
+    non_controller_index = 0
+    for part in parts:
+        entry = part.lib.split(":")[-1]
+        symbol = deepcopy(template_by_name[entry])
+        symbol.uuid = uid(f"sch-{part.ref}")
+        if part.ref == "U1":
+            symbol.position = Position(81.28, 104.14, 0)
+        else:
+            column = non_controller_index % 5
+            row = non_controller_index // 5
+            symbol.position = Position(142.24 + 55.88 * column, 45.72 + 38.1 * row, 0)
+            non_controller_index += 1
+        for prop in symbol.properties:
+            if prop.key == "Reference":
+                prop.value = part.ref
+                offset = 23 if part.ref == "U1" else 6
+                prop.position = Position(symbol.position.X, symbol.position.Y - offset, 0)
+            elif prop.key == "Value":
+                prop.value = part.value
+                offset = 23 if part.ref == "U1" else 6
+                prop.position = Position(symbol.position.X, symbol.position.Y + offset, 0)
+            elif prop.key == "Footprint":
+                prop.value = part.footprint
+                prop.position = Position(symbol.position.X, symbol.position.Y, 0)
+                prop.effects.hide = True
+            else:
+                prop.position = Position(symbol.position.X, symbol.position.Y, 0)
+                if prop.effects is not None:
+                    prop.effects.hide = True
+        symbol.pins = {str(index): uid(f"sch-pin-{part.ref}-{index}") for index in range(1, len(part.pin_nets) + 1)}
+        symbol.instances = [SymbolProjectInstance(
+            name="atmosmesh-room",
+            paths=[SymbolProjectPath(sheetInstancePath=f"/{root_uuid}", reference=part.ref, unit=1)],
+        )]
+        sheet.schematicSymbols.append(symbol)
+
+        offsets = pin_offsets(lib_by_name[entry])
+        for pin_number, net in enumerate(part.pin_nets, start=1):
+            offset = offsets[str(pin_number)]
+            position = Position(symbol.position.X + offset.X, symbol.position.Y - offset.Y, 0)
+            if net is None:
+                sheet.noConnects.append(NoConnect(position=position, uuid=uid(f"nc-{part.ref}-{pin_number}")))
+            else:
+                sheet.globalLabels.append(GlobalLabel(
+                    text=net, shape="bidirectional", position=position,
+                    effects=Effects(font=Font(height=1.0, width=1.0), justify=Justify()),
+                    uuid=uid(f"label-{part.ref}-{pin_number}"),
+                ))
+
+    notes = [
+        (18, 15, "DO NOT FABRICATE - VERIFY EXACT IDEASPARK BOARD / 30-PIN ROW SPACING / FRONT + BACK PHOTOS"),
+        (18, 20, "Onboard OLED stays directly on GPIO21/GPIO22. External sensors are behind 330R series resistors."),
+        (18, 270, "No Zener clamps: known inventory starts at 5.1V and is unsuitable for 3.3V GPIO protection."),
+        (210, 15, "PIR: default-open 5V power + 1N5819; NPN interface is ACTIVE LOW."),
+        (210, 20, "Buzzer: 3V3 low-side NPN. D_BEEP DNP / FIT MAGNETIC ONLY; omit for piezo."),
+    ]
+    for index, (x, y, note) in enumerate(notes):
+        sheet.texts.append(Text(text=note, position=Position(x, y, 0),
+                                effects=Effects(font=Font(height=1.5, width=1.5), justify=Justify()),
+                                uuid=uid(f"note-{index}")))
+    sheet.sheetInstances = [HierarchicalSheetInstance(instancePath="/", page="1")]
+    output = ROOT / "atmosmesh-room.kicad_sch"
+    sheet.to_file(str(output))
+    return output
+
+
+def write_project_and_tables() -> None:
+    project = {
+        "board": {}, "boards": [], "cvpcb": {}, "erc": {}, "libraries": {},
+        "meta": {"filename": "atmosmesh-room.kicad_pro", "version": 1},
+        "net_settings": {"classes": [], "meta": {"version": 3}},
+        "pcbnew": {}, "schematic": {}, "sheets": [], "text_variables": {}
+    }
+    (ROOT / "atmosmesh-room.kicad_pro").write_text(json.dumps(project, indent=2) + "\n", encoding="utf-8")
+    (ROOT / "fp-lib-table").write_text(
+        '(fp_lib_table\n  (version 7)\n  (lib (name "room")(type "KiCad")'
+        '(uri "${KIPRJMOD}/room.pretty")(options "")(descr "ROOM-01 THT footprints"))\n)\n', encoding="utf-8")
+    (ROOT / "sym-lib-table").write_text(
+        '(sym_lib_table\n  (version 7)\n  (lib (name "atmosmesh")(type "KiCad")'
+        '(uri "${KIPRJMOD}/atmosmesh.kicad_sym")(options "")(descr "Vendored ROOM-01 symbols"))\n)\n',
+        encoding="utf-8")
+    source_symbols = ROOT.parent / "atmosmesh-bench" / "atmosmesh.kicad_sym"
+    (ROOT / "atmosmesh.kicad_sym").write_text(source_symbols.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def board_pad_positions(part: Part) -> list[tuple[float, float]]:
+    count = len(part.pin_nets)
+    if part.footprint.endswith("Ideaspark_30Pin_Provisional"):
+        return ([(part.bx, part.by + 2.54 * index) for index in range(15)] +
+                [(part.bx + 25.4, part.by + 2.54 * index) for index in range(15)])
+    if "PinHeader_1x" in part.footprint:
+        return [(part.bx, part.by + 2.54 * index) for index in range(count)]
+    if part.footprint.endswith("TO92_CBE"):
+        return [(part.bx, part.by), (part.bx + 2.54, part.by), (part.bx + 5.08, part.by)]
+    if part.footprint.endswith("TestPoint_2Pin_THT"):
+        return [(part.bx, part.by), (part.bx + 2.54, part.by)]
+    pitch = 2.0 if part.footprint.endswith("C_Radial_P2.00mm") else 5.0 if part.footprint.endswith("C_Disc_P5.00mm") else 2.54 if "Jumper" in part.footprint else 7.62
+    return [(part.bx, part.by), (part.bx + pitch, part.by)]
+
+
+def property_block(ref: str, value: str, description: str) -> str:
+    return f'''\n\t\t(property "Reference" "{ref}"\n\t\t\t(at 0 -2 0)\n\t\t\t(layer "F.Fab") (hide yes)\n\t\t\t(uuid "{uid(ref + '-ref')}")\n\t\t\t(effects (font (size 0.9 0.9) (thickness 0.15)))\n\t\t)\n\t\t(property "Value" "{value}"\n\t\t\t(at 0 2 0)\n\t\t\t(layer "F.Fab")\n\t\t\t(uuid "{uid(ref + '-value')}")\n\t\t\t(effects (font (size 0.8 0.8) (thickness 0.12)))\n\t\t)\n\t\t(property "Description" "{description}"\n\t\t\t(at 0 0 0) (layer "F.Fab") (hide yes)\n\t\t\t(uuid "{uid(ref + '-description')}")\n\t\t\t(effects (font (size 1 1)))\n\t\t)'''
+
+
+def write_board(netlist_path: pathlib.Path) -> None:
+    tree = ET.parse(netlist_path)
+    paths = {c.attrib["ref"]: c.findtext("tstamps") for c in tree.findall("./components/comp")}
+    descriptions = {c.attrib["ref"]: (c.findtext("description") or "") for c in tree.findall("./components/comp")}
+    nets: dict[str, int] = {}
+    pin_nets: dict[tuple[str, str], str] = {}
+    for net in tree.findall("./nets/net"):
+        name = net.attrib["name"]
+        nets[name] = int(net.attrib["code"])
+        for node in net.findall("node"):
+            pin_nets[(node.attrib["ref"], node.attrib["pin"])] = name
+
+    lines = [f'''(kicad_pcb
+\t(version 20260206)
+\t(generator "atmosmesh-room-generator")
+\t(generator_version "10.0")
+\t(general (thickness 1.6) (legacy_teardrops no))
+\t(paper "A4")
+\t(title_block
+\t\t(title "AtmosMesh Room protected carrier")
+\t\t(date "2026-08-28")
+\t\t(rev "PROVISIONAL A")
+\t\t(company "AtmosMesh")
+\t\t(comment 1 "DO NOT FABRICATE - exact module identities and pinouts unverified")
+\t)
+\t(layers
+\t\t(0 "F.Cu" signal)
+\t\t(2 "B.Cu" signal)
+\t\t(9 "F.Adhes" user "F.Adhesive")
+\t\t(11 "B.Adhes" user "B.Adhesive")
+\t\t(13 "F.Paste" user)
+\t\t(15 "B.Paste" user)
+\t\t(5 "F.SilkS" user "F.SilkS")
+\t\t(7 "B.SilkS" user "B.Silkscreen")
+\t\t(1 "F.Mask" user)
+\t\t(3 "B.Mask" user)
+\t\t(17 "Dwgs.User" user "Dwgs.User")
+\t\t(19 "Cmts.User" user "User.Comments")
+\t\t(21 "Eco1.User" user "User.Eco1")
+\t\t(23 "Eco2.User" user "User.Eco2")
+\t\t(25 "Edge.Cuts" user)
+\t\t(27 "Margin" user)
+\t\t(31 "F.CrtYd" user "F.Courtyard")
+\t\t(29 "B.CrtYd" user "B.Courtyard")
+\t\t(35 "F.Fab" user)
+\t\t(33 "B.Fab" user)
+\t)
+\t(setup (pad_to_mask_clearance 0) (allow_soldermask_bridges_in_footprints no))''']
+    def pcb_net_name(name: str) -> str:
+        return name.replace("/", "{slash}") if name.startswith("unconnected-(") else name
+
+    for name, code in sorted(nets.items(), key=lambda item: item[1]):
+        lines.append(f'\t(net {code} "{pcb_net_name(name)}")')
+
+    pad_locations: dict[str, list[tuple[float, float, str]]] = {}
+    for part in parts:
+        positions = board_pad_positions(part)
+        relative = [(x - part.bx, y - part.by) for x, y in positions]
+        lines.append(f'''\t(footprint "{part.footprint}"
+\t\t(layer "F.Cu")
+\t\t(uuid "{uid('fp-' + part.ref)}")
+\t\t(at {part.bx} {part.by})
+\t\t{property_block(part.ref, part.value, descriptions[part.ref])}
+\t\t(path "/{paths[part.ref]}")
+\t\t(sheetname "/")
+\t\t(sheetfile "atmosmesh-room.kicad_sch")
+\t\t(attr through_hole)
+\t\t(fp_rect (start {min(x for x, _ in relative)-1.25} {min(y for _, y in relative)-1.25}) (end {max(x for x, _ in relative)+1.25} {max(y for _, y in relative)+1.25})
+\t\t\t(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "{uid('silk-' + part.ref)}"))''')
+        for index, ((x, y), (rx, ry)) in enumerate(zip(positions, relative), start=1):
+            net_name = pin_nets.get((part.ref, str(index)))
+            net_clause = f' (net {nets[net_name]} "{pcb_net_name(net_name)}")' if net_name else ""
+            shape = "rect" if index == 1 else "circle"
+            lines.append(f'''\t\t(pad "{index}" thru_hole {shape} (at {rx:.3f} {ry:.3f}) (size 1.7 1.7) (drill 0.8)
+\t\t\t(layers "*.Cu" "*.Mask"){net_clause} (uuid "{uid(f'pad-{part.ref}-{index}')}") )''')
+            if net_name:
+                pad_locations.setdefault(net_name, []).append((x, y, part.ref))
+        lines.append("\t)")
+
+    for index, (x, y) in enumerate(((104, 64), (176, 64), (104, 116), (176, 116)), start=1):
+        lines.append(f'''\t(footprint "room:MountingHole_3.2mm_M3" (layer "F.Cu") (uuid "{uid(f'mh-{index}')}") (at {x} {y})
+\t\t(property "Reference" "H{index}" (at 0 -4 0) (layer "F.Fab") (hide yes) (uuid "{uid(f'mhr-{index}')}") (effects (font (size 1 1))))
+\t\t(property "Value" "M3" (at 0 4 0) (layer "F.Fab") (uuid "{uid(f'mhv-{index}')}") (effects (font (size 1 1))))
+\t\t(attr board_only through_hole exclude_from_pos_files exclude_from_bom)
+\t\t(fp_circle (center 0 0) (end 4 0) (stroke (width 0.25) (type solid)) (fill no) (layer "F.Fab") (uuid "{uid(f'mhc-{index}')}") )
+\t\t(pad "" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers "*.Cu" "*.Mask") (uuid "{uid(f'mhp-{index}')}") )
+\t)''')
+
+    # Copper remains intentionally unrouted until exact board/module photos establish the physical
+    # socket spacing, orientation and connector pin order.
+
+    texts = [
+        (140, 61.5, "VERIFY EXACT IDEASPARK BOARD", 1.2),
+        (140, 63.5, "VERIFY 30-PIN / 25.4mm ROWS", 1.0),
+        (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9),
+        (169, 102, "5V DOMAIN", 1.0),
+        (166, 65, "FIT MAGNETIC ONLY", 0.75),
+        (166, 66.5, "DNP PIEZO", 0.75),
+        (108, 89, "SHT41 - KEEP FROM HEAT", 0.7),
+        (110, 79, "VEML7700 - SHIELD FROM OLED", 0.65),
+        (140, 118.5, "DO NOT FABRICATE - PHOTOS FIRST", 1.0),
+    ]
+    for index, (x, y, value, size) in enumerate(texts):
+        layer = "F.SilkS" if index in {0, 1, 8} else "Dwgs.User"
+        lines.append(f'''\t(gr_text "{value}" (at {x} {y}) (layer "{layer}") (uuid "{uid(f'text-{index}')}")
+\t\t(effects (font (size {size} {size}) (thickness 0.16)) (justify)) )''')
+    # The antenna region is a visible placement keepout; final copper keepout awaits exact photos.
+    lines.append(f'''\t(gr_rect (start 119 60.5) (end 155 67) (stroke (width 0.3) (type dash)) (fill none)
+\t\t(layer "Dwgs.User") (uuid "{uid('antenna-box')}") )''')
+    for index, (x1, y1, x2, y2) in enumerate(((100, 60, 180, 60), (180, 60, 180, 120), (180, 120, 100, 120), (100, 120, 100, 60))):
+        lines.append(f'''\t(gr_line (start {x1} {y1}) (end {x2} {y2}) (stroke (width 0.2) (type solid))
+\t\t(layer "Edge.Cuts") (uuid "{uid(f'edge-{index}')}") )''')
+    lines.append(")")
+    pcb_text = "\n".join(line.rstrip() for line in "\n".join(lines).splitlines()) + "\n"
+    (ROOT / "atmosmesh-room.kicad_pcb").write_text(pcb_text, encoding="utf-8")
+
+
+def write_minimal_footprint_library() -> None:
+    lib = ROOT / "room.pretty"
+    lib.mkdir(exist_ok=True)
+    representatives = {}
+    for part in parts:
+        representatives.setdefault(part.footprint.split(":", 1)[1], part)
+    for name, part in sorted(representatives.items()):
+        positions = board_pad_positions(part)
+        relative = [(x - part.bx, y - part.by) for x, y in positions]
+        body = [f'''(footprint "{name}" (version 20260206) (generator "atmosmesh-room-generator")
+  (layer "F.Cu")
+  (descr "ROOM-01 provisional THT footprint; verify exact physical part")
+  (attr through_hole)
+  (fp_rect (start {min(x for x, _ in relative)-1.25} {min(y for _, y in relative)-1.25})
+    (end {max(x for x, _ in relative)+1.25} {max(y for _, y in relative)+1.25})
+    (stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab")
+    (uuid "{uid('lib-silk-' + name)}"))''']
+        for index, (x, y) in enumerate(relative, start=1):
+            shape = "rect" if index == 1 else "circle"
+            body.append(f'''  (pad "{index}" thru_hole {shape} (at {x:.3f} {y:.3f})
+    (size 1.7 1.7) (drill 0.8) (layers "*.Cu" "*.Mask")
+    (uuid "{uid(f'lib-pad-{name}-{index}')}") )''')
+        body.append(")\n")
+        text = "\n".join(body)
+        (lib / f"{name}.kicad_mod").write_text(text, encoding="utf-8")
+    name = "MountingHole_3.2mm_M3"
+    (lib / f"{name}.kicad_mod").write_text(f'''(footprint "{name}" (version 20260206) (generator "atmosmesh-room-generator")
+  (layer "F.Cu") (attr board_only through_hole exclude_from_pos_files exclude_from_bom)
+  (fp_circle (center 0 0) (end 4 0) (stroke (width 0.25) (type solid)) (fill no)
+    (layer "F.Fab") (uuid "{uid('lib-mh-circle')}"))
+  (pad "" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2)
+    (layers "*.Cu" "*.Mask") (uuid "{uid('lib-mh-pad')}"))
+)\n''', encoding="utf-8")
+
+
+def main() -> None:
+    write_project_and_tables()
+    write_minimal_footprint_library()
+    schematic = write_native_schematic()
+    netlist = ROOT / "atmosmesh-room.net"
+    subprocess.run(["kicad-cli", "sch", "export", "netlist", "--format", "kicadxml", "-o", str(netlist), str(schematic)], check=True, cwd=ROOT)
+    write_board(netlist)
+    netlist.unlink()
+    print("Generated ROOM-01 KiCad project")
+
+
+if __name__ == "__main__":
+    main()

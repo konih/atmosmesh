@@ -43,6 +43,15 @@ probe). Its work does not change the order or completion state of the RLS MVP or
 | ---: | --- | --- | --- | --- | --- |
 | Aqua-1 | [AQ-01](stories/AQ-01.md) | In flight | P2 | ADR-0001, D-019/ADR-0002 | Aqua product composition root, host-tested, build-verified, independently reviewed and merged to `main`; hardware wiring/flashing blocked on photo evidence |
 
+## AtmosMesh Room variant
+
+A compact ESP32 room-station carrier using the Ideaspark WROOM-32 integrated OLED, VEML7700,
+SHT41, D-SUN PIR and buzzer. This design track does not change the RLS MVP order.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| Room-1 | [ROOM-01](stories/ROOM-01.md) | Blocked | P1 | Exact module photos before fabrication | Protected 60×80 mm THT carrier and complete build plan; fabrication remains blocked until identities and pin order are verified |
+
 ## Milestones
 
 ### M1 — Hardware approved

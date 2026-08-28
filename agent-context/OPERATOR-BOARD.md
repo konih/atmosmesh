@@ -4,7 +4,7 @@
 
 | Lane | Owner | Branch | Scope |
 | --- | --- | --- | --- |
-| — | — | — | No implementation lane currently claimed |
+| ROOM-01 protected room carrier | Codex implementer | `codex/atmosmesh-room-carrier` | Provisional 60×80 mm KiCad carrier, validation, and safety documentation; no fabrication approval before exact module photos |
 
 ## PR open
 

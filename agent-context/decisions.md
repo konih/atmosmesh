@@ -264,6 +264,23 @@
 - **Supersedes:** D-018's "thresholds remain disabled until operator measurements establish
   direction and cutoffs" — that measurement is this decision.
 
+### D-022 — Room I²C sensors share direct 3.3 V; external signals use 330 Ω series protection
+
+- **Status:** Accepted for the provisional ROOM-01 design, 2026-08-28.
+- **Power:** VEML7700 VIN and SHT41 VCC connect directly to the Ideaspark board's confirmed 3.3 V
+  output. The rejected alternative was a series Schottky diode or about 50 Ω per sensor: either
+  can lower sensor VDD while the integrated OLED still pulls SDA/SCL to 3.3 V, risking input-clamp
+  current above `VDD + margin`.
+- **Signals:** GPIO21/SDA and GPIO22/SCL reach only the external sensor branch through individual
+  330 Ω resistors. They limit fault current and damp edges; they are not treated as a measurement
+  noise source. `C1`, `C3` and `C4` provide power decoupling and use 220 nF from available stock
+  (47–220 nF acceptable).
+- **VEML7700:** Confirmed five-pin header is VIN/3Vo/GND/SCL/SDA. VIN gets 3.3 V, `3Vo` is the
+  breakout regulator output and must stay NC, and no extra pull-ups are fitted because the breakout
+  and onboard OLED already provide I²C pull-ups.
+- **Boundary:** This does not approve fabrication. Exact controller/SHT41/PIR/buzzer photos and
+  dimensions still gate routing and assembly.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

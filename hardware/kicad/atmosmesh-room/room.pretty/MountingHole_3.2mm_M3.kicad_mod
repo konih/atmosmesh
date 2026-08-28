@@ -1,0 +1,7 @@
+(footprint "MountingHole_3.2mm_M3" (version 20260206) (generator "atmosmesh-room-generator")
+  (layer "F.Cu") (attr board_only through_hole exclude_from_pos_files exclude_from_bom)
+  (fp_circle (center 0 0) (end 4 0) (stroke (width 0.25) (type solid)) (fill no)
+    (layer "F.Fab") (uuid "73500659-45cd-556a-88c6-cee25627da88"))
+  (pad "" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2)
+    (layers "*.Cu" "*.Mask") (uuid "4a53172f-7eb8-59a9-b73a-9911e2db56ff"))
+)
