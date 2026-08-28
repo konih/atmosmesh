@@ -46,6 +46,7 @@ def main() -> int:
             "all populated electrical parts must use THT footprints")
     for token in (
         'IDEASPARK 1.14in TFT - VERIFY ROW SPACING',
+        'PARKED - PERFBOARD BUILD - DO NOT ORDER',
         'NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART',
         'VERIFY 30-PIN / 25.4mm ROWS',
         'NO COPPER / PARTS - ANTENNA',
@@ -89,6 +90,16 @@ def main() -> int:
     clash = sorted(used_gpios & reserved_gpios)
     require(not clash,
             f"carrier nets must not reach TFT/strap/USB-UART pins: GPIO{clash}")
+
+    # The socket symbol was inherited from a DevKit V1, whose pin names run from the other end of
+    # the row. KiCad writes each unconnected pad's own pin name into a placeholder net, so these
+    # assert that the schematic labels the pad with the name the real board prints on it, and that
+    # the display-owned pin is still unconnected.
+    require('ESP32_DevKit_V1_Socket' not in sch,
+            "U1 must not claim to be a DevKit V1 socket: its pin order differs in almost every position")
+    for pad, name in ((30, 'GPIO23'), (24, 'GPIO18'), (4, 'GPIO12'), (10, 'GPIO32')):
+        require(f'unconnected-(U1-{name}-Pad{pad})' in pcb,
+                f"U1 pad {pad} must be labelled {name} and left unconnected")
 
     require('R_PU_SDA' in sch and 'R_PU_SCL' in sch and '3.3k' in sch,
             "external I2C needs its own 3.3k pullups: the TFT board has no onboard I2C device")

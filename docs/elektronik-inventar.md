@@ -312,15 +312,26 @@
 
 ### Zenerdioden
 
-- 10-Werte-Sortiment
-- 1N47xx-Serie
-- sicher erkennbar u. a.:
-  - 1N4733
-  - 1N4744
-  - 1N4745
-  - 1N4746
-  - 1N4748
-- restliche Typnummern wegen beschädigtem/verdecktem Etikett nicht sicher erfasst
+- 10-Werte-Sortiment, 1N47xx-Serie — **vollständig erfasst am 28. August 2026**
+
+| Typ | Zenerspannung |
+| --- | ---: |
+| 1N4733 | 5,1 V |
+| 1N4738 | 8,2 V |
+| 1N4739 | 9,1 V |
+| 1N4740 | 10 V |
+| 1N4741 | 11 V |
+| 1N4742 | 12 V |
+| 1N4744 | 15 V |
+| 1N4745 | 16 V |
+| 1N4746 | 18 V |
+| 1N4748 | 22 V |
+
+**Konstruktive Folge: für 3,3-V-GPIOs ist nichts davon brauchbar.** Der niedrigste Wert ist
+1N4733 mit 5,1 V und klemmt damit weit oberhalb der zulässigen GPIO-Spannung. Ein 1N4728 (3,3 V)
+oder 1N4730 (3,9 V) ist **nicht** vorhanden. Die Regel „kein Zener-Clamp" im Room-Design
+(`hardware/kicad/atmosmesh-room/README.md`) steht damit auf einer vollständigen Bestandsliste und
+nicht mehr auf einer Vermutung.
 
 ### Transistoren
 

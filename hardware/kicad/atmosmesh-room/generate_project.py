@@ -54,6 +54,12 @@ class Part:
 # Confirmed from docs/hardware/ideaspark-esp32-tft-pinout.png (operator evidence, 2026-08-28).
 # Pads 1-15 are the left column and 16-30 the right column, both counted from the
 # USB/button end, matching the pad geometry in Ideaspark_30Pin_Provisional.kicad_mod.
+# The bench project's socket symbol is a DevKit V1, whose pin names run from the EN end and
+# disagree with this board in almost every position. Rename it and relabel every pin, so the
+# schematic cannot show "3V3" against the pad that is really GPIO23 / TFT MOSI.
+SOCKET_SOURCE_SYMBOL = "ESP32_DevKit_V1_Socket"
+SOCKET_SYMBOL = "Ideaspark_ESP32_1V14_TFT_30Pin"
+
 IDEASPARK_PINS = {
     1: "VIN", 2: "GND", 3: "GPIO13", 4: "GPIO12", 5: "GPIO14", 6: "GPIO27",
     7: "GPIO26", 8: "GPIO25", 9: "GPIO33", 10: "GPIO32", 11: "GPIO35",
@@ -97,7 +103,7 @@ def ideaspark_pin_nets() -> tuple:
 
 
 parts = [
-    Part("U1", "IDEASPARK_ESP32_1V14_TFT_30PIN", "atmosmesh:ESP32_DevKit_V1_Socket", "room:Ideaspark_30Pin_Provisional", 3900, 3000,
+    Part("U1", "IDEASPARK_ESP32_1V14_TFT_30PIN", "atmosmesh:" + SOCKET_SYMBOL, "room:Ideaspark_30Pin_Provisional", 3900, 3000,
          ideaspark_pin_nets(), 124.0, 68.0),
     Part("J_VEML", "VEML7700 VIN/3Vo/GND/SCL/SDA", "atmosmesh:Conn_01x05", "room:PinHeader_1x05_P2.54mm", 1200, 2100,
          ("+3V3", None, "GND", "SCL_EXT", "SDA_EXT"), 103.5, 70.0),
@@ -255,9 +261,9 @@ def write_native_schematic() -> pathlib.Path:
     sheet.titleBlock = TitleBlock(
         title="AtmosMesh Room protected carrier", date="2026-08-28",
         revision="PROVISIONAL A", company="AtmosMesh",
-        comments={1: "DO NOT FABRICATE - Ideaspark pin names confirmed; row spacing and module pinouts still unverified",
+        comments={1: "DO NOT ENERGISE - row spacing, SDS011 connector order and all 5 V measurements still open",
                   2: "GPIO21 SDA / GPIO22 SCL; no 5 V on any GPIO or 3V3",
-                  3: "60x80 mm two-layer THT carrier", 4: "ROOM-01"},
+                  3: "Built by hand on a 31x27 perfboard; the PCB is parked", 4: "ROOM-01 / 02 / 03"},
     )
     conn_01x05 = stock_symbol("Conn_01x05", "Connector_Generic")
     diode = stock_symbol("D", "Device")
@@ -266,18 +272,34 @@ def write_native_schematic() -> pathlib.Path:
     extra_symbols = [conn_01x05, diode, schottky, npn_cbe]
 
     needed_names = {part.lib.split(":")[-1] for part in parts}
+    needed_names.discard(SOCKET_SYMBOL)
+    needed_names.add(SOCKET_SOURCE_SYMBOL)
     sheet.libSymbols = [deepcopy(item) for item in source.libSymbols if item.entryName in needed_names]
+    for item in sheet.libSymbols:
+        if item.entryName == SOCKET_SOURCE_SYMBOL:
+            item.entryName = SOCKET_SYMBOL
+            # KiCad will not load the sheet unless each unit's own entry name is renamed with it.
+            for unit in item.units:
+                unit.entryName = unit.entryName.replace(SOCKET_SOURCE_SYMBOL, SOCKET_SYMBOL, 1)
+            for prop in item.properties:
+                if prop.key == "Value" and prop.value == SOCKET_SOURCE_SYMBOL:
+                    prop.value = SOCKET_SYMBOL
     sheet.libSymbols.extend(deepcopy(item) for item in extra_symbols)
     for item in sheet.libSymbols:
         set_symbol_description(item, f"ROOM-01 symbol: {item.entryName}; see schematic instance description")
     lib_by_name = {item.entryName: item for item in sheet.libSymbols}
-    for unit in lib_by_name["ESP32_DevKit_V1_Socket"].units:
+    for unit in lib_by_name[SOCKET_SYMBOL].units:
         for pin in unit.pins:
             pin.electricalType = "passive"
+            pin.name = IDEASPARK_PINS[int(pin.number)]
     write_local_symbol_library(sheet.libSymbols)
     template_by_name = {}
     for item in source.schematicSymbols:
         template_by_name.setdefault(item.entryName, item)
+    socket_template = deepcopy(template_by_name[SOCKET_SOURCE_SYMBOL])
+    socket_template.entryName = SOCKET_SYMBOL
+    socket_template.libraryNickname = "atmosmesh"
+    template_by_name[SOCKET_SYMBOL] = socket_template
     conn_01x05_template = deepcopy(template_by_name["Conn_01x04"])
     conn_01x05_template.entryName = "Conn_01x05"
     conn_01x05_template.pins = {str(index): "" for index in range(1, 6)}
@@ -344,7 +366,7 @@ def write_native_schematic() -> pathlib.Path:
                 ))
 
     notes = [
-        (18, 15, "DO NOT FABRICATE - IDEASPARK PIN NAMES CONFIRMED; ROW SPACING + MODULE PINOUTS STILL UNVERIFIED"),
+        (18, 15, "PERFBOARD BUILD - PIN NAMES CONFIRMED; ROW SPACING, SDS011 CONNECTOR AND ALL 5V MEASUREMENTS STILL OPEN"),
         (18, 20, "Display is SPI, not I2C: GPIO21/22 carry no onboard device. R_PU_SDA/R_PU_SCL 4k7 are the only bus pullups."),
         (18, 25, "NEVER WIRE: GPIO23/18/15/2/4/32 drive the 1.14in TFT; GPIO12 is the flash strap; GPIO1/3 are the USB-UART."),
         (18, 270, "No Zener clamps: known inventory starts at 5.1V and is unsuitable for 3.3V GPIO protection."),
@@ -442,7 +464,7 @@ def write_board(netlist_path: pathlib.Path) -> None:
 \t\t(date "2026-08-28")
 \t\t(rev "PROVISIONAL A")
 \t\t(company "AtmosMesh")
-\t\t(comment 1 "DO NOT FABRICATE - exact module identities and pinouts unverified")
+\t\t(comment 1 "PARKED - the build target is a 31x27 perfboard, not this board")
 \t)
 \t(layers
 \t\t(0 "F.Cu" signal)
@@ -520,7 +542,7 @@ def write_board(netlist_path: pathlib.Path) -> None:
         (166, 65, "BUZZER S/VCC/-", 0.8),
         (108, 89, "SHT41 - KEEP FROM HEAT", 0.8),
         (113, 66, "SHIELD FROM LCD", 0.8),
-        (140, 118.5, "DO NOT FABRICATE - PHOTOS FIRST", 1.0),
+        (140, 118.5, "PARKED - PERFBOARD BUILD - DO NOT ORDER", 1.0),
     ]
     for index, (x, y, value, size) in enumerate(texts):
         layer = "F.SilkS" if index in {0, 1, 8} else "Dwgs.User"

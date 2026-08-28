@@ -1,9 +1,13 @@
 # ROOM-01 wiring, protection, assembly and commissioning plan
 
-This is the complete construction contract for the provisional 60×80 mm room carrier. It defines
-the intended nets and safe build order, but it is **not fabrication approval**. The exact Ideaspark
-controller, SHT41, D-SUN PIR and buzzer still require readable front/back photographs and physical
-measurements. Never infer pin order or connector orientation from a generic product photograph.
+This is the complete construction contract for the room carrier. It defines the intended nets and
+safe build order, but it is **not approval to apply power**. The board is built by hand on a 31 × 27
+perfboard ([`perfboard.md`](perfboard.md)), not fabricated.
+
+The controller, VEML7700, SHT41, D-SUN PIR and buzzer connector orders are now operator-confirmed.
+Still outstanding: the controller's physical row spacing, the SDS011 module's own connector order,
+and every 5 V measurement. Never infer pin order or connector orientation from a generic product
+photograph.
 
 ## Design decisions
 

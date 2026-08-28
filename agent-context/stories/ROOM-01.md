@@ -95,3 +95,13 @@ measurements establish the exact hardware.
 - 2026-08-28: Operator identified the buzzer as a no-name Keyes 3-pin breakout, S / VCC / −, the
   same part AtmosMesh v1 drives active-HIGH from GPIO25. The carrier's 2-pin low-side-NPN design
   could not have worked with it: the module's `S` input had no connection at all. Rebuilt per D-025.
+- 2026-08-28: Final review caught U1's socket **symbol** still carrying inherited DevKit V1 pin
+  names, which run from the opposite end of the row. The nets were correct but the schematic would
+  have *displayed* `3V3` against pad 30, which is really GPIO23 / TFT MOSI, and `GPIO34` against
+  pad 4, which is really the GPIO12 flash strap. Symbol renamed to
+  `Ideaspark_ESP32_1V14_TFT_30Pin` and every pin relabelled from the confirmed map. The validator
+  now asserts pads 30, 24, 4 and 10 are labelled GPIO23/18/12/32 and left unconnected, and refuses
+  the DevKit name; both mutation-proved.
+- 2026-08-28: Operator completed the Zener inventory — 1N4733, 4738, 4739, 4740, 4741, 4742, 4744,
+  4745, 4746, 4748. The lowest is still 5.1 V and no 1N4728 is held, so the "no Zener clamp" rule
+  now rests on a complete list rather than a partial one.
