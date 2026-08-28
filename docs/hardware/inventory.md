@@ -329,6 +329,22 @@ KiCad J5 still documents 10 kΩ / 15 kΩ (3.0 V at 5.0 V in). The live bench is 
 Datasheet support for these electrical choices is recorded in [spec-comparison.md](spec-comparison.md).
 Photos still block construction.
 
+## Passive stock — resistors (operator, 2026-08-28)
+
+The operator holds a **complete E24 resistor kit: hundreds of values in large quantities**.
+Confirmed present by example: 100, 110, 130, 150, 160, 180 and 200 Ω, continuing through the
+series.
+
+**Design consequence: do not accept a suboptimal resistor value to match stock.** Earlier notes in
+this repo compromise on parts that were scarce — the MQ135 bench divider settled on 10 kΩ / 20 kΩ,
+and `C1`/`C3`/`C4` on the Room carrier use 220 nF "because those parts are available". That
+reasoning applies to capacitors, not to resistors. Choose the electrically correct resistor and
+state the calculation; the E24 series is fine enough that rounding to it changes nothing that
+matters.
+
+This does not extend to capacitors, diodes or transistors, whose stock is still only what the
+tables above record.
+
 ## Non-negotiable limits
 
 - Never wire SDS011 (d011v2) to RX0/TX0 (GPIO3/GPIO1). Those pins are USB console only.

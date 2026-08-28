@@ -532,13 +532,13 @@
 			(uuid "068600d0-38df-52df-ade5-95d7a58b9deb")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "10uF"
+		(property "Value" "100uF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "2c69f889-8cad-548c-94b8-57b58e86ecdd")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "10 uF protected PIR 5V bulk capacitor; observe polarity"
+		(property "Description" "100 uF protected PIR 5V bulk capacitor; observe polarity"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "a882dee1-4b9d-5284-9084-eb066cd4d05d")
 			(effects (font (size 1 1)))
@@ -664,13 +664,13 @@
 			(uuid "d6966962-36d8-5c68-9e02-a3b8e78560fc")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "4.7k"
+		(property "Value" "3.3k"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "457c4bfb-6802-5618-8309-6ae2f67f5289")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "4.7 kilohm SDA_EXT pullup to 3V3; the TFT board has no onboard I2C pullups"
+		(property "Description" "3.3 kilohm SDA_EXT pullup to 3V3; sized for perfboard wiring capacitance at 100 kHz"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "ff49d945-7d6e-5c16-93f5-361a5127da75")
 			(effects (font (size 1 1)))
@@ -697,13 +697,13 @@
 			(uuid "e30d79ed-0463-5b14-aab5-bd368a9432f9")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "4.7k"
+		(property "Value" "3.3k"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "f6f214bd-a284-5822-8342-6a368bcd8b17")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "4.7 kilohm SCL_EXT pullup to 3V3; the TFT board has no onboard I2C pullups"
+		(property "Description" "3.3 kilohm SCL_EXT pullup to 3V3; sized for perfboard wiring capacitance at 100 kHz"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "524ffcd3-8439-51df-b349-b9d864c4dff7")
 			(effects (font (size 1 1)))
@@ -730,13 +730,13 @@
 			(uuid "d6367d0a-a079-5964-910a-2473f12ed78d")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "220nF"
+		(property "Value" "100nF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "82b375af-db16-5d62-a070-c980b1a80a80")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "220 nF VEML7700 VIN input decoupling; 47-220 nF acceptable"
+		(property "Description" "100 nF VEML7700 VIN input decoupling"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "dc47b199-f600-532b-8213-b9517aa78817")
 			(effects (font (size 1 1)))
@@ -763,13 +763,13 @@
 			(uuid "238bb4df-a14a-531a-809c-46d16244c817")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "220nF"
+		(property "Value" "100nF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "5de3d53b-f020-5745-9f3d-8665f90bb88f")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "220 nF SHT41 3V3 local decoupling; 47-220 nF acceptable"
+		(property "Description" "100 nF SHT41 3V3 local decoupling"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "a71de53c-de44-5ed5-8837-80d6a066a8ab")
 			(effects (font (size 1 1)))
@@ -796,13 +796,13 @@
 			(uuid "95a09f21-5b4f-54b2-8567-1f7af40292c3")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "10-47uF"
+		(property "Value" "100uF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "74886c66-bfe2-54e3-9008-668ea0cd5521")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "10-47 uF controller 3V3 bulk capacitor; observe polarity"
+		(property "Description" "100 uF controller 3V3 bulk capacitor; observe polarity"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "2cbc7a4c-cbc5-5834-82ea-c09daa7fb00c")
 			(effects (font (size 1 1)))
@@ -829,13 +829,13 @@
 			(uuid "c99776f4-8448-5084-abea-57c0bc1d1fe9")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "220nF"
+		(property "Value" "100nF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "69c7b2fd-5568-52ce-a71e-d9b2aa6aa2ce")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "220 nF controller 3V3 local decoupling; 47-220 nF acceptable"
+		(property "Description" "100 nF controller 3V3 local decoupling"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "0add5233-1e60-5597-b1c1-4eff2b1fc819")
 			(effects (font (size 1 1)))
@@ -998,13 +998,13 @@
 			(uuid "684a63ca-7cc8-5e53-879c-008dad909561")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "10uF"
+		(property "Value" "470uF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "c0f37fce-14e6-5184-ad76-b531b0b9c420")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "10 uF protected SDS011 5V bulk capacitor; observe polarity"
+		(property "Description" "470 uF protected SDS011 5V bulk; sized for the fan against the 20 mV ripple limit; observe polarity"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "dd3669ba-8804-57d5-acde-f34d25a7aa48")
 			(effects (font (size 1 1)))
@@ -1031,13 +1031,13 @@
 			(uuid "07e5462d-d34c-55b2-9415-2785345cc173")
 			(effects (font (size 0.9 0.9) (thickness 0.15)))
 		)
-		(property "Value" "220nF"
+		(property "Value" "100nF"
 			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "bea95d95-da98-5a80-9b1a-993a3699ac35")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "220 nF SDS011 5V high-frequency decoupling"
+		(property "Description" "100 nF SDS011 5V high-frequency decoupling"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "f53a004c-ae00-580e-9930-263f41f0e8df")
 			(effects (font (size 1 1)))

@@ -25,22 +25,39 @@ Protection is instead provided by keyed connectors, staged measurements, local d
 signal short or wiring mistake and damp fast edges. They do **not** create appreciable measurement
 noise. `C1`, `C3` and `C4` decouple power; their job is different from the series resistors.
 
-The PCB/BOM uses 220 nF for `C1`, `C3` and `C4` because those parts are available. Values from
-47 nF through 220 nF are electrically acceptable here; do not substitute electrolytics for these
-high-frequency ceramic capacitors.
+`C1`, `C3`, `C4` and `C7` are **100 nF**. The recorded ceramic assortment in
+[`elektronik-inventar.md`](../../../docs/elektronik-inventar.md) tops out at 100 nF, and D-022
+already accepts anything from 47 nF to 220 nF here, so 100 nF is both stocked and correct. Do not
+substitute electrolytics for these high-frequency ceramic capacitors.
 
 ### The carrier supplies the I²C pull-ups
 
 Nothing on the controller board pulls SDA or SCL up: its display is SPI. `R_PU_SDA` and `R_PU_SCL`,
-4.7 kΩ from `SDA_EXT`/`SCL_EXT` to 3.3 V, are therefore **required**, not optional. Without them a
+3.3 kΩ from `SDA_EXT`/`SCL_EXT` to 3.3 V, are therefore **required**, not optional. Without them a
 build populated with only the SHT41, or with a breakout whose pull-ups are unfitted, leaves the bus
 floating and every transaction fails.
 
 They sit on the sensor side of `R_SDA`/`R_SCL` so the 330 Ω series resistors remain a fault-current
 limit rather than part of the pull-up divider. If both breakouts carry their own 10 kΩ pull-ups the
-parallel result is about 2.4 kΩ — roughly 1.4 mA at 3.3 V, inside the I²C 3 mA sink limit — so keep
+parallel result is about 2.0 kΩ — roughly 1.6 mA at 3.3 V, inside the I²C 3 mA sink limit — so keep
 them fitted. After assembly, measure the unpowered resistance from SDA to 3.3 V and SCL to 3.3 V,
 then verify idle-high voltage when powered.
+
+
+### Resistor sizing
+
+The operator holds a complete E24 kit, so every value below is the electrically chosen one, not the
+nearest thing in a drawer.
+
+| Ref | Value | Why this value |
+| --- | ---: | --- |
+| `R_PU_SDA`, `R_PU_SCL` | 3.3 kΩ | Rise time is the binding constraint on hand-wired perfboard. At 100 kHz I²C allows 1000 ns. Assuming ~200 pF of hand-soldered bus capacitance, 4.7 kΩ gives 940 ns — right on the limit — while 3.3 kΩ gives 660 ns. Sink stays at 1.0 mA alone, or 1.6 mA with two 10 kΩ breakout pull-ups in parallel, against the 3 mA I²C limit. **Changed from 4.7 kΩ when the build moved to perfboard.** |
+| `R_SDA`, `R_SCL` | 330 Ω | Fault-current limiting is the primary job: 3.3 V / 330 Ω = 10 mA, comfortably under the 40 mA GPIO maximum. The cost is a divider against the pull-ups when the ESP32 drives low — sensors then see 3.3 V × 330 / (2030 + 330) = 0.46 V, still well under the 0.99 V I²C VIL. Dropping to 220 Ω would improve that margin but push fault current to 15 mA for no real gain. |
+| `R_SDS_RX`, `R_SDS_TX` | 1 kΩ | Sized to bound a UART driver fight to 3.3 V / 1 kΩ ≈ 3.3 mA against the 40 mA maximum. Signal cost is nil: 1 kΩ into a few hundred pF settles in ~200 ns against a 104 µs bit at 9600 baud. Also limits clamp current to ~1.4 mA if a 5 V module is ever fitted by mistake. |
+| `R_PIR_IN` | 10 kΩ | Base drive for `Q_PIR`. Collector current is only 3.3 V / 10 kΩ = 0.33 mA through `R_PIR_PU`, needing ~33 µA of base current for a forced β of 10. 10 kΩ supplies (3.3 − 0.7) / 10 kΩ = 260 µA — deep saturation with 8× margin, while loading the PIR output with a quarter of a milliamp. |
+| `R_PIR_PU` | 10 kΩ | Collector pull-up holding GPIO33 high when the PIR is idle. Keeps `Q_PIR` collector current at 0.33 mA, which is what makes the 10 kΩ base resistor comfortable. |
+| `R_PIR_PD` | 100 kΩ | Defines `Q_PIR`'s base if the PIR output floats or is removed. Ten times `R_PIR_IN`, so it costs about 9% of the base drive and cannot prevent turn-on. |
+| `R_BEEP_S` | 100 Ω | A deliberate compromise while the module's internals are unconfirmed — see the step-down rule above. If `J_BEEP` is a buffered logic input, anything from 100 Ω to 1 kΩ behaves identically and 100 Ω is simply the safe end. |
 
 ### Five-pin VEML7700 connector
 
@@ -51,8 +68,8 @@ The confirmed module header order is `VIN`, `3Vo`, `GND`, `SCL`, `SDA`.
 | 1 | `VIN` | direct `3V3` | Supply the breakout here, even though it accepts a wider VIN range |
 | 2 | `3Vo` | **NC** | Regulator output; never drive it and never tie it to `3V3` |
 | 3 | `GND` | GND | Common 0 V reference |
-| 4 | `SCL` | `SCL_EXT` after `R_SCL` 330 Ω | Pulled up by `R_PU_SCL` 4.7 kΩ |
-| 5 | `SDA` | `SDA_EXT` after `R_SDA` 330 Ω | Pulled up by `R_PU_SDA` 4.7 kΩ |
+| 4 | `SCL` | `SCL_EXT` after `R_SCL` 330 Ω | Pulled up by `R_PU_SCL` 3.3 kΩ |
+| 5 | `SDA` | `SDA_EXT` after `R_SDA` 330 Ω | Pulled up by `R_PU_SDA` 3.3 kΩ |
 
 The VEML7700 address is `0x10`. Place `C3` 220 nF between `VIN` and GND beside this connector.
 
@@ -105,12 +122,12 @@ polarized: positive to 3.3 V, negative to GND.
 ### External I²C branch
 
 ```text
-                                        R_PU_SDA 4k7 ── +3V3
+                                        R_PU_SDA 3k3 ── +3V3
                                                      │
 GPIO21 (pad 26) ── R_SDA 330 Ω ── SDA_EXT ───────────┼─ VEML7700 SDA
                                                      └─ SHT41 SDA
 
-                                        R_PU_SCL 4k7 ── +3V3
+                                        R_PU_SCL 3k3 ── +3V3
                                                      │
 GPIO22 (pad 29) ── R_SCL 330 Ω ── SCL_EXT ───────────┼─ VEML7700 SCL
                                                      └─ SHT41 SCL
@@ -227,8 +244,13 @@ minimum before any USB droop is counted. The jumper provides the same isolation 
    without the SDS011, and says 700 mA is not comfortable. Adding a fan to a USB-fed carrier is a
    power-budget claim, not a given.
 
-The SDS011 ripple specification is < 20 mV. `C6` at 10 µF matches existing stock and has **not**
-been shown to meet that against a fan load; measure the rail with a scope during commissioning.
+The SDS011 ripple specification is < 20 mV, and `C6` is **470 µF** to meet it. The electrolytic
+assortment runs to 1000 µF, so this is no longer a stock compromise — an earlier 10 µF value was
+never shown to hold 20 mV against a fan load. Still measure the rail with a scope during
+commissioning; a chosen value is not a measured one.
+
+> **Close `JP_SDS_5V` before applying USB power, not while live.** Closing it onto a charged rail
+> dumps the inrush of a discharged 470 µF into the shared 5 V supply and can brown out the ESP32.
 
 ### Buzzer (`J_BEEP`)
 
@@ -252,12 +274,13 @@ GPIO25 (pad 8) ── R_BEEP_S 100 Ω ── S
 Logic is **active HIGH**, matching v1. There is no flyback diode: an internally-driven module keeps
 the inductive kick behind its own transistor, so it never reaches the header.
 
-> **If the buzzer is silent, do not raise the drive — lower the resistor.** Some Keyes buzzer boards
-> put the sounder straight across `S` and `−` with no onboard transistor. On such a module 100 Ω
-> drops most of the supply and it will barely click. Replace `R_BEEP_S` with a wire link, then
-> measure the current into `S` during a beep. It must stay **under 20 mA**; the ESP32 GPIO absolute
-> maximum is 40 mA. If it exceeds 20 mA, fit a low-side NPN on the `−` pin instead of driving `S`
-> harder.
+> **If the buzzer is silent, do not raise the drive — lower the resistor, one E24 step at a time.**
+> Some Keyes buzzer boards put the sounder straight across `S` and `−` with no onboard transistor.
+> On such a module 100 Ω drops most of the supply and it will barely click. Step down through the
+> kit — 100 → 47 → 22 Ω — measuring the current into `S` during a beep at each step, and stop at the
+> largest value that gives acceptable volume. The current must stay **under 20 mA**; the ESP32 GPIO
+> absolute maximum is 40 mA. A wire link is the last resort, not the first move, and if even 22 Ω
+> exceeds 20 mA then fit a low-side NPN on the `−` pin rather than driving `S` harder.
 
 `R_BEEP_S` starts at 100 Ω deliberately: the protective value is the default, and the bench
 measurement is what authorises reducing it.

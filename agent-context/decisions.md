@@ -277,8 +277,9 @@
   The decision is unchanged; only its justification is.
 - **Signals:** GPIO21/SDA and GPIO22/SCL reach only the external sensor branch through individual
   330 Ω resistors. They limit fault current and damp edges; they are not treated as a measurement
-  noise source. `C1`, `C3` and `C4` provide power decoupling and use 220 nF from available stock
-  (47–220 nF acceptable).
+  noise source. `C1`, `C3` and `C4` provide power decoupling. **Revised 2026-08-28 to 100 nF**, the
+  confirmed ceramic stock value in `docs/elektronik-inventar.md`, still inside the 47–220 nF range
+  this decision allows.
 - **VEML7700:** Operator-confirmed five-pin header is VIN/3Vo/GND/SCL/SDA. VIN gets 3.3 V and
   `3Vo` is the breakout regulator output and must stay NC. Bus pull-ups are now fitted on the
   carrier itself — see D-023.
@@ -289,8 +290,12 @@
 ### D-023 — The Room carrier supplies its own I²C pull-ups
 
 - **Status:** Accepted 2026-08-28, replacing the "no extra pull-ups" position inside D-022.
-- **Rule:** `R_PU_SDA` and `R_PU_SCL`, 4.7 kΩ from `SDA_EXT`/`SCL_EXT` to 3.3 V, are **required**
+- **Rule:** `R_PU_SDA` and `R_PU_SCL`, 3.3 kΩ from `SDA_EXT`/`SCL_EXT` to 3.3 V, are **required**
   parts, not optional ones.
+- **Value revised 2026-08-28** from 4.7 kΩ to 3.3 kΩ when the build moved to perfboard. Rise time
+  binds: at 100 kHz I²C allows 1000 ns, and 4.7 kΩ against roughly 200 pF of hand-soldered bus
+  capacitance gives 940 ns — on the limit. 3.3 kΩ gives 660 ns. The operator holds a complete E24
+  kit, so no value here is a stock compromise; every choice is tabulated in `wiring.md`.
 - **Why:** the previous position assumed an integrated I²C OLED supplied pull-ups. The identified
   board's display is SPI (D-024), so nothing on the controller pulls SDA or SCL up. Without these
   resistors a build populated with only the SHT41 — or with a breakout whose pull-ups are unfitted —
@@ -298,7 +303,7 @@
 - **Placement:** on the sensor side of the 330 Ω series resistors, so `R_SDA`/`R_SCL` stay a
   fault-current limit rather than part of the pull-up divider.
 - **Loading:** with both breakouts carrying their own 10 kΩ pull-ups the parallel result is about
-  2.4 kΩ, roughly 1.4 mA at 3.3 V. That is inside the I²C 3 mA sink limit, so they stay fitted
+  2.0 kΩ, roughly 1.6 mA at 3.3 V. That is inside the I²C 3 mA sink limit, so they stay fitted
   rather than DNP.
 
 ### D-024 — The ideaspark display is SPI, and six GPIOs are off-limits
@@ -361,6 +366,42 @@
   `spec-comparison.md` already puts the shared rail near 650 mA peak coincidence without this
   sensor; and `C6` at 10 µF is not shown to meet the < 20 mV ripple specification against a fan.
   All three are measurements, not conclusions.
+
+### D-027 — The Room build target is a 31 × 27 perfboard; the PCB is parked
+
+- **Status:** Accepted 2026-08-28 on operator direction: "KiCad PCB is not needed right now — we
+  only need the schematic", and the board is hand-soldered on perfboard.
+- **Board:** 31 × 27 holes at 2.54 mm, sold as 7 × 9 cm. The **hole count is authoritative**; the
+  extra millimetres are unholed lead-in strips at both edges.
+- **Consequence:** `atmosmesh-room.kicad_pcb` is parked. It is still generated from the netlist and
+  still carries the safety silkscreen that `validate_room_carrier.py` checks, but its placement is
+  no longer maintained as a fabrication candidate and it must not be ordered.
+- **New artifacts:** `perfboard.md` is the build plan and `validate_room_perfboard.py` gates it. A
+  build plan with no gate would be exactly the "gates that check nothing" pattern this repo keeps
+  hitting; its five assertions are mutation-proved.
+- **Orientation is the new principal hazard:** the pinout sheet is a top view and soldering happens
+  from the copper side, where left and right invert. Two connector orders on this design were
+  already found reversed. The wiring table is therefore authoritative **by pin name**, and the
+  validator refuses to let that warning be edited out.
+- **Row spacing:** dry-fitting the board into the grid settles it in seconds — 25.4 mm is exactly
+  10 pitches. That is step 1 of the build plan, and it discharges the open item in D-024.
+
+### D-028 — Bulk capacitance is chosen for the load, not for the drawer
+
+- **Status:** Accepted 2026-08-28 after `docs/elektronik-inventar.md` was added to the repository.
+- **What changed:** the electrolytic assortment covers 0.1 µF to 1000 µF in 24 values, so the
+  earlier "matches existing stock" reasoning no longer applies to bulk capacitors.
+  - `C6`, the SDS011 5 V bulk: **10 µF → 470 µF**. Its ripple specification is < 20 mV against a fan
+    load, and 10 µF was never shown to meet it.
+  - `C5`, the PIR 5 V bulk: 10 µF → 100 µF.
+  - `C2`, the controller 3.3 V bulk: 10–47 µF → 100 µF.
+- **Ceramics went the other way:** the ceramic assortment stops at 100 nF, so `C1`, `C3`, `C4` and
+  `C7` move from 220 nF to **100 nF** — inside the range D-022 already permits, and actually held.
+- **Consequence:** `JP_SDS_5V` must be closed **before** USB power is applied. Closing it onto a
+  live rail dumps a discharged 470 µF into the shared 5 V supply and can brown out the ESP32.
+- **Zener position re-confirmed, not changed:** the Zener stock is the 1N47xx series starting at
+  1N4733 (5.1 V). That is too late for a 3.3 V GPIO and no 1N4728 is held, so the "no Zener clamp"
+  rule stands on evidence rather than assumption.
 
 ## Additional accepted decision
 

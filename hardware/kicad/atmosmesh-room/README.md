@@ -21,7 +21,9 @@ supplies the only I²C pull-ups it has.
 | --- | --- |
 | `atmosmesh-room.kicad_pro` | KiCad 10 project; open this file |
 | `atmosmesh-room.kicad_sch` | Reviewable electrical contract |
-| `atmosmesh-room.kicad_pcb` | 60×80 mm placement and unrouted safety-reviewed netlist |
+| `atmosmesh-room.kicad_pcb` | **Parked.** Kept only as a netlist/silkscreen cross-check — not the build target |
+| `perfboard.md` | **The build target**: 31×27 hole plan, orientation rules and build order |
+| `validate_room_perfboard.py` | Deterministic structural check on the perfboard plan |
 | `room.pretty/`, `fp-lib-table`, `sym-lib-table` | Local THT library contract |
 | `BOM.csv` | Values, fitting policy and verification notes |
 | `wiring.md` | Connector contract and staged pre-power checks |
@@ -38,16 +40,17 @@ supplies the only I²C pull-ups it has.
   any of them and `validate_room_carrier.py` fails if one appears.
 - GPIO21/SDA and GPIO22/SCL reach the external sensor branch through 330 Ω series resistors. Those
   resistors limit fault current and damp edges; they are not a measurement noise source.
-- `R_PU_SDA` and `R_PU_SCL` (4.7 kΩ to 3.3 V) are the bus pull-ups. They are required because the
+- `R_PU_SDA` and `R_PU_SCL` (3.3 kΩ to 3.3 V) are the bus pull-ups. They are required because the
   display is SPI: nothing on the controller board pulls I²C up. They sit on the sensor side of the
   330 Ω resistors so the series resistance stays a fault limit rather than part of the pull-up
-  divider. With both breakouts populated the parallel result is roughly 2.4 kΩ, about 1.4 mA at
-  3.3 V, inside the I²C 3 mA sink limit, so they stay fitted rather than DNP.
+  divider. With both breakouts populated the parallel result is roughly 2.0 kΩ, about 1.6 mA at
+  3.3 V, inside the I²C 3 mA sink limit, so they stay fitted rather than DNP. Every resistor value
+  on this board is justified in `wiring.md`'s sizing table.
 - Both sensors receive direct 3.3 V and local 220 nF decoupling. There is deliberately no diode or
   resistor in a sensor supply: a breakout's pull-ups reference its own VDD, so dropping sensor VDD
   drags the pull-ups down with it and buys nothing, while adding a droop path under the SHT41's
-  measurement current bursts. The build uses 220 nF for `C1`, `C3` and `C4`; 47–220 nF is
-  electrically acceptable for these high-frequency decouplers.
+  measurement current bursts. The build uses 100 nF for `C1`, `C3`, `C4`
+  and `C7` — the confirmed ceramic stock value, inside D-022's own 47–220 nF range.
 - The confirmed five-pin VEML7700 connector is `VIN`, `3Vo`, `GND`, `SCL`, `SDA`: `VIN` receives
   3.3 V and `3Vo` is regulator output and remains NC.
 - PIR power can come only from a confirmed USB/5 V pin, through `JP_PIR_5V` which is **DEFAULT
@@ -63,8 +66,18 @@ supplies the only I²C pull-ups it has.
   GPIO16/RX2, GPIO17/TX2 to sensor RXD — each through a 1 kΩ series resistor that bounds a driver
   fight to about 3.3 mA. The generator refuses both a straight-through UART and a diode on that
   rail.
-- No Zener clamp is used. The known inventory starts at 5.1 V, which clamps too late for a 3.3 V
-  GPIO.
+- No Zener clamp is used. This is now positively evidenced rather than assumed: the Zener
+  assortment in `docs/elektronik-inventar.md` is the 1N47xx series starting at **1N4733 = 5.1 V**,
+  which clamps far too late to protect a 3.3 V GPIO. A 3.3 V part (1N4728) is not held.
+
+## The build target is perfboard
+
+The operator builds this by hand on a **31 × 27 hole** perfboard, so no board is fabricated. The
+schematic is the electrical contract and [`perfboard.md`](perfboard.md) is the build plan.
+
+`atmosmesh-room.kicad_pcb` is **parked**: it is still generated from the netlist and still carries
+the safety silkscreen, which is why its checks remain in `validate_room_carrier.py`, but its
+placement is not maintained as a fabrication candidate. Do not order it.
 
 ## Placement and routing state
 

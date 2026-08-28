@@ -90,12 +90,14 @@ def main() -> int:
     require(not clash,
             f"carrier nets must not reach TFT/strap/USB-UART pins: GPIO{clash}")
 
-    require('R_PU_SDA' in sch and 'R_PU_SCL' in sch and '4.7k' in sch,
-            "external I2C needs its own 4.7k pullups: the TFT board has no onboard I2C device")
+    require('R_PU_SDA' in sch and 'R_PU_SCL' in sch and '3.3k' in sch,
+            "external I2C needs its own 3.3k pullups: the TFT board has no onboard I2C device")
     require('330R' in sch and '1N5819' in sch and '2N3904' in sch,
             "schematic must contain the specified protection components")
-    require(sch.count('220nF') >= 3,
-            "C1, C3, and C4 must use the selected 220 nF decouplers")
+    require(sch.count('100nF') >= 4,
+            "C1, C3, C4 and C7 must use 100 nF, the confirmed ceramic stock value")
+    require('470uF' in sch,
+            "C6 must be the 470 uF SDS011 bulk: 10 uF was never shown to meet the 20 mV ripple limit")
     require('R_VEML' not in sch and 'R_SHT' not in sch,
             "sensor power must be direct 3V3 without series supply resistors")
     require('VEML7700 VIN/3Vo/GND/SCL/SDA' in sch,
