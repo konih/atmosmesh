@@ -78,9 +78,9 @@ The map in [inventory.md](inventory.md) is still **not approved**, but the sheet
 ## Still blocked without photos / measurement
 
 - ESP32 **devboard** silkscreen (VIN vs 5V vs USB-only).
-- SDS011 USB2TT004 adapter cable: identify each wire by continuity to the sensor's own 7-pin header
-  (datasheet pin 1 = NC, 3 = 5 V, 5 = GND, 6 = RX, 7 = TX). Wire colours vary between kits and are
-  not evidence — see D-026a.
+- SDS011 USB2TT004 adapter cable — **still open; the cable has not been rung out.** Identify each
+  wire by continuity to the sensor's own 7-pin header (datasheet pin 1 = NC, 3 = 5 V, 5 = GND,
+  6 = RX, 7 = TX). Wire colours vary between kits and are not evidence — see D-026a.
 - DHT22 vs wired AM2302 pin/colour order.
 - GY-BMP280 6-pin: CSB→3V3 and SDO→GND for I²C 0x76. Breakout regulator / 5 V VCC still unconfirmed.
 - OLED: SSD1306 at 0x3C on GPIO5/GPIO4 proven on the bench; SH1106 still possible on a second module. VCC 3.3 V.

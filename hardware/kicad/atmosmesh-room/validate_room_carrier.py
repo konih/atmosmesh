@@ -166,8 +166,12 @@ def main() -> int:
 
     # D-026a: the SDS011 arrives on its adapter cable, whose colours vary between kits. Recording a
     # colour would restore exactly the guess that caused the 2026-08-17 straight-through UART.
-    sds = wiring[wiring.index("#### The UART must be crossed") - 2500:
-                 wiring.index("#### The UART must be crossed")]
+    sds_head = "### SDS011 particulate sensor (`J_SDS`)"
+    sds_end = "#### The UART must be crossed"
+    require(sds_head in wiring, "wiring.md must carry the SDS011 connector section")
+    require(wiring.index(sds_head) < wiring.index(sds_end),
+            "the SDS011 connector section must precede the crossed-UART section")
+    sds = wiring[wiring.index(sds_head):wiring.index(sds_end)]
     require("continuity" in sds,
             "wiring.md must tell the builder to ring the SDS011 cable out by continuity")
     for colour in ("red", "black", "green", "blue", "yellow", "white",
