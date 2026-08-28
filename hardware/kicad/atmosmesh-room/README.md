@@ -61,6 +61,10 @@ supplies the only I²C pull-ups it has.
   low-side NPN and flyback diode are gone: an internally-driven module keeps the inductive kick
   behind its own transistor. If the buzzer stays silent the module may be unbuffered — see the
   measurement rule in `wiring.md` before changing anything.
+- `JP_5V_SRC` selects where `+5V_DOMAIN` comes from: the board's `VIN` (pins 1–2) or an external
+  bench supply on `J_5V_EXT` (pins 2–3). A 3-pin header takes exactly one shunt, so the two sources
+  can never be bridged back into the host's USB port. Use the external, current-limited supply for
+  first power-up and whenever the SDS011 fan runs.
 - The SDS011 takes 5 V through `JP_SDS_5V`, **DEFAULT OPEN**, with **no series diode**: its minimum
   is 4.7 V and a Schottky at fan current drops below that. Its UART is crossed — sensor TXD to
   GPIO16/RX2, GPIO17/TX2 to sensor RXD — each through a 1 kΩ series resistor that bounds a driver

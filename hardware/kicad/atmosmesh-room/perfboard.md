@@ -50,6 +50,7 @@ U1 occupies **rows 8 and 18, columns 2–16** — 15 holes along each row, 10 pi
 | PIR block | 25–31 | 15–27 | `J_PIR`, `JP_PIR_5V`, `D_PIR`, `Q_PIR`, `R_PIR_IN`, `R_PIR_PD`, `R_PIR_PU`, `C5` |
 | SDS011 block | 17–24 | 15–27 | `J_SDS`, `JP_SDS_5V`, `R_SDS_RX`, `R_SDS_TX`, `C6`, `C7` |
 | Buzzer | 17–24 | 8–14 | `J_BEEP`, `R_BEEP_S` |
+| 5 V source select | 17–24 | 1–7 | `J_5V_EXT`, `JP_5V_SRC` |
 | Indicators | 25–31 | 1–7 | `D_LED_3V3`, `R_LED_3V3`, `D_LED_SDS`, `R_LED_SDS`, `D_LED_PIR`, `R_LED_PIR` |
 
 Put the three indicator LEDs together at one visible edge and label them on the board. They are

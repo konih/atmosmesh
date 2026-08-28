@@ -252,6 +252,29 @@ The 1 kΩ series resistors are the additional protection. They bound a driver fi
 3.3 V / 1 kΩ ≈ **3.3 mA** instead of a short. At 9600 baud a bit is 104 µs, while 1 kΩ against a
 few hundred pF of wiring is a couple of hundred nanoseconds, so they cost nothing in signal terms.
 
+#### Where the 5 V comes from
+
+`JP_5V_SRC` selects the source for `+5V_DOMAIN`, which feeds both `JP_PIR_5V` and `JP_SDS_5V`.
+
+| Shunt | Source | Use |
+| --- | --- | --- |
+| pins 1–2 | `+5V_USB_CONFIRMED`, the board's `VIN` | normal standalone operation |
+| pins 2–3 | `+5V_EXT`, from `J_5V_EXT` | bench bring-up and any run with the SDS011 fan |
+
+A 3-pin header takes **exactly one** 2-pin shunt, so the two sources cannot be bridged. That
+matters: bridging them would push a bench supply back into the host's USB port. `generate_project.py`
+refuses to flatten this into two independent jumpers.
+
+**Use the external supply for first power-up.** The operator's lab supply has an adjustable current
+limit, and a current-limited bring-up is the cheapest protection this project can buy — it turns a
+wiring error from a destroyed part into a supply that simply refuses to deliver. Set the limit just
+above the expected draw, not at the supply's maximum.
+
+Feeding the 5 V domain externally also **removes the shared-rail problem** rather than measuring
+around it. `spec-comparison.md` puts the USB rail near 650 mA peak coincidence before the SDS011
+fan is added, and says 700 mA is not comfortable. With the shunt on 2–3 the fan is not on the USB
+rail at all. `J_5V_EXT` GND is common with the board — connect it, or nothing has a return path.
+
 #### 5 V supply — and why there is no diode here
 
 `JP_SDS_5V` is **DEFAULT OPEN**, the same pattern as `JP_PIR_5V`. `C6` 10 µF and `C7` 220 nF sit on

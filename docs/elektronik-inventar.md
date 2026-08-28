@@ -459,6 +459,20 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
      `hardware/kicad/atmosmesh-room/wiring.md`). Am fertigen Lochrasteraufbau lässt sich die
      tatsächliche Anstiegszeit messen und die Annahme bestätigen oder korrigieren.
 
+- 1× Labornetzteil mit einstellbarer Spannung und einstellbarer Strombegrenzung
+  - genaue Typbezeichnung, Spannungs- und Strombereich am Gerät ablesen und hier nachtragen
+
+  **Konstruktive Folge: das Room-Board bekommt dafür eine umschaltbare 5-V-Quelle (D-031).**
+
+  1. **Erstinbetriebnahme mit Strombegrenzung.** Der Grenzwert wird knapp über den erwarteten
+     Strom gesetzt, nicht auf das Maximum. Ein Verdrahtungsfehler führt dann zu einem Netzteil,
+     das schlicht nicht liefert, statt zu einem zerstörten Bauteil. Dieses Projekt hat bereits
+     einmal einen LDO verloren (`hardware/incident-2026-08-17-ldo.md`).
+  2. **Das Problem der gemeinsamen 5-V-Schiene entfällt.** `hardware/spec-comparison.md` nennt
+     rund 650 mA Spitzenkoinzidenz auf der USB-Schiene noch ohne den SDS011-Lüfter. Mit
+     `JP_5V_SRC` auf 2–3 hängt der Lüfter gar nicht an dieser Schiene.
+  3. Der tatsächliche Stromverbrauch beider 5-V-Domänen lässt sich am Netzteil direkt ablesen.
+
 - IC-Fassungssortiment (DIP)
   - verschiedene Polzahlen
   - für das Room-Design derzeit nicht erforderlich; es enthält keinen DIP-Baustein

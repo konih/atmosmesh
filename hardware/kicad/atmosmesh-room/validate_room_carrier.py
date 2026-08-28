@@ -61,7 +61,7 @@ def main() -> int:
         require(token in pcb, f"missing safety silkscreen: {token}")
 
     required_nets = {
-        '+3V3', '+5V_USB_CONFIRMED', 'GND', 'SDA_EXT', 'SCL_EXT',
+        '+3V3', '+5V_USB_CONFIRMED', '+5V_EXT', '+5V_DOMAIN', 'GND', 'SDA_EXT', 'SCL_EXT',
         'GPIO21_SDA', 'GPIO22_SCL', 'GPIO25_BEEP', 'GPIO33_PIR_N',
         'PIR_BASE', 'BEEP_S', 'PIR_5V_PROTECTED',
         'SDS_5V_PROTECTED', 'SDS_RXD', 'SDS_TXD', 'GPIO16_SDS_RX', 'GPIO17_SDS_TX',
@@ -73,7 +73,7 @@ def main() -> int:
     for reference in (
         'U1', 'J_VEML', 'J_SHT', 'J_PIR', 'J_BEEP', 'JP_PIR_5V',
         'Q_PIR', 'D_PIR', 'R_SDA', 'R_SCL', 'R_BEEP_S',
-        'J_SDS', 'JP_SDS_5V', 'R_SDS_RX', 'R_SDS_TX', 'C6', 'C7',
+        'J_SDS', 'JP_SDS_5V', 'R_SDS_RX', 'R_SDS_TX', 'C6', 'C7', 'J_5V_EXT', 'JP_5V_SRC',
         'TP_3V3', 'TP_5V', 'TP_GND', 'TP_SDA', 'TP_SCL',
     ):
         require(f'"Reference" "{reference}"' in pcb,

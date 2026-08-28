@@ -434,6 +434,24 @@
 - **Boundary:** the byte-level command frames are not in the datasheet held here. Obtain Nova's
   separate control-protocol document before writing firmware; do not guess frame formats.
 
+### D-031 — The 5 V domain has a selectable source, and the bench supply is the default for bring-up
+
+- **Status:** Accepted 2026-08-28, after the operator recorded an adjustable-voltage,
+  adjustable-current lab supply.
+- **Rule:** `JP_5V_SRC` is a 3-pin select feeding `+5V_DOMAIN`. Shunt on 1–2 takes the board's
+  `VIN`; on 2–3 it takes `+5V_EXT` from `J_5V_EXT`. Both `JP_PIR_5V` and `JP_SDS_5V` feed from
+  `+5V_DOMAIN`, never straight off `VIN`.
+- **Why a 3-pin select and not two jumpers:** a 3-pin header accepts exactly one 2-pin shunt, so
+  the sources cannot be bridged. Two independent 2-pin jumpers could both be closed, pushing the
+  bench supply back into the host's USB port. `generate_project.py` refuses that arrangement.
+- **What this resolves:** the shared-rail power budget stops being a measurement problem and becomes
+  a wiring choice. `spec-comparison.md` puts the USB rail near 650 mA peak coincidence before the
+  SDS011 fan; with the external source selected, the fan is not on that rail at all.
+- **Bring-up rule:** first power-up uses the external supply with the current limit set just above
+  the expected draw. A current-limited supply turns a wiring error from a destroyed part into a
+  supply that refuses to deliver — the cheapest protection available to this project, which has
+  already lost an LDO once (`docs/hardware/incident-2026-08-17-ldo.md`).
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

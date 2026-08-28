@@ -116,8 +116,12 @@ parts = [
     # Operator-confirmed 2026-08-28: no-name Keyes 3-pin breakout, header order S / VCC / -.
     Part("J_BEEP", "KEYES BUZZER S/VCC/-", "Connector_Generic:Conn_01x03", "room:PinHeader_1x03_P2.54mm", 8200, 1800,
          ("BEEP_S", "+3V3", "GND"), 176.0, 73.0),
+    Part("J_5V_EXT", "EXT 5V IN / GND", "Connector_Generic:Conn_01x02", "room:PinHeader_1x02_P2.54mm", 8200, 8000,
+         ("+5V_EXT", "GND"), 109.0, 62.5),
+    Part("JP_5V_SRC", "SELECT: 1-2 USB / 2-3 EXT", "Connector_Generic:Conn_01x03", "room:PinHeader_1x03_P2.54mm", 7600, 8000,
+         ("+5V_USB_CONFIRMED", "+5V_DOMAIN", "+5V_EXT"), 119.0, 62.5),
     Part("JP_PIR_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 3500,
-         ("+5V_USB_CONFIRMED", "PIR_5V_RAW"), 158.0, 108.0),
+         ("+5V_DOMAIN", "PIR_5V_RAW"), 158.0, 108.0),
     Part("D_PIR", "1N5819", "atmosmesh:D_Schottky", "room:D_Axial_P7.62mm", 7400, 3500,
          ("PIR_5V_PROTECTED", "PIR_5V_RAW"), 165.0, 108.0),
     Part("Q_PIR", "2N3904 C/B/E", "atmosmesh:Q_NPN_CBE", "room:TO92_CBE", 6800, 4300,
@@ -152,7 +156,7 @@ parts = [
     Part("J_SDS", "SDS011 5V/GND/RXD/TXD", "Connector_Generic:Conn_01x04", "room:PinHeader_1x04_P2.54mm", 8200, 5400,
          ("SDS_5V_PROTECTED", "GND", "SDS_RXD", "SDS_TXD"), 168.0, 84.0),
     Part("JP_SDS_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 5400,
-         ("+5V_USB_CONFIRMED", "SDS_5V_PROTECTED"), 120.0, 112.0),
+         ("+5V_DOMAIN", "SDS_5V_PROTECTED"), 120.0, 112.0),
     Part("R_SDS_RX", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 5400,
          ("SDS_TXD", "GPIO16_SDS_RX"), 108.0, 100.0),
     Part("R_SDS_TX", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 5900,
@@ -176,7 +180,7 @@ parts = [
     Part("D_LED_PIR", "LED PIR 5V LIVE", "atmosmesh:LED", "room:D_Axial_P7.62mm", 6900, 7400,
          ("GND", "LED_PIR_A"), 162.0, 118.0),
     Part("TP_3V3", "3V3/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 5800, 4700, ("+3V3", "GND"), 134.0, 116.0),
-    Part("TP_5V", "5V/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6200, 4700, ("+5V_USB_CONFIRMED", "GND"), 141.0, 116.0),
+    Part("TP_5V", "5V/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6200, 4700, ("+5V_DOMAIN", "GND"), 141.0, 116.0),
     Part("TP_GND", "GND/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6600, 4700, ("GND", "GND"), 148.0, 116.0),
     Part("TP_SDA", "SDA/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 2600, 3900, ("SDA_EXT", "GND"), 103.5, 83.0),
     Part("TP_SCL", "SCL/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 3000, 3900, ("SCL_EXT", "GND"), 118.0, 93.0),
@@ -190,6 +194,8 @@ DESCRIPTION_BY_REF = {
     "J_PIR": "Confirmed D-SUN PIR header order: GND, OUT, protected 5V",
     "J_BEEP": "Confirmed Keyes 3-pin buzzer header: S, VCC, minus",
     "R_BEEP_S": "100 ohm series protection between GPIO25 and the buzzer S input; see wiring.md if the buzzer stays silent",
+    "J_5V_EXT": "External 5V input from a current-limited bench supply; GND is common with the board",
+    "JP_5V_SRC": "5V source select. Shunt on 1-2 takes the board VIN, on 2-3 the external supply. Exactly one shunt fits",
     "JP_PIR_5V": "Default-open PIR 5V enable jumper",
     "D_PIR": "1N5819 PIR supply diode; pin 1 K to protected rail, pin 2 A to raw 5V",
     "Q_PIR": "2N3904 active-low PIR interface; symbol and footprint pins 1/2/3 are C/B/E",
@@ -218,7 +224,7 @@ DESCRIPTION_BY_REF = {
     "R_LED_PIR": "1 kilohm for the PIR 5V live indicator; about 3 mA. Draws through JP_PIR_5V",
     "D_LED_PIR": "PIR 5V domain live indicator; lit means the default-open jumper is closed",
     "TP_3V3": "3V3 and GND paired through-hole measurement points",
-    "TP_5V": "Confirmed USB 5V and GND paired through-hole measurement points",
+    "TP_5V": "Selected 5V domain and GND paired measurement points; reads whichever source JP_5V_SRC selects",
     "TP_GND": "Paired GND through-hole continuity points",
     "TP_SDA": "External SDA and GND paired through-hole measurement points",
     "TP_SCL": "External SCL and GND paired through-hole measurement points",
@@ -553,21 +559,24 @@ def write_board(netlist_path: pathlib.Path) -> None:
     # Copper remains intentionally unrouted until exact board/module photos establish the physical
     # socket spacing, orientation and connector pin order.
 
+    # Layer is stated per entry. It used to be a hard-coded index set, which silently put the
+    # wrong text on silkscreen every time an entry was inserted above it.
+    SILK, DRAW = "F.SilkS", "Dwgs.User"
     texts = [
-        (140, 61.5, "IDEASPARK 1.14in TFT - VERIFY ROW SPACING", 1.2),
-        (140, 63.5, "VERIFY 30-PIN / 25.4mm ROWS", 1.0),
-        (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9),
-        (140, 107, "NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART", 0.8),
-        (169, 102, "5V DOMAIN", 1.0),
-        (140, 110, "LED LIT = THAT 5V DOMAIN IS LIVE", 0.8),
-        (120, 118, "SDS011 5V - NO DIODE - UART CROSSED", 0.8),
-        (166, 65, "BUZZER S/VCC/-", 0.8),
-        (112, 89, "SHT41 - KEEP FROM HEAT", 0.8),
-        (113, 66, "SHIELD FROM LCD", 0.8),
-        (140, 118.5, "PARKED - PERFBOARD BUILD - DO NOT ORDER", 1.0),
+        (142, 61.5, "IDEASPARK 1.14in TFT - VERIFY ROW SPACING", 1.2, SILK),
+        (142, 63.5, "VERIFY 30-PIN / 25.4mm ROWS", 1.0, SILK),
+        (142, 65.5, "PARKED - PERFBOARD BUILD - DO NOT ORDER", 1.0, SILK),
+        (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9, DRAW),
+        (140, 107, "NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART", 0.8, DRAW),
+        (169, 102, "5V DOMAIN", 1.0, DRAW),
+        (113, 71.5, "5V SRC 1-2 USB 2-3 EXT", 0.8, DRAW),
+        (140, 110, "LED LIT = THAT 5V DOMAIN IS LIVE", 0.8, DRAW),
+        (120, 118, "SDS011 5V - NO DIODE - UART CROSSED", 0.8, DRAW),
+        (166, 65, "BUZZER S/VCC/-", 0.8, DRAW),
+        (112, 89, "SHT41 - KEEP FROM HEAT", 0.8, DRAW),
+        (109, 67.5, "SHIELD FROM LCD", 0.8, DRAW),
     ]
-    for index, (x, y, value, size) in enumerate(texts):
-        layer = "F.SilkS" if index in {0, 1, 8} else "Dwgs.User"
+    for index, (x, y, value, size, layer) in enumerate(texts):
         lines.append(f'''\t(gr_text "{value}" (at {x} {y}) (layer "{layer}") (uuid "{uid(f'text-{index}')}")
 \t\t(effects (font (size {size} {size}) (thickness 0.16)) (justify)) )''')
     # The antenna region is a visible placement keepout; final copper keepout awaits exact photos.
@@ -616,6 +625,26 @@ def write_minimal_footprint_library() -> None:
 )\n''', encoding="utf-8")
 
 
+def assert_one_5v_source_at_a_time() -> None:
+    """The 5 V select must stay a 3-pin header with the shared rail in the middle.
+
+    A 3-pin header accepts exactly one 2-pin shunt, so USB VIN and the bench supply cannot be
+    bridged. Flattening this to two 2-pin jumpers would let both be closed at once and push the
+    bench supply back into the host's USB port.
+    """
+    by_ref = {part.ref: part for part in parts}
+    select = by_ref["JP_5V_SRC"].pin_nets
+    if len(select) != 3:
+        raise RuntimeError("JP_5V_SRC must be a 3-pin select, not a pair of independent jumpers")
+    if select[1] != "+5V_DOMAIN":
+        raise RuntimeError("JP_5V_SRC pin 2 must be the shared +5V_DOMAIN rail")
+    if set((select[0], select[2])) != {"+5V_USB_CONFIRMED", "+5V_EXT"}:
+        raise RuntimeError("JP_5V_SRC outer pins must be the two 5 V sources")
+    for ref in ("JP_PIR_5V", "JP_SDS_5V"):
+        if "+5V_USB_CONFIRMED" in by_ref[ref].pin_nets:
+            raise RuntimeError(f"{ref} must feed from +5V_DOMAIN, not straight off USB VIN")
+
+
 def assert_no_series_diode_on_sds_rail() -> None:
     """Keep the PIR's 1N5819 idiom off the SDS011 supply.
 
@@ -653,6 +682,7 @@ def assert_sds011_uart_crossed() -> None:
 def main() -> None:
     write_project_and_tables()
     write_minimal_footprint_library()
+    assert_one_5v_source_at_a_time()
     assert_no_series_diode_on_sds_rail()
     assert_sds011_uart_crossed()
     schematic = write_native_schematic()

@@ -4,6 +4,8 @@ J_VEML,1,1x5 keyed header,2.54 mm THT,"CONFIRMED order VIN/3Vo/GND/SCL/SDA (oper
 J_SHT,1,1x4 keyed header,2.54 mm THT,"CONFIRMED order VIN/GND/SCL/SDA (operator 2026-08-28)"
 J_PIR,1,1x3 keyed header,2.54 mm THT,"CONFIRMED order GND/OUT/protected-5V (operator 2026-08-28); verify supply voltage before closing JP_PIR_5V"
 J_BEEP,1,1x3 keyed header,2.54 mm THT,"CONFIRMED Keyes 3-pin order S/VCC/- (operator 2026-08-28); active HIGH as on AtmosMesh v1"
+J_5V_EXT,1,1x2 header,2.54 mm THT,"External 5 V input from the current-limited bench supply; GND common with the board"
+JP_5V_SRC,1,1x3 header + ONE shunt,2.54 mm THT,"5 V source select: 1-2 = board VIN, 2-3 = external. Exactly one shunt fits, by design"
 JP_PIR_5V,1,2-pin jumper,2.54 mm THT,"DEFAULT OPEN"
 J_SDS,1,1x4 keyed header,2.54 mm THT,"Carrier order 5V/GND/RXD/TXD; VERIFY the SDS011 module connector order before plugging in"
 JP_SDS_5V,1,2-pin jumper,2.54 mm THT,"DEFAULT OPEN. Measure VIN under Wi-Fi load first: the SDS011 minimum is 4.7 V"
