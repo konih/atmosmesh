@@ -149,6 +149,32 @@ def main() -> int:
         require(documented == name or name.startswith(documented) or documented.startswith(name),
                 f"wiring.md pad {pad} says {documented!r}, the generator says {name!r}")
 
+    # D-025's transducer type is INFERRED from v1 driving this part with DC, not measured. The
+    # ohmmeter table is what stops that inference quietly becoming a stated fact, so it is a gate.
+    for reading in ("open / megohms", "16–42 Ω", "internal oscillator"):
+        require(reading in wiring,
+                f"wiring.md must keep the buzzer ohmmeter discriminator row for {reading!r}")
+    require("different when the leads are swapped" in wiring,
+            "wiring.md must keep the swapped-lead tell that distinguishes an active can")
+
+    # A larger R_BEEP_S is silence, not protection, on the active and magnetic loads. The rule is
+    # counter-intuitive enough that a later editor could 'improve' it into a fault.
+    require("**Never raise it**" in wiring,
+            "wiring.md must forbid raising R_BEEP_S")
+    require(re.search(r'\|\s*`R_BEEP_S`\s*\|\s*100 Ω\s*\|', wiring) is not None,
+            "wiring.md's resistor table must still size R_BEEP_S at 100 Ω")
+
+    # D-026a: the SDS011 arrives on its adapter cable, whose colours vary between kits. Recording a
+    # colour would restore exactly the guess that caused the 2026-08-17 straight-through UART.
+    sds = wiring[wiring.index("#### The UART must be crossed") - 2500:
+                 wiring.index("#### The UART must be crossed")]
+    require("continuity" in sds,
+            "wiring.md must tell the builder to ring the SDS011 cable out by continuity")
+    for colour in ("red", "black", "green", "blue", "yellow", "white",
+                   "rot", "schwarz", "grün", "blau", "gelb", "weiß"):
+        require(not re.search(rf'\b{colour}\b', sds, re.I),
+                f"wiring.md binds the SDS011 wire colour {colour!r}; colours vary between kits (D-026a)")
+
     print("ROOM-01 structural validation: PASS")
     return 0
 

@@ -3,6 +3,10 @@
 This is the **build target**. The KiCad project is the electrical contract; the PCB file is parked
 (see [README.md](README.md)) because the board is hand-soldered, not fabricated.
 
+The companion [front/back and wiring drawing](atmosmesh-room-perfboard-drawing.svg) is a zoomable
+visual aid. Its copper-side lines show safe routing corridors, not an exact hole-to-hole solder
+map; this document and [wiring.md](wiring.md) remain authoritative.
+
 ## The board
 
 Operator-supplied, 2026-08-28: **31 × 27 holes**, 2.54 mm pitch, sold as 7 × 9 cm. The hole count
@@ -90,6 +94,7 @@ in ROOM-02 are recorded.
 
 ## What this plan does not settle
 
-- The module connector orders for the SDS011 are still unread from its own printed labels.
+- The SDS011's adapter cable is not yet rung out against its 7-pin header (D-026a). Colours may not
+  be assumed; four continuity readings settle it.
 - `VIN` under Wi-Fi load, the shared 5 V budget and the SDS011 rail ripple are unmeasured.
 - Nothing here authorises applying power. It authorises soldering.

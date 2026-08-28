@@ -23,6 +23,8 @@ supplies the only I²C pull-ups it has.
 | `atmosmesh-room.kicad_sch` | Reviewable electrical contract |
 | `atmosmesh-room.kicad_pcb` | **Parked.** Kept only as a netlist/silkscreen cross-check — not the build target |
 | `perfboard.md` | **The build target**: 31×27 hole plan, orientation rules and build order |
+| `atmosmesh-room-perfboard-drawing.svg` | Zoomable front, mirrored back and logical wiring planning drawing |
+| `atmosmesh-room-perfboard-drawing.png` | Rendered preview of the planning drawing |
 | `validate_room_perfboard.py` | Deterministic structural check on the perfboard plan |
 | `room.pretty/`, `fp-lib-table`, `sym-lib-table` | Local THT library contract |
 | `BOM.csv` | Values, fitting policy and verification notes |
@@ -58,9 +60,12 @@ supplies the only I²C pull-ups it has.
   10 kΩ pull-up to 3.3 V. Motion logic is active-low.
 - The buzzer is a confirmed Keyes 3-pin module, header order `S`/`VCC`/`−`. GPIO25 drives `S`
   directly through `R_BEEP_S` 100 Ω, active HIGH, exactly as AtmosMesh v1 drives the same part. The
-  low-side NPN and flyback diode are gone: an internally-driven module keeps the inductive kick
-  behind its own transistor. If the buzzer stays silent the module may be unbuffered — see the
-  measurement rule in `wiring.md` before changing anything.
+  low-side NPN and flyback diode are gone because the transducer is **self-oscillating inside the
+  can** — the breakout PCB carries no parts, so the middle `VCC` pin is a no-op and GPIO25 sources
+  the whole operating current. The evidence is that v1 sounds this part with a bare 50 ms DC
+  `digitalWrite(HIGH)`, which neither a piezo disc nor a passive coil can do. That type is inferred,
+  not measured: one ohmmeter reading across `S` and `−` settles it, and `R_BEEP_S` is **never
+  raised** — see the table in `wiring.md` before changing anything.
 - `JP_5V_SRC` selects where `+5V_DOMAIN` comes from: the board's `VIN` (pins 1–2) or an external
   bench supply on `J_5V_EXT` (pins 2–3). A 3-pin header takes exactly one shunt, so the two sources
   can never be bridged back into the host's USB port. Use the external, current-limited supply for

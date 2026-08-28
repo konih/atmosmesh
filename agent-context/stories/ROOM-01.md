@@ -35,7 +35,9 @@ measurements establish the exact hardware.
       the active-low 2N3904 interface and 3.3 V pull-up.
 - [x] Buzzer uses a low-side NPN driver; the flyback footprint is DNP unless a magnetic buzzer is
       confirmed. **Superseded 2026-08-28 by D-025** — the part is a confirmed Keyes 3-pin S/VCC/−
-      active module, so GPIO25 drives `S` directly and the driver and flyback are removed.
+      breakout whose transducer self-oscillates inside the can, so GPIO25 drives `S` directly and
+      the driver and flyback are removed. The breakout PCB itself carries no active parts; the
+      ohmmeter test in `wiring.md` is what converts that inference into a measurement.
 - [x] Board and documentation visibly block energising until the controller row spacing and both
       5 V modules' supply voltage and output swing are measured.
 - [x] A complete through-hole placement, assembly, unpowered-test, commissioning and stop-condition

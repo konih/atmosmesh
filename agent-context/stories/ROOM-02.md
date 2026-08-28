@@ -27,8 +27,9 @@ crossing and the diodeless 5 V rail enforced by generator guards rather than by 
 - [x] `JP_SDS_5V` is default-open and the protected side has bulk and HF decoupling.
 - [x] GPIO16/GPIO17 are confirmed free on the ideaspark 1.14 inch TFT board and are not among the
       display, strap or USB-UART pins reserved by D-024.
-- [x] `wiring.md` states the module's own connector order is unconfirmed and must be read from its
-      printed labels.
+- [x] `wiring.md` records that the unit is terminated by its USB2TT004 adapter cable, that wire
+      colours vary between kits and may not be assumed, and that each wire is identified by
+      continuity back to the sensor's own header pads (D-026a).
 - [ ] `VIN` measured under Wi-Fi load and shown to stay above 4.7 V.
 - [ ] The shared 5 V budget re-checked with the SDS011 fan included.
 - [ ] Rail ripple measured against the < 20 mV specification with the fan running.

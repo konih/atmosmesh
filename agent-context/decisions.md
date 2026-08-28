@@ -333,15 +333,38 @@
   **S / VCC / −**. It is the same part AtmosMesh v1 uses.
 - **Rule:** `S` is driven from GPIO25 through `R_BEEP_S` 100 Ω, `VCC` takes 3.3 V, `−` takes GND.
   Logic is active HIGH. `Q_BEEP`, `R_BEEP_IN`, `R_BEEP_PD` and the `D_BEEP` flyback are removed.
-- **Why:** `firmware/README.md` records v1 driving this part with a bare 50 ms
-  `digitalWrite(HIGH)` on GPIO25, so it is an active module with its own driver. The previous design
-  presented a 2-pin header and switched the load's low side, which does not match a 3-pin S/VCC/−
-  module at all — `S` would have been left unconnected. No flyback is fitted because an
-  internally-driven module keeps the inductive kick behind its own transistor.
-- **Residual risk and its bench rule:** some Keyes buzzer boards put the sounder straight across
-  `S` and `−` with no onboard transistor. On such a module 100 Ω makes it barely click. The
-  resistor therefore starts at the *protective* value; only a measured current under 20 mA
-  authorises replacing it with a wire link. The ESP32 GPIO absolute maximum is 40 mA.
+- **Why (amended 2026-08-28):** the operator inspected the breakout and reports **no active parts
+  on the PCB** — only the cylinder and the header. That falsifies this decision's original reason,
+  which said the *module* carried its own driver. The rule survives on different evidence: the
+  oscillator is inside the can. `firmware/src/products/atmosmesh_v1.cpp` drives this part with a
+  bare 50 ms `digitalWrite(HIGH)` — a DC level, no `tone()`, no PWM — and `firmware/README.md`
+  records that as working boot and PIR-edge behaviour. A piezo disc is a capacitor and would tick
+  once per edge, not sound for 50 ms; a passive magnetic coil would click *and* pull far more than
+  a GPIO should source. Only a self-oscillating transducer produces what v1 ships. No flyback is
+  fitted because that switching stays inside the can and never reaches the header.
+- **Consequence of the bare PCB:** with the transducer across `S` and `−`, the middle pin is not
+  connected, so its 3.3 V feed is a no-op. It stays wired — harmless, and it covers the variant
+  that uses it — but GPIO25 sources the buzzer's entire operating current, and no part of the
+  carrier may treat that pin as a supply.
+- **Residual risk and its bench rule:** the transducer type is *inferred*, not measured. One
+  ohmmeter reading across `S` and `−` settles it: open = piezo, ~16–42 Ω = magnetic coil, hundreds
+  of Ω to kΩ *that changes when the leads are swapped* = active. `wiring.md` carries the table.
+  Until then `R_BEEP_S` stays at 100 Ω, the only value safe for all three, and **it is never raised**
+  — on an active or magnetic load a larger resistor is silence, not protection. Only a measured
+  current under 20 mA authorises stepping it down. The ESP32 GPIO absolute maximum is 40 mA.
+
+### D-026a — The SDS011 is terminated by its adapter cable, and the cable is rung out, not read
+
+- **Status:** Accepted 2026-08-28, amending D-026.
+- **Fact:** the operator's unit is wired through the **4-wire cable from its USB2TT004 adapter kit**,
+  not through the bare 7-pin module header.
+- **Rule:** the cable remaps the header and **wire colours vary between kits**, so no colour
+  convention is recorded and none may be assumed. Identify each wire by continuity back to the
+  sensor's own header pads — 3 = 5 V, 5 = GND, 6 = RXD, 7 = TXD — with everything unpowered.
+- **Why this and not a photograph:** a colour order is a claim that cannot be checked later; four
+  continuity readings are evidence, and they close the item permanently. This is the same class of
+  fault as the 2026-08-17 straight-through UART, which was also a plausible assumption about which
+  wire was which.
 
 ### D-026 — The SDS011 joins the Room carrier with series UART resistors and a diodeless 5 V jumper
 
@@ -451,6 +474,21 @@
   the expected draw. A current-limited supply turns a wiring error from a destroyed part into a
   supply that refuses to deliver — the cheapest protection available to this project, which has
   already lost an LDO once (`docs/hardware/incident-2026-08-17-ldo.md`).
+
+### D-032 — No ADS1115 on the Room carrier; the rail checks stay manual
+
+- **Status:** Declined 2026-08-28 by the operator, after the part was confirmed in stock
+  (`docs/elektronik-inventar.md`: "ADS1115 ADC + PGA – mehrere vorhanden").
+- **What was proposed:** an ADS1115 on the existing I²C bus at 0x48, with dividers turning
+  `+5V_DOMAIN`, `VIN` and `+3V3` into continuous telemetry instead of one-time bench readings. It
+  would have cost no GPIO.
+- **Decision:** not fitted. No `J_ADC`, no dividers, no BOM change, no schematic change.
+- **Consequence:** the three rail checks stay **manual, pre-energise multimeter and scope readings**
+  exactly as `wiring.md` already specifies — `VIN` under Wi-Fi load, `+5V_DOMAIN`, and C6 ripple
+  against the 20 mV limit with the DSO2D15. These are gates before the jumpers close, not telemetry,
+  so a fault after bring-up will still be found by a failed sensor rather than by a rail reading.
+- **Revisit if:** the carrier ever shows unexplained sensor dropouts that a manual reading cannot
+  reproduce, which is the case continuous rail monitoring would actually have solved.
 
 ## Additional accepted decision
 

@@ -25,7 +25,7 @@ Safe **only if** the signal stays ≤ ~3.3 V (VIH max = VDD + 0.3 V).
 
 | Signal | Datasheet level | Direct to ESP32? |
 | --- | --- | --- |
-| SDS011 TX / RX | 3.3 V TTL (pins 7 / 6) | Yes, after pin order is confirmed from the adapter |
+| SDS011 TX / RX | 3.3 V TTL (pins 7 / 6) | Yes, after the adapter cable is rung out to the header pads (D-026a) |
 | DHT22 DATA at 3.3 V VDD | 3.3 V bus | Yes, with pull-up to **3.3 V** (not 5 V) |
 | BMP280 SDA/SCL at 3.3 V VDDIO | 3.3 V I²C | Yes, if the breakout is actually 3.3 V |
 | OLED SDA/SCL at 3.3 V | 3.3 V I²C | Yes, if the module VCC is 3.3 V |
@@ -78,7 +78,9 @@ The map in [inventory.md](inventory.md) is still **not approved**, but the sheet
 ## Still blocked without photos / measurement
 
 - ESP32 **devboard** silkscreen (VIN vs 5V vs USB-only).
-- SDS011 connector vs USB2TT004 adapter pin order (datasheet pin 1 = NC, 3 = 5 V, 6 = RX, 7 = TX).
+- SDS011 USB2TT004 adapter cable: identify each wire by continuity to the sensor's own 7-pin header
+  (datasheet pin 1 = NC, 3 = 5 V, 5 = GND, 6 = RX, 7 = TX). Wire colours vary between kits and are
+  not evidence — see D-026a.
 - DHT22 vs wired AM2302 pin/colour order.
 - GY-BMP280 6-pin: CSB→3V3 and SDO→GND for I²C 0x76. Breakout regulator / 5 V VCC still unconfirmed.
 - OLED: SSD1306 at 0x3C on GPIO5/GPIO4 proven on the bench; SH1106 still possible on a second module. VCC 3.3 V.

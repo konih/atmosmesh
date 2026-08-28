@@ -84,7 +84,7 @@ nearest thing in a drawer.
 | `R_PIR_PD` | 100 kΩ | Defines `Q_PIR`'s base if the PIR output floats or is removed. Ten times `R_PIR_IN`, so it costs about 9% of the base drive and cannot prevent turn-on. |
 | `R_LED_3V3` | 470 Ω | 3.3 V rail less a ~2.0 V red LED leaves 1.3 V; 1.3 V / 470 Ω = 2.8 mA. Bright enough to read across a room, negligible against the rail budget. |
 | `R_LED_SDS`, `R_LED_PIR` | 1 kΩ | 5 V rail less a ~2.0 V LED leaves 3.0 V; 3.0 V / 1 kΩ = 3.0 mA. Deliberately the same order as the 3.3 V indicator so all three read at similar brightness. |
-| `R_BEEP_S` | 100 Ω | A deliberate compromise while the module's internals are unconfirmed — see the step-down rule above. If `J_BEEP` is a buffered logic input, anything from 100 Ω to 1 kΩ behaves identically and 100 Ω is simply the safe end. |
+| `R_BEEP_S` | 100 Ω | The one value that is safe across all three transducer types, so it stays until the ohmmeter test names the load. Piezo: `Xc` is about 3.5 kΩ at 2.3 kHz, so 100 Ω costs no audible volume. Active: a can drawing ~25 mA looks like ~130 Ω, so 100 Ω leaves it only ~1.9 V of the 3.3 V — enough to be weak, which is exactly what the step-down rule is for. Magnetic worst case: ~28 mA for 50 ms, under the 40 mA absolute maximum. **Never raise it** — on the active and magnetic loads a larger value is silence, not protection. |
 
 ### Five-pin VEML7700 connector
 
@@ -232,9 +232,24 @@ with a datasheet or diode-test measurement; do not trust flat-face folklore.
 | 3 | `SDS_RXD` | sensor **RXD**, from GPIO17/TX2 through `R_SDS_TX` 1 kΩ |
 | 4 | `SDS_TXD` | sensor **TXD**, to GPIO16/RX2 through `R_SDS_RX` 1 kΩ |
 
-> **The module's own connector order is NOT confirmed.** The datasheet gives pin 1 = NC, 3 = 5 V,
-> 5 = GND, 6 = RXD, 7 = TXD, and `spec-comparison.md` still lists the SDS011-vs-USB2TT004 order as
-> open. Check the printed labels against this table before plugging anything in.
+> **The sensor is terminated by the 4-wire cable from its USB2TT004 adapter kit** (operator-confirmed
+> 2026-08-28), not by the bare 7-pin header. That cable remaps the header, and **wire colours vary
+> between kits** — so a colour is a claim, not evidence, and no colour convention is recorded here on
+> purpose.
+>
+> **Ring the cable out instead.** With everything unpowered, put a continuity meter between each
+> cable end and the pads of the sensor's own 7-pin header, and label the wire by the header position
+> it reaches:
+>
+> | Header pin | Signal | Carrier net |
+> | ---: | --- | --- |
+> | 3 | 5 V | `SDS_5V_PROTECTED` |
+> | 5 | GND | `GND` |
+> | 6 | RXD (into the sensor) | `SDS_RXD` |
+> | 7 | TXD (out of the sensor) | `SDS_TXD` |
+>
+> Pins 1 (NC), 2 and 4 (the PWM outputs) are unused. Four continuity readings close this item
+> permanently; a photograph or a remembered colour order does not.
 
 #### The UART must be crossed
 
@@ -309,14 +324,21 @@ once the perfboard exists.
 ### Buzzer (`J_BEEP`)
 
 Operator-confirmed 2026-08-28: a no-name **Keyes 3-pin breakout**, black cylinder with a single
-hole, header order **S / VCC / −**. It is the same part AtmosMesh v1 drives, and v1 drives it
-directly from GPIO25 with a 50 ms `digitalWrite(HIGH)` — so it behaves as an *active* module with
-its own driver, and needs no external transistor.
+hole, header order **S / VCC / −**. The operator inspected the breakout on 2026-08-28: there are
+**no active parts on the little PCB**, only the cylinder and the header.
+
+That does not make it a passive element — the oscillator is inside the can, not on the board.
+AtmosMesh v1 drives this same part from GPIO25 with a bare 50 ms `digitalWrite(HIGH)`
+(`firmware/src/products/atmosmesh_v1.cpp`), a DC level with no `tone()` and no PWM, and
+`firmware/README.md` records that as working boot and PIR-edge behaviour. A piezo disc is a
+capacitor, so a DC step gives one tick per edge rather than a 50 ms tone; a passive magnetic coil
+would click *and* draw far more from the pin than a GPIO should source. Only a **self-oscillating**
+transducer produces the sound v1 actually ships, so no external transistor is fitted.
 
 | Pin | Module label | Carrier net |
 | ---: | --- | --- |
 | 1 | `S` | `BEEP_S`, from GPIO25 through `R_BEEP_S` 100 Ω |
-| 2 | (unlabelled) `VCC` | direct 3.3 V |
+| 2 | (unlabelled) `VCC` | direct 3.3 V — a no-op on this module class, see below |
 | 3 | `−` | GND |
 
 ```text
@@ -325,8 +347,26 @@ GPIO25 (pad 8) ── R_BEEP_S 100 Ω ── S
                               GND ── −
 ```
 
-Logic is **active HIGH**, matching v1. There is no flyback diode: an internally-driven module keeps
-the inductive kick behind its own transistor, so it never reaches the header.
+Logic is **active HIGH**, matching v1. There is no flyback diode: a self-oscillating can keeps its
+own switching behind its own internals, so no inductive kick reaches the header.
+
+On this module class the transducer sits directly between `S` and `−`, which leaves the middle pin
+**not connected** and makes the 3.3 V feed a no-op. It stays wired because it is harmless and it
+covers the variant that does use it, but nothing on the carrier may assume it powers anything: the
+buzzer's entire operating current is sourced by GPIO25.
+
+> **Settle the transducer type with one ohmmeter reading before Stage 5**, taken across `S` and `−`
+> with the module off the carrier and nothing powered:
+>
+> | Reading | Transducer | Consequence |
+> | --- | --- | --- |
+> | open / megohms | piezo disc | needs bounded 2–4 kHz PWM, not DC; `R_BEEP_S` barely affects volume |
+> | ~16–42 Ω | passive magnetic coil | DC drive is forbidden; needs PWM **and** a low-side NPN |
+> | hundreds of Ω to kΩ, **and different when the leads are swapped** | active, internal oscillator | the expected result; v1's DC drive is correct |
+>
+> The swapped-lead asymmetry is the tell — it is the ohmmeter seeing a semiconductor junction inside
+> the can. The reasoning above says this *should* read as active. The measurement is what turns that
+> inference into a fact, and it costs one probe touch.
 
 > **If the buzzer is silent, do not raise the drive — lower the resistor, one E24 step at a time.**
 > Some Keyes buzzer boards put the sounder straight across `S` and `−` with no onboard transistor.
