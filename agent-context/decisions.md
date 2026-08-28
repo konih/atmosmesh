@@ -338,6 +338,30 @@
   resistor therefore starts at the *protective* value; only a measured current under 20 mA
   authorises replacing it with a wire link. The ESP32 GPIO absolute maximum is 40 mA.
 
+### D-026 — The SDS011 joins the Room carrier with series UART resistors and a diodeless 5 V jumper
+
+- **Status:** Accepted 2026-08-28. Operator asked for the SDS011 that already worked on AtmosMesh v1,
+  with additional protection.
+- **UART:** crossed and protected. Sensor TXD reaches GPIO16/RX2 through `R_SDS_RX` 1 kΩ; GPIO17/TX2
+  reaches sensor RXD through `R_SDS_TX` 1 kΩ. Both legs are hard-wired — the operator chose this
+  over a default-open TX jumper so laser duty-cycling stays available without rework.
+- **Why 1 kΩ:** the 2026-08-17 bench fault put the sensor's push-pull TXD on the ESP32's push-pull
+  TX2, and they fought for roughly 10 ms in every second against a 40 mA absolute maximum. 1 kΩ
+  bounds that fight to about 3.3 mA. At 9600 baud a bit is 104 µs while 1 kΩ into a few hundred pF
+  settles in a couple of hundred nanoseconds, so the protection is free in signal terms.
+- **Enforcement:** `generate_project.py` refuses to emit a straight-through SDS011 UART. Mutation-
+  proved by swapping the header's RXD/TXD nets.
+- **5 V, and the rejected diode:** `JP_SDS_5V` is default-open, with `C6` 10 µF and `C7` 220 nF on
+  the protected side. There is **no series Schottky**, breaking from the PIR rail's 1N5819 idiom:
+  the SDS011 minimum is 4.7 V and a Schottky drops about 0.3–0.4 V at fan current, landing under the
+  minimum before any USB droop. The jumper isolates at zero volts. The generator refuses a diode on
+  this rail, also mutation-proved.
+- **Assumptions that gate closing the jumper:** `+5V_USB_CONFIRMED` comes from `VIN`, which on many
+  dev boards sits behind a diode from USB VBUS and may already read 4.6–4.7 V under load;
+  `spec-comparison.md` already puts the shared rail near 650 mA peak coincidence without this
+  sensor; and `C6` at 10 µF is not shown to meet the < 20 mV ripple specification against a fan.
+  All three are measurements, not conclusions.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

@@ -5,6 +5,9 @@ J_SHT,1,1x4 keyed header,2.54 mm THT,"CONFIRMED order VIN/GND/SCL/SDA (operator 
 J_PIR,1,1x3 keyed header,2.54 mm THT,"CONFIRMED order GND/OUT/protected-5V (operator 2026-08-28); verify supply voltage before closing JP_PIR_5V"
 J_BEEP,1,1x3 keyed header,2.54 mm THT,"CONFIRMED Keyes 3-pin order S/VCC/- (operator 2026-08-28); active HIGH as on AtmosMesh v1"
 JP_PIR_5V,1,2-pin jumper,2.54 mm THT,"DEFAULT OPEN"
+J_SDS,1,1x4 keyed header,2.54 mm THT,"Carrier order 5V/GND/RXD/TXD; VERIFY the SDS011 module connector order before plugging in"
+JP_SDS_5V,1,2-pin jumper,2.54 mm THT,"DEFAULT OPEN. Measure VIN under Wi-Fi load first: the SDS011 minimum is 4.7 V"
+R_SDS_RX R_SDS_TX,2,1k,Axial THT 7.62 mm,"UART series protection; bounds a driver fight to about 3.3 mA. NEVER omit"
 R_SDA R_SCL,2,330R,Axial THT 7.62 mm,"External I2C short-current limiting and edge damping; not a noise source"
 R_PU_SDA R_PU_SCL,2,4.7k,Axial THT 7.62 mm,"External I2C pull-ups. REQUIRED: the TFT board is SPI and has no onboard I2C device to pull the bus up"
 R_PIR_IN R_PIR_PU,2,10k,Axial THT 7.62 mm,PIR base limit and GPIO33 pull-up
@@ -15,5 +18,7 @@ D_PIR,1,1N5819,Axial THT 7.62 mm,"Series in PIR 5 V only; band/cathode toward pr
 C1 C3 C4,3,220nF,Ceramic THT 5 mm,"Build value; 47-220 nF is electrically acceptable for local HF decoupling"
 C2,1,10-47uF >=6.3V,Radial THT 2 mm,Main 3.3 V bulk; observe polarity
 C5,1,10uF >=10V,Radial THT 2 mm,PIR protected-5 V bulk; observe polarity
+C6,1,10uF >=10V,Radial THT 2 mm,"SDS011 protected-5 V bulk; observe polarity. Ripple <20 mV is UNVERIFIED against a fan load"
+C7,1,220nF,Ceramic THT 5 mm,SDS011 5 V high-frequency decoupling
 TP_3V3 TP_5V TP_GND TP_SDA TP_SCL,5,2-pin test point pair,THT,Each signal/rail paired with GND for safe measurement
 H1 H2 H3 H4,4,M3 mounting hole,3.2 mm NPTH,Keep metal hardware clear of wiring

@@ -177,6 +177,59 @@ The NPN prevents PIR output voltage from reaching GPIO33 directly and inverts th
 Firmware must therefore treat GPIO33 LOW as motion. Verify the actual transistor's C/B/E order
 with a datasheet or diode-test measurement; do not trust flat-face folklore.
 
+### SDS011 particulate sensor (`J_SDS`)
+
+5 V fan and laser, **3.3 V TTL** UART at 9600 8N1. The sensor reports autonomously at 1 Hz.
+
+| Pin | Carrier net | Goes to |
+| ---: | --- | --- |
+| 1 | `SDS_5V_PROTECTED` | sensor 5 V, behind `JP_SDS_5V` |
+| 2 | `GND` | sensor GND |
+| 3 | `SDS_RXD` | sensor **RXD**, from GPIO17/TX2 through `R_SDS_TX` 1 kΩ |
+| 4 | `SDS_TXD` | sensor **TXD**, to GPIO16/RX2 through `R_SDS_RX` 1 kΩ |
+
+> **The module's own connector order is NOT confirmed.** The datasheet gives pin 1 = NC, 3 = 5 V,
+> 5 = GND, 6 = RXD, 7 = TXD, and `spec-comparison.md` still lists the SDS011-vs-USB2TT004 order as
+> open. Check the printed labels against this table before plugging anything in.
+
+#### The UART must be crossed
+
+```text
+SDS011 TXD ── R_SDS_RX 1 kΩ ── GPIO16 / RX2   (pad 21)
+SDS011 RXD ── R_SDS_TX 1 kΩ ── GPIO17 / TX2   (pad 22)
+```
+
+On 2026-08-17 this was wired straight through on the bench: the sensor's TXD landed on the ESP32's
+TX2. Both are push-pull outputs, so they fought on one net for roughly 10 ms in every second, and
+the ESP32 GPIO absolute maximum is 40 mA. `generate_project.py` now refuses to emit a
+straight-through SDS011 UART, and the refusal is mutation-proved.
+
+The 1 kΩ series resistors are the additional protection. They bound a driver fight to about
+3.3 V / 1 kΩ ≈ **3.3 mA** instead of a short. At 9600 baud a bit is 104 µs, while 1 kΩ against a
+few hundred pF of wiring is a couple of hundred nanoseconds, so they cost nothing in signal terms.
+
+#### 5 V supply — and why there is no diode here
+
+`JP_SDS_5V` is **DEFAULT OPEN**, the same pattern as `JP_PIR_5V`. `C6` 10 µF and `C7` 220 nF sit on
+the protected side.
+
+There is deliberately **no series Schottky**, unlike the PIR rail. The SDS011 minimum is **4.7 V**
+(`spec-comparison.md`), and a 1N5819 drops roughly 0.3–0.4 V at fan current — landing under the
+minimum before any USB droop is counted. The jumper provides the same isolation at zero volts.
+`generate_project.py` refuses to place a diode on this rail.
+
+**Two power facts are assumed and must be measured before this jumper is closed:**
+
+1. `+5V_USB_CONFIRMED` comes from the board's `VIN` pin (pad 1). On many dev boards `VIN` sits
+   behind a diode from USB VBUS, so it may already be near 4.6–4.7 V under load. Measure `VIN` with
+   Wi-Fi active before trusting the 4.7 V floor.
+2. `spec-comparison.md` already puts the shared 5 V rail at roughly **650 mA peak coincidence**
+   without the SDS011, and says 700 mA is not comfortable. Adding a fan to a USB-fed carrier is a
+   power-budget claim, not a given.
+
+The SDS011 ripple specification is < 20 mV. `C6` at 10 µF matches existing stock and has **not**
+been shown to meet that against a fan load; measure the rail with a scope during commissioning.
+
 ### Buzzer (`J_BEEP`)
 
 Operator-confirmed 2026-08-28: a no-name **Keyes 3-pin breakout**, black cylinder with a single

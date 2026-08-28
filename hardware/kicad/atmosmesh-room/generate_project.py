@@ -76,6 +76,8 @@ U1_NETS = {
     "GND": "GND",
     "GPIO21": "GPIO21_SDA",
     "GPIO22": "GPIO22_SCL",
+    "GPIO16": "GPIO16_SDS_RX",
+    "GPIO17": "GPIO17_SDS_TX",
     "GPIO25": "GPIO25_BEEP",
     "GPIO33": "GPIO33_PIR_N",
 }
@@ -140,6 +142,19 @@ parts = [
          ("+3V3", "GND"), 143.0, 112.0),
     Part("C1", "220nF", "Device:C", "room:C_Disc_P5.00mm", 5400, 4500,
          ("+3V3", "GND"), 149.0, 112.0),
+    # SDS011 (Nova PM). 5 V fan/laser, 3.3 V TTL UART, crossed: sensor TXD -> GPIO16/RX2.
+    Part("J_SDS", "SDS011 5V/GND/RXD/TXD", "Connector_Generic:Conn_01x04", "room:PinHeader_1x04_P2.54mm", 8200, 5400,
+         ("SDS_5V_PROTECTED", "GND", "SDS_RXD", "SDS_TXD"), 168.0, 84.0),
+    Part("JP_SDS_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 5400,
+         ("+5V_USB_CONFIRMED", "SDS_5V_PROTECTED"), 120.0, 112.0),
+    Part("R_SDS_RX", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 5400,
+         ("SDS_TXD", "GPIO16_SDS_RX"), 108.0, 100.0),
+    Part("R_SDS_TX", "1k", "Device:R", "room:R_Axial_P7.62mm", 6000, 5900,
+         ("GPIO17_SDS_TX", "SDS_RXD"), 108.0, 103.0),
+    Part("C6", "10uF", "Device:C_Polarized", "room:C_Radial_P2.00mm", 7800, 5400,
+         ("SDS_5V_PROTECTED", "GND"), 126.0, 112.0),
+    Part("C7", "220nF", "Device:C", "room:C_Disc_P5.00mm", 7800, 5900,
+         ("SDS_5V_PROTECTED", "GND"), 131.0, 108.0),
     Part("TP_3V3", "3V3/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 5800, 4700, ("+3V3", "GND"), 134.0, 116.0),
     Part("TP_5V", "5V/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6200, 4700, ("+5V_USB_CONFIRMED", "GND"), 141.0, 116.0),
     Part("TP_GND", "GND/GND", "atmosmesh:Conn_01x02", "room:TestPoint_2Pin_THT", 6600, 4700, ("GND", "GND"), 148.0, 116.0),
@@ -170,6 +185,12 @@ DESCRIPTION_BY_REF = {
     "C3": "220 nF VEML7700 VIN input decoupling; 47-220 nF acceptable",
     "C4": "220 nF SHT41 3V3 local decoupling; 47-220 nF acceptable",
     "C5": "10 uF protected PIR 5V bulk capacitor; observe polarity",
+    "J_SDS": "SDS011 header: protected 5V, GND, sensor RXD, sensor TXD. VERIFY the module connector order",
+    "JP_SDS_5V": "Default-open SDS011 5V enable jumper; no series diode, see D-026",
+    "R_SDS_RX": "1 kilohm between the SDS011 TXD output and GPIO16/RX2; bounds a driver fight to about 3 mA",
+    "R_SDS_TX": "1 kilohm between GPIO17/TX2 and the SDS011 RXD input",
+    "C6": "10 uF protected SDS011 5V bulk capacitor; observe polarity",
+    "C7": "220 nF SDS011 5V high-frequency decoupling",
     "TP_3V3": "3V3 and GND paired through-hole measurement points",
     "TP_5V": "Confirmed USB 5V and GND paired through-hole measurement points",
     "TP_GND": "Paired GND through-hole continuity points",
@@ -328,6 +349,7 @@ def write_native_schematic() -> pathlib.Path:
         (18, 25, "NEVER WIRE: GPIO23/18/15/2/4/32 drive the 1.14in TFT; GPIO12 is the flash strap; GPIO1/3 are the USB-UART."),
         (18, 270, "No Zener clamps: known inventory starts at 5.1V and is unsuitable for 3.3V GPIO protection."),
         (210, 15, "PIR: default-open 5V power + 1N5819; NPN interface is ACTIVE LOW."),
+        (210, 30, "SDS011: default-open 5V, NO series diode (4.7V minimum). UART CROSSED: sensor TXD -> GPIO16/RX2."),
         (210, 20, "Buzzer: Keyes 3-pin S/VCC/-. GPIO25 drives S directly through 100R, active HIGH as on AtmosMesh v1."),
     ]
     for index, (x, y, note) in enumerate(notes):
@@ -494,6 +516,7 @@ def write_board(netlist_path: pathlib.Path) -> None:
         (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9),
         (140, 107, "NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART", 0.8),
         (169, 102, "5V DOMAIN", 1.0),
+        (120, 118, "SDS011 5V - NO DIODE - UART CROSSED", 0.8),
         (166, 65, "BUZZER S/VCC/-", 0.8),
         (108, 89, "SHT41 - KEEP FROM HEAT", 0.8),
         (113, 66, "SHIELD FROM LCD", 0.8),
@@ -549,9 +572,45 @@ def write_minimal_footprint_library() -> None:
 )\n''', encoding="utf-8")
 
 
+def assert_no_series_diode_on_sds_rail() -> None:
+    """Keep the PIR's 1N5819 idiom off the SDS011 supply.
+
+    The SDS011 minimum is 4.7 V (docs/hardware/spec-comparison.md). A Schottky drops
+    roughly 0.3-0.4 V at fan current, which lands under that minimum before any USB
+    droop is counted. The default-open jumper gives the same isolation at zero volts.
+    """
+    diodes = {"D", "D_Schottky"}
+    for part in parts:
+        if part.lib.split(":")[-1] in diodes and "SDS_5V_PROTECTED" in part.pin_nets:
+            raise RuntimeError(
+                f"{part.ref} puts a series diode on the SDS011 rail; its minimum is 4.7 V")
+
+
+def assert_sds011_uart_crossed() -> None:
+    """Refuse to emit a straight-through SDS011 UART.
+
+    The 2026-08-17 bench fault was exactly that: the sensor's push-pull TX landed on the
+    ESP32's push-pull TX2 and the two fought on one net, roughly 10 ms in every second.
+    Only "sensor TX -> an ESP32 receive pin" actually matters, so encode the crossing here
+    rather than trusting a wiring table nobody re-reads.
+    """
+    by_ref = {part.ref: part for part in parts}
+    _, _, sensor_rxd, sensor_txd = by_ref["J_SDS"].pin_nets
+    rx_leg = by_ref["R_SDS_RX"].pin_nets
+    tx_leg = by_ref["R_SDS_TX"].pin_nets
+    if sensor_txd not in rx_leg or U1_NETS["GPIO16"] not in rx_leg:
+        raise RuntimeError("SDS011 TXD must reach GPIO16/RX2 through R_SDS_RX")
+    if sensor_rxd not in tx_leg or U1_NETS["GPIO17"] not in tx_leg:
+        raise RuntimeError("SDS011 RXD must reach GPIO17/TX2 through R_SDS_TX")
+    if sensor_txd in tx_leg or sensor_rxd in rx_leg:
+        raise RuntimeError("SDS011 UART is wired straight through; it must be crossed")
+
+
 def main() -> None:
     write_project_and_tables()
     write_minimal_footprint_library()
+    assert_no_series_diode_on_sds_rail()
+    assert_sds011_uart_crossed()
     schematic = write_native_schematic()
     netlist = ROOT / "atmosmesh-room.net"
     subprocess.run(["kicad-cli", "sch", "export", "netlist", "--format", "kicadxml", "-o", str(netlist), str(schematic)], check=True, cwd=ROOT)

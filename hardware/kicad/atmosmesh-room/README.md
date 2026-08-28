@@ -58,6 +58,11 @@ supplies the only I²C pull-ups it has.
   low-side NPN and flyback diode are gone: an internally-driven module keeps the inductive kick
   behind its own transistor. If the buzzer stays silent the module may be unbuffered — see the
   measurement rule in `wiring.md` before changing anything.
+- The SDS011 takes 5 V through `JP_SDS_5V`, **DEFAULT OPEN**, with **no series diode**: its minimum
+  is 4.7 V and a Schottky at fan current drops below that. Its UART is crossed — sensor TXD to
+  GPIO16/RX2, GPIO17/TX2 to sensor RXD — each through a 1 kΩ series resistor that bounds a driver
+  fight to about 3.3 mA. The generator refuses both a straight-through UART and a diode on that
+  rail.
 - No Zener clamp is used. The known inventory starts at 5.1 V, which clamps too late for a 3.3 V
   GPIO.
 

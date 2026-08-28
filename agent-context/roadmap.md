@@ -51,7 +51,8 @@ MVP order.
 
 | Order | Story | Status | Priority | Depends on | Outcome |
 | ---: | --- | --- | --- | --- | --- |
-| Room-1 | [ROOM-01](stories/ROOM-01.md) | Blocked | P1 | Exact module photos before fabrication | Protected 60×80 mm THT carrier and complete build plan; fabrication remains blocked until identities and pin order are verified |
+| Room-1 | [ROOM-01](stories/ROOM-01.md) | Blocked | P1 | Row-spacing and 5 V measurements | Protected carrier and complete build plan; energising remains blocked until the row spacing and both 5 V modules are measured |
+| Room-2 | [ROOM-02](stories/ROOM-02.md) | Blocked | P1 | ROOM-01 + VIN and 5 V budget measurements | SDS011 with crossed, series-protected UART and a diodeless default-open 5 V rail |
 
 ## Milestones
 
