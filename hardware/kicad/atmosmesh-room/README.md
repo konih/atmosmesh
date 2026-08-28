@@ -1,12 +1,19 @@
 # AtmosMesh Room carrier — provisional design
 
-**DO NOT FABRICATE OR ENERGISE THIS BOARD YET.** The exact Ideaspark board, module pin orders and
-beeper type have not been established from readable **front and back photographs**. This project is
-a protected, reviewable starting point, not a wiring approval.
+**DO NOT ENERGISE THIS BOARD YET.** The controller and every module connector order are now
+identified, but no supply voltage or output swing has been measured on the 5 V modules. This project is a protected, reviewable starting point, not a wiring
+approval.
 
-The board is a 60×80 mm, 1.6 mm, two-copper-layer carrier for through-hole assembly. The Ideaspark
-ESP32/OLED board is represented by two provisional 1×15 female sockets at 25.4 mm row spacing.
-Measure the actual board, photograph both sides and compare every printed pin before ordering.
+The controller is the **ideaspark ESP32 1.14 inch TFT LCD board** (ESP32-WROOM-32), confirmed from
+[`docs/hardware/ideaspark-esp32-tft-pinout.png`](../../../docs/hardware/ideaspark-esp32-tft-pinout.png).
+Its 30 pins and their order are therefore no longer provisional: pads 1–15 are the left column and
+16–30 the right column, both counted from the USB/button end. What remains unmeasured is the
+physical **row spacing**: 25.4 mm is still an assumption, so MEASURE THE ROW SPACING before
+cutting a socket or committing a hole pattern.
+
+**The integrated display is SPI, not I²C.** It occupies GPIO23 (MOSI), GPIO18 (SCLK), GPIO15 (CS),
+GPIO2 (DC), GPIO4 (RST) and GPIO32 (backlight). GPIO21/22 carry no onboard device, so the carrier
+supplies the only I²C pull-ups it has.
 
 ## Files
 
@@ -25,15 +32,24 @@ Measure the actual board, photograph both sides and compare every printed pin be
 ## Safety architecture
 
 - ESP32 GPIO and `3V3` must **never receive 5 V**.
-- The onboard OLED remains directly on GPIO21/SDA and GPIO22/SCL. Only the external I²C branch
-  passes through 330 Ω series resistors.
+- **Never wire GPIO23, 18, 15, 2, 4 or 32** — the dev board's own TFT drives them. GPIO12 is the
+  flash-voltage strap (high at boot can stop the board starting) and GPIO1/GPIO3 are the CP2102
+  USB-UART used by `task flash` and `task monitor`. `generate_project.py` refuses to emit a net on
+  any of them and `validate_room_carrier.py` fails if one appears.
+- GPIO21/SDA and GPIO22/SCL reach the external sensor branch through 330 Ω series resistors. Those
+  resistors limit fault current and damp edges; they are not a measurement noise source.
+- `R_PU_SDA` and `R_PU_SCL` (4.7 kΩ to 3.3 V) are the bus pull-ups. They are required because the
+  display is SPI: nothing on the controller board pulls I²C up. They sit on the sensor side of the
+  330 Ω resistors so the series resistance stays a fault limit rather than part of the pull-up
+  divider. With both breakouts populated the parallel result is roughly 2.4 kΩ, about 1.4 mA at
+  3.3 V, inside the I²C 3 mA sink limit, so they stay fitted rather than DNP.
 - Both sensors receive direct 3.3 V and local 220 nF decoupling. There is deliberately no diode or
-  resistor in a sensor supply: lowering sensor VDD while the onboard OLED pulls I²C to 3.3 V could
-  forward-bias a sensor input clamp. The build uses 220 nF for `C1`, `C3` and `C4`; 47–220 nF is
+  resistor in a sensor supply: a breakout's pull-ups reference its own VDD, so dropping sensor VDD
+  drags the pull-ups down with it and buys nothing, while adding a droop path under the SHT41's
+  measurement current bursts. The build uses 220 nF for `C1`, `C3` and `C4`; 47–220 nF is
   electrically acceptable for these high-frequency decouplers.
 - The confirmed five-pin VEML7700 connector is `VIN`, `3Vo`, `GND`, `SCL`, `SDA`: `VIN` receives
-  3.3 V and `3Vo` is regulator output and remains NC. Its onboard pull-ups mean no extra I²C
-  pull-ups are fitted.
+  3.3 V and `3Vo` is regulator output and remains NC.
 - PIR power can come only from a confirmed USB/5 V pin, through `JP_PIR_5V` which is **DEFAULT
   OPEN**, then a 1N5819. PIR OUT drives a 2N3904 through 10 kΩ; GPIO33 sees only the collector and a
   10 kΩ pull-up to 3.3 V. Motion logic is active-low.
@@ -45,13 +61,13 @@ Measure the actual board, photograph both sides and compare every printed pin be
 
 ## Placement and routing state
 
-The VEML7700 sits at a board edge and must be optically shielded from OLED light. The SHT41 sits at
+The VEML7700 sits at a board edge and must be optically shielded from the TFT backlight. The SHT41 sits at
 the opposite ventilated edge, away from the ESP32 regulator, PIR electronics and buzzer. The 5 V
 PIR block is fenced at the right edge. The antenna clearance is marked on `User.Drawings` and silk;
 its final copper keepout/overhang cannot be fixed until the exact board orientation is photographed.
 
-Copper is intentionally unrouted because the Ideaspark row spacing, orientation and pin order, plus
-each module connector order, are unverified. This prevents a plausible-looking provisional drawing
+Copper is intentionally unrouted because the Ideaspark row spacing and orientation, plus each
+module connector order, are unverified. This prevents a plausible-looking provisional drawing
 from being mistaken for a fabrication-ready board. Do not "finish the ratsnest" by assuming a
 generic ESP32 DevKit image.
 

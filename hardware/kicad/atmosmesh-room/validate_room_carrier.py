@@ -45,14 +45,15 @@ def main() -> int:
     require(pcb.count('(attr through_hole)') >= 24,
             "all populated electrical parts must use THT footprints")
     for token in (
-        'VERIFY EXACT IDEASPARK BOARD',
+        'IDEASPARK 1.14in TFT - VERIFY ROW SPACING',
+        'NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART',
         'VERIFY 30-PIN / 25.4mm ROWS',
         'NO COPPER / PARTS - ANTENNA',
         '5V DOMAIN',
         'FIT MAGNETIC ONLY',
         'DNP PIEZO',
         'SHT41 - KEEP FROM HEAT',
-        'VEML7700 - SHIELD FROM OLED',
+        'SHIELD FROM LCD',
     ):
         require(token in pcb, f"missing safety silkscreen: {token}")
 
@@ -74,7 +75,21 @@ def main() -> int:
                 f"PCB is missing {reference}")
 
     require('GPIO21_SDA' in sch and 'GPIO22_SCL' in sch,
-            "schematic must document the integrated OLED I2C bus")
+            "schematic must document the external I2C bus")
+
+    # The 1.14 inch TFT owns GPIO23/18/15/2/4/32 on the dev board itself, GPIO12 is the
+    # flash-voltage strap and GPIO1/GPIO3 are the CP2102 USB-UART. Net names encode the
+    # GPIO number, so a carrier net reaching any of them is visible here. Checked against
+    # net names only: the silkscreen and notes name these pins deliberately.
+    reserved_gpios = {1, 2, 3, 4, 12, 15, 18, 23, 32}
+    used_gpios = {int(match) for net in pcb_nets
+                  for match in re.findall(r'^GPIO(\d+)', net)}
+    clash = sorted(used_gpios & reserved_gpios)
+    require(not clash,
+            f"carrier nets must not reach TFT/strap/USB-UART pins: GPIO{clash}")
+
+    require('R_PU_SDA' in sch and 'R_PU_SCL' in sch and '4.7k' in sch,
+            "external I2C needs its own 4.7k pullups: the TFT board has no onboard I2C device")
     require('330R' in sch and '1N5819' in sch and '2N3904' in sch,
             "schematic must contain the specified protection components")
     require(sch.count('220nF') >= 3,
@@ -88,7 +103,7 @@ def main() -> int:
 
     upper = readme.upper()
     for warning in (
-        'DO NOT FABRICATE', 'FRONT AND BACK PHOTOGRAPHS',
+        'DO NOT ENERGISE', 'MEASURE THE ROW SPACING',
         'NEVER RECEIVE 5 V', 'NO ZENER',
     ):
         require(warning in upper, f"README is missing warning: {warning}")

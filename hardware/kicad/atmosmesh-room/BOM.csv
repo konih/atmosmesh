@@ -1,11 +1,12 @@
 Reference,Quantity,Value,Package,Fitting/verification note
-U1,1,Ideaspark ESP32-WROOM-32 OLED carrier,2x15 socket 2.54 mm THT,"PROVISIONAL 25.4 mm row spacing and common 30-pin map; verify exact board"
-J_VEML,1,1x5 keyed header,2.54 mm THT,"Confirmed module labels VIN/3Vo/GND/SCL/SDA; 3Vo MUST BE NC"
-J_SHT,1,1x4 keyed header,2.54 mm THT,"Carrier order VCC/GND/SDA/SCL; verify module order from photos"
-J_PIR,1,1x3 keyed header,2.54 mm THT,"Carrier order protected-5V/GND/OUT; verify PIR order and voltage"
+U1,1,ideaspark ESP32 1.14in TFT LCD board,2x15 socket 2.54 mm THT,"Pin names and order CONFIRMED from the operator pinout; 25.4 mm row spacing still to measure"
+J_VEML,1,1x5 keyed header,2.54 mm THT,"CONFIRMED order VIN/3Vo/GND/SCL/SDA (operator 2026-08-28); 3Vo MUST BE NC"
+J_SHT,1,1x4 keyed header,2.54 mm THT,"CONFIRMED order VIN/GND/SCL/SDA (operator 2026-08-28)"
+J_PIR,1,1x3 keyed header,2.54 mm THT,"CONFIRMED order GND/OUT/protected-5V (operator 2026-08-28); verify supply voltage before closing JP_PIR_5V"
 J_BEEP,1,1x2 keyed header,2.54 mm THT,"3.3 V initially; verify polarity/type"
 JP_PIR_5V,1,2-pin jumper,2.54 mm THT,"DEFAULT OPEN"
 R_SDA R_SCL,2,330R,Axial THT 7.62 mm,"External I2C short-current limiting and edge damping; not a noise source"
+R_PU_SDA R_PU_SCL,2,4.7k,Axial THT 7.62 mm,"External I2C pull-ups. REQUIRED: the TFT board is SPI and has no onboard I2C device to pull the bus up"
 R_PIR_IN R_PIR_PU,2,10k,Axial THT 7.62 mm,PIR base limit and GPIO33 pull-up
 R_PIR_PD R_BEEP_PD,2,100k,Axial THT 7.62 mm,Base-emitter pull-downs
 R_BEEP_IN,1,2.2k,Axial THT 7.62 mm,Buzzer base resistor

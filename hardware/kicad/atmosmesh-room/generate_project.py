@@ -51,16 +51,60 @@ class Part:
     rotation: float = 0
 
 
+# Confirmed from docs/hardware/ideaspark-esp32-tft-pinout.png (operator evidence, 2026-08-28).
+# Pads 1-15 are the left column and 16-30 the right column, both counted from the
+# USB/button end, matching the pad geometry in Ideaspark_30Pin_Provisional.kicad_mod.
+IDEASPARK_PINS = {
+    1: "VIN", 2: "GND", 3: "GPIO13", 4: "GPIO12", 5: "GPIO14", 6: "GPIO27",
+    7: "GPIO26", 8: "GPIO25", 9: "GPIO33", 10: "GPIO32", 11: "GPIO35",
+    12: "GPIO34", 13: "GPIO39", 14: "GPIO36", 15: "EN",
+    16: "3V3", 17: "GND", 18: "GPIO15", 19: "GPIO2", 20: "GPIO4",
+    21: "GPIO16", 22: "GPIO17", 23: "GPIO5", 24: "GPIO18", 25: "GPIO19",
+    26: "GPIO21", 27: "GPIO3", 28: "GPIO1", 29: "GPIO22", 30: "GPIO23",
+}
+
+# The 1.14 inch TFT is wired to these on the dev board itself. Reaching any of them
+# from the carrier fights the display driver for the pin.
+LCD_RESERVED_PINS = {"GPIO23", "GPIO18", "GPIO15", "GPIO2", "GPIO4", "GPIO32"}
+# GPIO12 is the flash-voltage strap (high at boot can stop the board starting),
+# GPIO1/GPIO3 are the CP2102 USB-UART used by flash/monitor, EN is the reset line.
+BOARD_RESERVED_PINS = LCD_RESERVED_PINS | {"GPIO12", "GPIO1", "GPIO3", "EN"}
+
+U1_NETS = {
+    "VIN": "+5V_USB_CONFIRMED",
+    "3V3": "+3V3",
+    "GND": "GND",
+    "GPIO21": "GPIO21_SDA",
+    "GPIO22": "GPIO22_SCL",
+    "GPIO25": "GPIO25_BEEP",
+    "GPIO33": "GPIO33_PIR_N",
+}
+
+
+def ideaspark_pin_nets() -> tuple:
+    """Expand U1_NETS into the socket's 30 pad positions, refusing reserved pins."""
+    result = []
+    for index in range(1, len(IDEASPARK_PINS) + 1):
+        name = IDEASPARK_PINS[index]
+        net = U1_NETS.get(name)
+        if net is not None and name in BOARD_RESERVED_PINS:
+            raise RuntimeError(
+                f"pad {index} ({name}) is reserved by the dev board and must stay unconnected")
+        result.append(net)
+    return tuple(result)
+
+
 parts = [
-    Part("U1", "IDEASPARK_30PIN_PROVISIONAL", "atmosmesh:ESP32_DevKit_V1_Socket", "room:Ideaspark_30Pin_Provisional", 3900, 3000,
-         (None, None, None, None, None, None, "GPIO33_PIR_N", "GPIO25_BEEP", None, None, None, None, None, "GND", "+5V_USB_CONFIRMED",
-          None, "GPIO22_SCL", None, None, "GPIO21_SDA", None, None, None, None, None, None, None, None, "GND", "+3V3"), 124.0, 68.0),
+    Part("U1", "IDEASPARK_ESP32_1V14_TFT_30PIN", "atmosmesh:ESP32_DevKit_V1_Socket", "room:Ideaspark_30Pin_Provisional", 3900, 3000,
+         ideaspark_pin_nets(), 124.0, 68.0),
     Part("J_VEML", "VEML7700 VIN/3Vo/GND/SCL/SDA", "atmosmesh:Conn_01x05", "room:PinHeader_1x05_P2.54mm", 1200, 2100,
          ("+3V3", None, "GND", "SCL_EXT", "SDA_EXT"), 103.5, 70.0),
-    Part("J_SHT", "SHT41_3V3", "Connector_Generic:Conn_01x04", "room:PinHeader_1x04_P2.54mm", 1200, 4200,
-         ("+3V3", "GND", "SDA_EXT", "SCL_EXT"), 103.5, 91.0),
-    Part("J_PIR", "DSUN_PIR", "Connector_Generic:Conn_01x03", "room:PinHeader_1x03_P2.54mm", 8200, 4200,
-         ("PIR_5V_PROTECTED", "GND", "PIR_OUT"), 176.0, 105.0),
+    # Operator-confirmed 2026-08-28: the SHT41 header reads VIN / GND / SCL / SDA.
+    Part("J_SHT", "SHT41 VIN/GND/SCL/SDA", "Connector_Generic:Conn_01x04", "room:PinHeader_1x04_P2.54mm", 1200, 4200,
+         ("+3V3", "GND", "SCL_EXT", "SDA_EXT"), 103.5, 91.0),
+    # Operator-confirmed 2026-08-28: the D-SUN header reads GND / OUT / VCC.
+    Part("J_PIR", "DSUN_PIR GND/OUT/VCC", "Connector_Generic:Conn_01x03", "room:PinHeader_1x03_P2.54mm", 8200, 4200,
+         ("GND", "PIR_OUT", "PIR_5V_PROTECTED"), 176.0, 105.0),
     Part("J_BEEP", "PIEZO_PROVISIONAL", "Connector_Generic:Conn_01x02", "room:PinHeader_1x02_P2.54mm", 8200, 1800,
          ("+3V3", "BEEP_LOW"), 176.0, 73.0),
     Part("JP_PIR_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 3500,
@@ -90,6 +134,10 @@ parts = [
          ("SDA_EXT", "GPIO21_SDA"), 111.0, 83.0),
     Part("R_SCL", "330R", "Device:R", "room:R_Axial_P7.62mm", 2300, 3200,
          ("SCL_EXT", "GPIO22_SCL"), 111.0, 87.0),
+    Part("R_PU_SDA", "4.7k", "Device:R", "room:R_Axial_P7.62mm", 2300, 3700,
+         ("SDA_EXT", "+3V3"), 104.0, 108.0),
+    Part("R_PU_SCL", "4.7k", "Device:R", "room:R_Axial_P7.62mm", 2300, 4200,
+         ("SCL_EXT", "+3V3"), 115.0, 108.0),
     Part("C3", "220nF", "Device:C", "room:C_Disc_P5.00mm", 1900, 2200,
          ("+3V3", "GND"), 108.0, 73.0),
     Part("C4", "220nF", "Device:C", "room:C_Disc_P5.00mm", 1900, 4500,
@@ -107,10 +155,10 @@ parts = [
 
 
 DESCRIPTION_BY_REF = {
-    "U1": "Provisional 30-pin Ideaspark ESP32-WROOM-32 OLED socket; verify exact pinout and spacing",
-    "J_VEML": "Confirmed VEML7700 breakout header: VIN, 3Vo NC, GND, SCL, SDA",
-    "J_SHT": "Provisional SHT41 header: 3V3, GND, SDA, SCL; verify module pin order",
-    "J_PIR": "Provisional D-SUN PIR header: protected 5V, GND, OUT; verify module pin order",
+    "U1": "Ideaspark ESP32-WROOM-32 1.14 inch TFT board, 30-pin socket; pin names confirmed, row spacing still to measure",
+    "J_VEML": "Operator-confirmed VEML7700 header: VIN, 3Vo NC, GND, SCL, SDA",
+    "J_SHT": "Confirmed SHT41 header order: VIN, GND, SCL, SDA",
+    "J_PIR": "Confirmed D-SUN PIR header order: GND, OUT, protected 5V",
     "J_BEEP": "Provisional 3.3V buzzer connection: supply and transistor-switched low side",
     "JP_PIR_5V": "Default-open PIR 5V enable jumper",
     "D_PIR": "1N5819 PIR supply diode; pin 1 K to protected rail, pin 2 A to raw 5V",
@@ -119,6 +167,8 @@ DESCRIPTION_BY_REF = {
     "D_BEEP": "Optional 1N4001 flyback diode; DNP for piezo; pin 1 K to 3V3, pin 2 A to switched low",
     "R_SDA": "330 ohm external SDA fault-current limiter and edge damper",
     "R_SCL": "330 ohm external SCL fault-current limiter and edge damper",
+    "R_PU_SDA": "4.7 kilohm SDA_EXT pullup to 3V3; the TFT board has no onboard I2C pullups",
+    "R_PU_SCL": "4.7 kilohm SCL_EXT pullup to 3V3; the TFT board has no onboard I2C pullups",
     "R_PIR_IN": "10 kilohm PIR-output-to-NPN-base current limiter",
     "R_PIR_PD": "100 kilohm PIR NPN base-emitter pulldown",
     "R_PIR_PU": "10 kilohm GPIO33 pullup to 3V3 for active-low PIR input",
@@ -193,7 +243,7 @@ def write_native_schematic() -> pathlib.Path:
     sheet.titleBlock = TitleBlock(
         title="AtmosMesh Room protected carrier", date="2026-08-28",
         revision="PROVISIONAL A", company="AtmosMesh",
-        comments={1: "DO NOT FABRICATE - verify exact Ideaspark board and all module pinouts",
+        comments={1: "DO NOT FABRICATE - Ideaspark pin names confirmed; row spacing and module pinouts still unverified",
                   2: "GPIO21 SDA / GPIO22 SCL; no 5 V on any GPIO or 3V3",
                   3: "60x80 mm two-layer THT carrier", 4: "ROOM-01"},
     )
@@ -282,8 +332,9 @@ def write_native_schematic() -> pathlib.Path:
                 ))
 
     notes = [
-        (18, 15, "DO NOT FABRICATE - VERIFY EXACT IDEASPARK BOARD / 30-PIN ROW SPACING / FRONT + BACK PHOTOS"),
-        (18, 20, "Onboard OLED stays directly on GPIO21/GPIO22. External sensors are behind 330R series resistors."),
+        (18, 15, "DO NOT FABRICATE - IDEASPARK PIN NAMES CONFIRMED; ROW SPACING + MODULE PINOUTS STILL UNVERIFIED"),
+        (18, 20, "Display is SPI, not I2C: GPIO21/22 carry no onboard device. R_PU_SDA/R_PU_SCL 4k7 are the only bus pullups."),
+        (18, 25, "NEVER WIRE: GPIO23/18/15/2/4/32 drive the 1.14in TFT; GPIO12 is the flash strap; GPIO1/3 are the USB-UART."),
         (18, 270, "No Zener clamps: known inventory starts at 5.1V and is unsuitable for 3.3V GPIO protection."),
         (210, 15, "PIR: default-open 5V power + 1N5819; NPN interface is ACTIVE LOW."),
         (210, 20, "Buzzer: 3V3 low-side NPN. D_BEEP DNP / FIT MAGNETIC ONLY; omit for piezo."),
@@ -447,14 +498,15 @@ def write_board(netlist_path: pathlib.Path) -> None:
     # socket spacing, orientation and connector pin order.
 
     texts = [
-        (140, 61.5, "VERIFY EXACT IDEASPARK BOARD", 1.2),
+        (140, 61.5, "IDEASPARK 1.14in TFT - VERIFY ROW SPACING", 1.2),
         (140, 63.5, "VERIFY 30-PIN / 25.4mm ROWS", 1.0),
         (136.5, 66, "NO COPPER / PARTS - ANTENNA", 0.9),
+        (140, 107, "NEVER WIRE: 2 4 15 18 23 32 TFT / 12 STRAP / 1 3 UART", 0.8),
         (169, 102, "5V DOMAIN", 1.0),
-        (166, 65, "FIT MAGNETIC ONLY", 0.75),
-        (166, 66.5, "DNP PIEZO", 0.75),
-        (108, 89, "SHT41 - KEEP FROM HEAT", 0.7),
-        (110, 79, "VEML7700 - SHIELD FROM OLED", 0.65),
+        (166, 65, "FIT MAGNETIC ONLY", 0.8),
+        (166, 66.5, "DNP PIEZO", 0.8),
+        (108, 89, "SHT41 - KEEP FROM HEAT", 0.8),
+        (113, 66, "SHIELD FROM LCD", 0.8),
         (140, 118.5, "DO NOT FABRICATE - PHOTOS FIRST", 1.0),
     ]
     for index, (x, y, value, size) in enumerate(texts):

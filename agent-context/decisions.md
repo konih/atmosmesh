@@ -268,18 +268,57 @@
 
 - **Status:** Accepted for the provisional ROOM-01 design, 2026-08-28.
 - **Power:** VEML7700 VIN and SHT41 VCC connect directly to the Ideaspark board's confirmed 3.3 V
-  output. The rejected alternative was a series Schottky diode or about 50 Ω per sensor: either
-  can lower sensor VDD while the integrated OLED still pulls SDA/SCL to 3.3 V, risking input-clamp
-  current above `VDD + margin`.
+  output. The rejected alternative was a series Schottky diode or about 50 Ω per sensor: both add a
+  droop path under the SHT41's measurement current bursts and protect nothing, because every pull-up
+  on this bus references the same 3.3 V the sensors run from and falls with them.
+- **Superseded rationale, 2026-08-28:** the original reason was that the integrated OLED holds
+  SDA/SCL at 3.3 V while a lowered sensor VDD forward-biases an input clamp. That is false for this
+  hardware — the ideaspark 1.14 inch board's display is SPI and never touches GPIO21/22 (D-024).
+  The decision is unchanged; only its justification is.
 - **Signals:** GPIO21/SDA and GPIO22/SCL reach only the external sensor branch through individual
   330 Ω resistors. They limit fault current and damp edges; they are not treated as a measurement
   noise source. `C1`, `C3` and `C4` provide power decoupling and use 220 nF from available stock
   (47–220 nF acceptable).
-- **VEML7700:** Confirmed five-pin header is VIN/3Vo/GND/SCL/SDA. VIN gets 3.3 V, `3Vo` is the
-  breakout regulator output and must stay NC, and no extra pull-ups are fitted because the breakout
-  and onboard OLED already provide I²C pull-ups.
-- **Boundary:** This does not approve fabrication. Exact controller/SHT41/PIR/buzzer photos and
-  dimensions still gate routing and assembly.
+- **VEML7700:** Operator-confirmed five-pin header is VIN/3Vo/GND/SCL/SDA. VIN gets 3.3 V and
+  `3Vo` is the breakout regulator output and must stay NC. Bus pull-ups are now fitted on the
+  carrier itself — see D-023.
+- **Boundary:** This does not approve energising. Connector orders are now confirmed, but the
+  controller's physical row spacing and both 5 V modules' supply voltage and output swing are still
+  unmeasured.
+
+### D-023 — The Room carrier supplies its own I²C pull-ups
+
+- **Status:** Accepted 2026-08-28, replacing the "no extra pull-ups" position inside D-022.
+- **Rule:** `R_PU_SDA` and `R_PU_SCL`, 4.7 kΩ from `SDA_EXT`/`SCL_EXT` to 3.3 V, are **required**
+  parts, not optional ones.
+- **Why:** the previous position assumed an integrated I²C OLED supplied pull-ups. The identified
+  board's display is SPI (D-024), so nothing on the controller pulls SDA or SCL up. Without these
+  resistors a build populated with only the SHT41 — or with a breakout whose pull-ups are unfitted —
+  leaves the bus floating and every transaction fails.
+- **Placement:** on the sensor side of the 330 Ω series resistors, so `R_SDA`/`R_SCL` stay a
+  fault-current limit rather than part of the pull-up divider.
+- **Loading:** with both breakouts carrying their own 10 kΩ pull-ups the parallel result is about
+  2.4 kΩ, roughly 1.4 mA at 3.3 V. That is inside the I²C 3 mA sink limit, so they stay fitted
+  rather than DNP.
+
+### D-024 — The ideaspark display is SPI, and six GPIOs are off-limits
+
+- **Status:** Accepted 2026-08-28 on operator evidence
+  (`docs/hardware/ideaspark-esp32-tft-pinout.png`).
+- **Board:** the Room controller is the **ideaspark ESP32 1.14 inch TFT LCD board**
+  (ESP32-WROOM-32), not an integrated-OLED variant. Its 30 pins and their order are confirmed;
+  pads 1–15 are the left column and 16–30 the right column, both from the USB/button end.
+- **Reserved by the display:** GPIO23 (MOSI), GPIO18 (SCLK), GPIO15 (CS), GPIO2 (DC), GPIO4 (RST)
+  and GPIO32 (backlight). The carrier must never reach them.
+- **Reserved by the board:** GPIO12 is the flash-voltage strap and high at boot can stop the board
+  starting; GPIO1/GPIO3 are the CP2102 USB-UART that `task flash` and `task monitor` need; `EN` is
+  reset.
+- **Enforcement:** `generate_project.py` raises rather than emit a net on a reserved pin, and
+  `validate_room_carrier.py` fails if a reserved GPIO appears in the net list. Both were
+  mutation-proved on 2026-08-28.
+- **Consequence:** knowing the pin order makes the socket *more* dangerous, not less — a builder can
+  now confidently reach the wrong pin. Hence the silkscreen and the two gates.
+- **Still unverified:** the physical row spacing. 25.4 mm remains an assumption to be measured.
 
 ## Additional accepted decision
 

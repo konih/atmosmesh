@@ -45,8 +45,9 @@ probe). Its work does not change the order or completion state of the RLS MVP or
 
 ## AtmosMesh Room variant
 
-A compact ESP32 room-station carrier using the Ideaspark WROOM-32 integrated OLED, VEML7700,
-SHT41, D-SUN PIR and buzzer. This design track does not change the RLS MVP order.
+A compact ESP32 room-station carrier using the ideaspark ESP32 1.14 inch TFT LCD board
+(ESP32-WROOM-32), VEML7700, SHT41, D-SUN PIR and buzzer. This design track does not change the RLS
+MVP order.
 
 | Order | Story | Status | Priority | Depends on | Outcome |
 | ---: | --- | --- | --- | --- | --- |
