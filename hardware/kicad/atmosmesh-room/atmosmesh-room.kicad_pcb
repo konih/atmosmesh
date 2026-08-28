@@ -89,7 +89,7 @@
 			(uuid "74ed2370-afc3-5c84-96b1-83f0811b350f")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "ESP32-WROOM-32 DevKit, USB powered on the bench"
+		(property "Description" "Provisional 30-pin Ideaspark ESP32-WROOM-32 OLED socket; verify exact pinout and spacing"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "8c2f711f-fa7b-516c-9d4f-c812900bb9da")
 			(effects (font (size 1 1)))
@@ -178,7 +178,7 @@
 			(uuid "7233e461-3c1f-5417-90b1-54d38ba9b5d9")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "LCD 1602 I2C backpack: GND, VCC(3V3), SDA=GPIO5, SCL=GPIO4"
+		(property "Description" "Confirmed VEML7700 breakout header: VIN, 3Vo NC, GND, SCL, SDA"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "fc8683e0-0fa9-5cb6-b81b-d3537c6473c6")
 			(effects (font (size 1 1)))
@@ -217,7 +217,7 @@
 			(uuid "b15668ff-f8d7-5c04-a84e-393068292f9b")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "LCD 1602 I2C backpack: GND, VCC(3V3), SDA=GPIO5, SCL=GPIO4"
+		(property "Description" "Provisional SHT41 header: 3V3, GND, SDA, SCL; verify module pin order"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "5ea8b111-e1da-501f-abfe-c512f8f5eb73")
 			(effects (font (size 1 1)))
@@ -254,7 +254,7 @@
 			(uuid "964634d9-1c30-5d21-8d6d-bc69ec2ebbfa")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 / DHT22: VDD=3V3, DATA=GPIO18, GND"
+		(property "Description" "Provisional D-SUN PIR header: protected 5V, GND, OUT; verify module pin order"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "f6ae3ff7-607b-5c28-82b2-7469e33febfc")
 			(effects (font (size 1 1)))
@@ -289,7 +289,7 @@
 			(uuid "94e2c3b0-2177-5bfc-817c-2720b131ec70")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "Provisional 3.3V buzzer connection: supply and transistor-switched low side"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "0db43744-8997-555e-ad0f-8f73604010bf")
 			(effects (font (size 1 1)))
@@ -322,7 +322,7 @@
 			(uuid "a8d730c2-d619-5177-add2-a5a93ceb51e9")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "Default-open PIR 5V enable jumper"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "cd9296d6-eb57-59a2-9c3f-1deb84943d1a")
 			(effects (font (size 1 1)))
@@ -355,7 +355,7 @@
 			(uuid "54edc9dc-cd3f-5a73-af48-e3a93c65dd78")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "1N5819 PIR supply diode; pin 1 K to protected rail, pin 2 A to raw 5V"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "1a6158a2-2883-5762-b489-043bd6677c75")
 			(effects (font (size 1 1)))
@@ -366,6 +366,12 @@
 		(attr through_hole)
 		(fp_rect (start -1.25 -1.25) (end 8.870000000000005 1.25)
 			(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "999da777-3461-51e3-969c-9e733e3cb3c4"))
+		(fp_text user "K" (at 0 -2.1) (layer "F.SilkS") (uuid "dd1f266a-fddc-5a51-8631-b71ed6c4e989")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "A" (at 7.62 -2.1) (layer "F.SilkS") (uuid "893649d7-230f-51c8-b1e1-8f3b6cf8221c")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_line (start 1.4 -1.25) (end 1.4 1.25) (stroke (width 0.35) (type solid))
+			(layer "F.SilkS") (uuid "060eae22-b350-5f0f-8d6d-cdcfa126e1ec"))
 		(pad "1" thru_hole rect (at 0.000 0.000) (size 1.7 1.7) (drill 0.8)
 			(layers "*.Cu" "*.Mask") (net 10 "PIR_5V_PROTECTED") (uuid "47421fde-4db6-5073-9eda-2ed0379976cc") )
 		(pad "2" thru_hole circle (at 7.620 0.000) (size 1.7 1.7) (drill 0.8)
@@ -388,7 +394,7 @@
 			(uuid "038cb1b5-42e5-5a4b-b40b-a3ec6acc2fb1")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 / DHT22: VDD=3V3, DATA=GPIO18, GND"
+		(property "Description" "2N3904 active-low PIR interface; symbol and footprint pins 1/2/3 are C/B/E"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "d7a37406-2cd5-5aaa-9b2d-44d1d4282162")
 			(effects (font (size 1 1)))
@@ -399,6 +405,12 @@
 		(attr through_hole)
 		(fp_rect (start -1.25 -1.25) (end 6.3300000000000125 1.25)
 			(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "dc241c7f-150b-5acd-949a-86954f0d0227"))
+		(fp_text user "C" (at 0 -2.1) (layer "F.SilkS") (uuid "8296865d-82de-5c23-b12c-1ebb926cb892")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "B" (at 2.54 -2.1) (layer "F.SilkS") (uuid "e18b3a1a-2501-52db-82e7-8c03908b6e9a")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "E" (at 5.08 -2.1) (layer "F.SilkS") (uuid "72dc4441-69a5-540a-aa9e-b13eea45f889")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
 		(pad "1" thru_hole rect (at 0.000 0.000) (size 1.7 1.7) (drill 0.8)
 			(layers "*.Cu" "*.Mask") (net 9 "GPIO33_PIR_N") (uuid "4455ae7f-35d3-5ac5-aa56-ab28c3c796cf") )
 		(pad "2" thru_hole circle (at 2.540 0.000) (size 1.7 1.7) (drill 0.8)
@@ -423,7 +435,7 @@
 			(uuid "35323855-a550-52ef-a5cc-10e7e5ad4e28")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "10 kilohm PIR-output-to-NPN-base current limiter"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "5ae35077-0101-51dd-a2c6-0d5e71c4e474")
 			(effects (font (size 1 1)))
@@ -456,7 +468,7 @@
 			(uuid "19779a86-f983-5e61-86b3-4ee62672c774")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "100 kilohm PIR NPN base-emitter pulldown"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "5d7ef8f5-62b2-545f-8ca6-cea42bb74d29")
 			(effects (font (size 1 1)))
@@ -489,7 +501,7 @@
 			(uuid "0beb4077-503d-5aa5-ac53-64acdd3e9745")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "10 kilohm GPIO33 pullup to 3V3 for active-low PIR input"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "930d5710-decc-5cfd-a416-62888fb05e4d")
 			(effects (font (size 1 1)))
@@ -522,7 +534,7 @@
 			(uuid "2c69f889-8cad-548c-94b8-57b58e86ecdd")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "3V3 bulk decoupling"
+		(property "Description" "10 uF protected PIR 5V bulk capacitor; observe polarity"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "a882dee1-4b9d-5284-9084-eb066cd4d05d")
 			(effects (font (size 1 1)))
@@ -555,7 +567,7 @@
 			(uuid "b32e0c1c-6e18-5480-94fc-d52cbc2a5f35")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 / DHT22: VDD=3V3, DATA=GPIO18, GND"
+		(property "Description" "Low-side buzzer NPN; symbol and footprint pins 1/2/3 are C/B/E; verify device leads"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "9e77081d-64f0-59f7-8cc7-727bbca52c41")
 			(effects (font (size 1 1)))
@@ -566,6 +578,12 @@
 		(attr through_hole)
 		(fp_rect (start -1.25 -1.25) (end 6.3300000000000125 1.25)
 			(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "7ca5cf84-ba0f-5a7a-92b7-5d247bf8e173"))
+		(fp_text user "C" (at 0 -2.1) (layer "F.SilkS") (uuid "d735aea2-3bb5-562c-b915-7169a1dce74b")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "B" (at 2.54 -2.1) (layer "F.SilkS") (uuid "e1c34723-f9a2-575b-9737-59d23fb22ba4")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "E" (at 5.08 -2.1) (layer "F.SilkS") (uuid "5441be73-a8bf-59ec-b945-d98b6e2717f5")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
 		(pad "1" thru_hole rect (at 0.000 0.000) (size 1.7 1.7) (drill 0.8)
 			(layers "*.Cu" "*.Mask") (net 4 "BEEP_LOW") (uuid "425e4685-9eb3-5d21-aeb6-633aea4fb902") )
 		(pad "2" thru_hole circle (at 2.540 0.000) (size 1.7 1.7) (drill 0.8)
@@ -590,7 +608,7 @@
 			(uuid "ed23685a-e3a8-5d71-87f0-3a54ff910dc4")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "2.2 kilohm GPIO25-to-buzzer-NPN base resistor"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "fee096e9-3328-5fc4-b5ec-7d7bafa4133d")
 			(effects (font (size 1 1)))
@@ -623,7 +641,7 @@
 			(uuid "c0c6d9a8-853a-53a4-af2a-23c5751f4801")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "100 kilohm buzzer NPN base-emitter pulldown"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "77e39491-b344-540f-bc6e-ce234ca9cbb7")
 			(effects (font (size 1 1)))
@@ -642,7 +660,7 @@
 	(footprint "room:D_Axial_P7.62mm"
 		(layer "F.Cu")
 		(uuid "dd605d91-f12b-5280-bfb6-44ff82eea587")
-		(at 168.0 68.0)
+		(at 163.0 68.0)
 
 		(property "Reference" "D_BEEP"
 			(at 0 -2 0)
@@ -656,7 +674,7 @@
 			(uuid "e990be58-505a-50f9-857a-b694993da379")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "Optional 1N4001 flyback diode; DNP for piezo; pin 1 K to 3V3, pin 2 A to switched low"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "3f2d0a1f-ff66-56d2-9b04-9342d57f1c7e")
 			(effects (font (size 1 1)))
@@ -667,6 +685,12 @@
 		(attr through_hole)
 		(fp_rect (start -1.25 -1.25) (end 8.870000000000005 1.25)
 			(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "c244a9f2-6cde-5487-885d-ddf22a36e79f"))
+		(fp_text user "K" (at 0 -2.1) (layer "F.SilkS") (uuid "57c12f13-0876-555e-8db8-2d155243374e")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_text user "A" (at 7.62 -2.1) (layer "F.SilkS") (uuid "fb39f169-c492-52fe-8fc8-f7d0de021c5b")
+			(effects (font (size 0.8 0.8) (thickness 0.14))) )
+		(fp_line (start 1.4 -1.25) (end 1.4 1.25) (stroke (width 0.35) (type solid))
+			(layer "F.SilkS") (uuid "161f0faf-875b-5537-b64b-fa6d378e7c5d"))
 		(pad "1" thru_hole rect (at 0.000 0.000) (size 1.7 1.7) (drill 0.8)
 			(layers "*.Cu" "*.Mask") (net 1 "+3V3") (uuid "da24dab9-fc9c-5f3b-9bab-721166f2947b") )
 		(pad "2" thru_hole circle (at 7.620 0.000) (size 1.7 1.7) (drill 0.8)
@@ -689,7 +713,7 @@
 			(uuid "d722ec03-d7a2-50ab-95ea-bfbc8fbafe87")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "330 ohm external SDA fault-current limiter and edge damper"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "cf1254b8-5b2a-5df1-80d5-964c9c33913c")
 			(effects (font (size 1 1)))
@@ -722,7 +746,7 @@
 			(uuid "98c4998c-335d-5321-8af1-c7af277e1037")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "AM2302 data pull-up to 3V3"
+		(property "Description" "330 ohm external SCL fault-current limiter and edge damper"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "f30bd3e5-cd82-577f-a78f-b14daba12cad")
 			(effects (font (size 1 1)))
@@ -755,7 +779,7 @@
 			(uuid "82b375af-db16-5d62-a070-c980b1a80a80")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "3V3 HF decoupling"
+		(property "Description" "220 nF VEML7700 VIN input decoupling; 47-220 nF acceptable"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "dc47b199-f600-532b-8213-b9517aa78817")
 			(effects (font (size 1 1)))
@@ -788,7 +812,7 @@
 			(uuid "5de3d53b-f020-5745-9f3d-8665f90bb88f")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "3V3 HF decoupling"
+		(property "Description" "220 nF SHT41 3V3 local decoupling; 47-220 nF acceptable"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "a71de53c-de44-5ed5-8837-80d6a066a8ab")
 			(effects (font (size 1 1)))
@@ -821,7 +845,7 @@
 			(uuid "74886c66-bfe2-54e3-9008-668ea0cd5521")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "3V3 bulk decoupling"
+		(property "Description" "10-47 uF controller 3V3 bulk capacitor; observe polarity"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "2cbc7a4c-cbc5-5834-82ea-c09daa7fb00c")
 			(effects (font (size 1 1)))
@@ -854,7 +878,7 @@
 			(uuid "69c7b2fd-5568-52ce-a71e-d9b2aa6aa2ce")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "3V3 HF decoupling"
+		(property "Description" "220 nF controller 3V3 local decoupling; 47-220 nF acceptable"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "0add5233-1e60-5597-b1c1-4eff2b1fc819")
 			(effects (font (size 1 1)))
@@ -887,7 +911,7 @@
 			(uuid "ad5c6aeb-0ba5-59cb-b597-21b0133294ed")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "3V3 and GND paired through-hole measurement points"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "2e06a95c-1c04-57e0-ac52-fb026bdf4694")
 			(effects (font (size 1 1)))
@@ -920,7 +944,7 @@
 			(uuid "38fd0481-d7d5-5185-a6a6-1e36f69bce0b")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "Confirmed USB 5V and GND paired through-hole measurement points"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "86739625-3e91-53d2-bac8-1d5d5f2bde8b")
 			(effects (font (size 1 1)))
@@ -953,7 +977,7 @@
 			(uuid "c5fc90f6-b882-5831-b9d4-22589992c67a")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "Paired GND through-hole continuity points"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "36220181-f780-58f5-be2f-bbf8d1d85596")
 			(effects (font (size 1 1)))
@@ -986,7 +1010,7 @@
 			(uuid "fa06d6ff-5ccd-592f-bdff-e7c37180d04e")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "External SDA and GND paired through-hole measurement points"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "131e09c9-a34f-5183-b136-1b59289ebe51")
 			(effects (font (size 1 1)))
@@ -1019,7 +1043,7 @@
 			(uuid "744768cc-a4c3-512e-aa79-ff0198ebf51f")
 			(effects (font (size 0.8 0.8) (thickness 0.12)))
 		)
-		(property "Description" "OPEN on the bench. Closing it feeds the DevKit VIN from the 5 V rail - only after the PSU is measured and enclosed, and never together with USB"
+		(property "Description" "External SCL and GND paired through-hole measurement points"
 			(at 0 0 0) (layer "F.Fab") (hide yes)
 			(uuid "193577ce-da3b-5e4d-bfab-f0eb4c056cdf")
 			(effects (font (size 1 1)))

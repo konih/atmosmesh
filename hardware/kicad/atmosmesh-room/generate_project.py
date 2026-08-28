@@ -65,9 +65,9 @@ parts = [
          ("+3V3", "BEEP_LOW"), 176.0, 73.0),
     Part("JP_PIR_5V", "DEFAULT_OPEN", "atmosmesh:R", "room:Jumper_2_Open_P2.54mm", 6900, 3500,
          ("+5V_USB_CONFIRMED", "PIR_5V_RAW"), 158.0, 108.0),
-    Part("D_PIR", "1N5819", "atmosmesh:R", "room:D_Axial_P7.62mm", 7400, 3500,
+    Part("D_PIR", "1N5819", "atmosmesh:D_Schottky", "room:D_Axial_P7.62mm", 7400, 3500,
          ("PIR_5V_PROTECTED", "PIR_5V_RAW"), 165.0, 108.0),
-    Part("Q_PIR", "2N3904 C/B/E", "atmosmesh:Conn_01x03", "room:TO92_CBE", 6800, 4300,
+    Part("Q_PIR", "2N3904 C/B/E", "atmosmesh:Q_NPN_CBE", "room:TO92_CBE", 6800, 4300,
          ("GPIO33_PIR_N", "PIR_BASE", "GND"), 160.0, 99.0),
     Part("R_PIR_IN", "10k", "Device:R", "room:R_Axial_P7.62mm", 6000, 4300,
          ("PIR_OUT", "PIR_BASE"), 170.0, 99.0),
@@ -77,14 +77,15 @@ parts = [
          ("+3V3", "GPIO33_PIR_N"), 154.0, 94.0),
     Part("C5", "10uF", "Device:C_Polarized", "room:C_Radial_P2.00mm", 7800, 3800,
          ("PIR_5V_PROTECTED", "GND"), 172.0, 113.0),
-    Part("Q_BEEP", "2N2222_OR_S8050 C/B/E", "atmosmesh:Conn_01x03", "room:TO92_CBE", 6800, 2100,
+    Part("Q_BEEP", "2N2222_OR_S8050 C/B/E", "atmosmesh:Q_NPN_CBE", "room:TO92_CBE", 6800, 2100,
          ("BEEP_LOW", "BEEP_BASE", "GND"), 165.0, 76.0),
     Part("R_BEEP_IN", "2.2k", "Device:R", "room:R_Axial_P7.62mm", 6000, 2100,
          ("GPIO25_BEEP", "BEEP_BASE"), 155.0, 80.0),
     Part("R_BEEP_PD", "100k", "Device:R", "room:R_Axial_P7.62mm", 6800, 2600,
          ("BEEP_BASE", "GND"), 165.0, 85.0),
-    Part("D_BEEP", "DNP / FIT MAGNETIC ONLY", "atmosmesh:R", "room:D_Axial_P7.62mm", 7600, 2100,
-         ("+3V3", "BEEP_LOW"), 168.0, 68.0),
+    # x=163: the axial anode marker sits 7.62 mm right of the origin and clipped H2's mask at 168.
+    Part("D_BEEP", "DNP / FIT MAGNETIC ONLY", "atmosmesh:D", "room:D_Axial_P7.62mm", 7600, 2100,
+         ("+3V3", "BEEP_LOW"), 163.0, 68.0),
     Part("R_SDA", "330R", "Device:R", "room:R_Axial_P7.62mm", 2300, 2700,
          ("SDA_EXT", "GPIO21_SDA"), 111.0, 83.0),
     Part("R_SCL", "330R", "Device:R", "room:R_Axial_P7.62mm", 2300, 3200,
@@ -105,12 +106,82 @@ parts = [
 ]
 
 
+DESCRIPTION_BY_REF = {
+    "U1": "Provisional 30-pin Ideaspark ESP32-WROOM-32 OLED socket; verify exact pinout and spacing",
+    "J_VEML": "Confirmed VEML7700 breakout header: VIN, 3Vo NC, GND, SCL, SDA",
+    "J_SHT": "Provisional SHT41 header: 3V3, GND, SDA, SCL; verify module pin order",
+    "J_PIR": "Provisional D-SUN PIR header: protected 5V, GND, OUT; verify module pin order",
+    "J_BEEP": "Provisional 3.3V buzzer connection: supply and transistor-switched low side",
+    "JP_PIR_5V": "Default-open PIR 5V enable jumper",
+    "D_PIR": "1N5819 PIR supply diode; pin 1 K to protected rail, pin 2 A to raw 5V",
+    "Q_PIR": "2N3904 active-low PIR interface; symbol and footprint pins 1/2/3 are C/B/E",
+    "Q_BEEP": "Low-side buzzer NPN; symbol and footprint pins 1/2/3 are C/B/E; verify device leads",
+    "D_BEEP": "Optional 1N4001 flyback diode; DNP for piezo; pin 1 K to 3V3, pin 2 A to switched low",
+    "R_SDA": "330 ohm external SDA fault-current limiter and edge damper",
+    "R_SCL": "330 ohm external SCL fault-current limiter and edge damper",
+    "R_PIR_IN": "10 kilohm PIR-output-to-NPN-base current limiter",
+    "R_PIR_PD": "100 kilohm PIR NPN base-emitter pulldown",
+    "R_PIR_PU": "10 kilohm GPIO33 pullup to 3V3 for active-low PIR input",
+    "R_BEEP_IN": "2.2 kilohm GPIO25-to-buzzer-NPN base resistor",
+    "R_BEEP_PD": "100 kilohm buzzer NPN base-emitter pulldown",
+    "C1": "220 nF controller 3V3 local decoupling; 47-220 nF acceptable",
+    "C2": "10-47 uF controller 3V3 bulk capacitor; observe polarity",
+    "C3": "220 nF VEML7700 VIN input decoupling; 47-220 nF acceptable",
+    "C4": "220 nF SHT41 3V3 local decoupling; 47-220 nF acceptable",
+    "C5": "10 uF protected PIR 5V bulk capacitor; observe polarity",
+    "TP_3V3": "3V3 and GND paired through-hole measurement points",
+    "TP_5V": "Confirmed USB 5V and GND paired through-hole measurement points",
+    "TP_GND": "Paired GND through-hole continuity points",
+    "TP_SDA": "External SDA and GND paired through-hole measurement points",
+    "TP_SCL": "External SCL and GND paired through-hole measurement points",
+}
+
+
+def description_for(part: Part) -> str:
+    return DESCRIPTION_BY_REF[part.ref]
+
+
 def pin_offsets(symbol) -> dict[str, Position]:
     result = {}
     for unit in symbol.units:
         for pin in unit.pins:
             result[pin.number] = pin.position
     return result
+
+
+def stock_symbol(name: str, library: str):
+    candidates = [
+        pathlib.Path(f"/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/{library}.kicad_sym"),
+        pathlib.Path(f"/usr/share/kicad/symbols/{library}.kicad_sym"),
+    ]
+    path = next((candidate for candidate in candidates if candidate.is_file()), None)
+    if path is None:
+        raise RuntimeError(f"KiCad {library}.kicad_sym not found; KiCad 10 is required")
+    symbols = SymbolLib().from_file(str(path))
+    result = deepcopy(next(item for item in symbols.symbols if item.entryName == name))
+    result.libraryNickname = "atmosmesh"
+    return result
+
+
+def set_symbol_description(symbol, description: str) -> None:
+    for prop in symbol.properties:
+        if prop.key == "Description":
+            prop.value = description
+
+
+def write_local_symbol_library(lib_symbols: list) -> None:
+    """Write the project library from the exact symbols the schematic embeds.
+
+    KiCad's lib_symbol_mismatch ERC check compares the schematic's embedded copy
+    against the library. Building the two independently drifts on the first
+    description or pin-type edit, so both come from this one list.
+    """
+    symbols = []
+    for item in lib_symbols:
+        symbol = deepcopy(item)
+        symbol.libraryNickname = None
+        symbols.append(symbol)
+    SymbolLib(symbols=symbols).to_file(str(ROOT / "atmosmesh.kicad_sym"))
 
 
 def write_native_schematic() -> pathlib.Path:
@@ -126,30 +197,22 @@ def write_native_schematic() -> pathlib.Path:
                   2: "GPIO21 SDA / GPIO22 SCL; no 5 V on any GPIO or 3V3",
                   3: "60x80 mm two-layer THT carrier", 4: "ROOM-01"},
     )
-    stock_symbol_candidates = [
-        pathlib.Path("/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/Connector_Generic.kicad_sym"),
-        pathlib.Path("/usr/share/kicad/symbols/Connector_Generic.kicad_sym"),
-    ]
-    stock_symbol_path = next((path for path in stock_symbol_candidates if path.is_file()), None)
-    if stock_symbol_path is None:
-        raise RuntimeError("KiCad Connector_Generic.kicad_sym not found; KiCad 10 is required")
-    stock_symbols = SymbolLib().from_file(str(stock_symbol_path))
-    conn_01x05 = deepcopy(next(item for item in stock_symbols.symbols if item.entryName == "Conn_01x05"))
-    conn_01x05.libraryNickname = "atmosmesh"
-
-    local_symbol_path = ROOT / "atmosmesh.kicad_sym"
-    local_symbols = SymbolLib().from_file(str(local_symbol_path))
-    if not any(item.entryName == "Conn_01x05" for item in local_symbols.symbols):
-        local_symbols.symbols.append(deepcopy(conn_01x05))
-        local_symbols.to_file(str(local_symbol_path))
+    conn_01x05 = stock_symbol("Conn_01x05", "Connector_Generic")
+    diode = stock_symbol("D", "Device")
+    schottky = stock_symbol("D_Schottky", "Device")
+    npn_cbe = stock_symbol("Q_NPN_CBE", "Transistor_BJT")
+    extra_symbols = [conn_01x05, diode, schottky, npn_cbe]
 
     needed_names = {part.lib.split(":")[-1] for part in parts}
     sheet.libSymbols = [deepcopy(item) for item in source.libSymbols if item.entryName in needed_names]
-    sheet.libSymbols.append(deepcopy(conn_01x05))
+    sheet.libSymbols.extend(deepcopy(item) for item in extra_symbols)
+    for item in sheet.libSymbols:
+        set_symbol_description(item, f"ROOM-01 symbol: {item.entryName}; see schematic instance description")
     lib_by_name = {item.entryName: item for item in sheet.libSymbols}
     for unit in lib_by_name["ESP32_DevKit_V1_Socket"].units:
         for pin in unit.pins:
             pin.electricalType = "passive"
+    write_local_symbol_library(sheet.libSymbols)
     template_by_name = {}
     for item in source.schematicSymbols:
         template_by_name.setdefault(item.entryName, item)
@@ -157,6 +220,13 @@ def write_native_schematic() -> pathlib.Path:
     conn_01x05_template.entryName = "Conn_01x05"
     conn_01x05_template.pins = {str(index): "" for index in range(1, 6)}
     template_by_name["Conn_01x05"] = conn_01x05_template
+    for entry, pin_count, base in (("D", 2, "R"), ("D_Schottky", 2, "R"),
+                                   ("Q_NPN_CBE", 3, "Conn_01x03")):
+        template = deepcopy(template_by_name[base])
+        template.libraryNickname = "atmosmesh"
+        template.entryName = entry
+        template.pins = {str(index): "" for index in range(1, pin_count + 1)}
+        template_by_name[entry] = template
 
     non_controller_index = 0
     for part in parts:
@@ -181,6 +251,10 @@ def write_native_schematic() -> pathlib.Path:
                 prop.position = Position(symbol.position.X, symbol.position.Y + offset, 0)
             elif prop.key == "Footprint":
                 prop.value = part.footprint
+                prop.position = Position(symbol.position.X, symbol.position.Y, 0)
+                prop.effects.hide = True
+            elif prop.key == "Description":
+                prop.value = description_for(part)
                 prop.position = Position(symbol.position.X, symbol.position.Y, 0)
                 prop.effects.hide = True
             else:
@@ -239,8 +313,6 @@ def write_project_and_tables() -> None:
         '(sym_lib_table\n  (version 7)\n  (lib (name "atmosmesh")(type "KiCad")'
         '(uri "${KIPRJMOD}/atmosmesh.kicad_sym")(options "")(descr "Vendored ROOM-01 symbols"))\n)\n',
         encoding="utf-8")
-    source_symbols = ROOT.parent / "atmosmesh-bench" / "atmosmesh.kicad_sym"
-    (ROOT / "atmosmesh.kicad_sym").write_text(source_symbols.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def board_pad_positions(part: Part) -> list[tuple[float, float]]:
@@ -262,10 +334,31 @@ def property_block(ref: str, value: str, description: str) -> str:
     return f'''\n\t\t(property "Reference" "{ref}"\n\t\t\t(at 0 -2 0)\n\t\t\t(layer "F.Fab") (hide yes)\n\t\t\t(uuid "{uid(ref + '-ref')}")\n\t\t\t(effects (font (size 0.9 0.9) (thickness 0.15)))\n\t\t)\n\t\t(property "Value" "{value}"\n\t\t\t(at 0 2 0)\n\t\t\t(layer "F.Fab")\n\t\t\t(uuid "{uid(ref + '-value')}")\n\t\t\t(effects (font (size 0.8 0.8) (thickness 0.12)))\n\t\t)\n\t\t(property "Description" "{description}"\n\t\t\t(at 0 0 0) (layer "F.Fab") (hide yes)\n\t\t\t(uuid "{uid(ref + '-description')}")\n\t\t\t(effects (font (size 1 1)))\n\t\t)'''
 
 
+def semantic_footprint_markings(name: str, identity: str, indent: str = "\t\t") -> str:
+    # Continuation lines extend the caller's own indent character. Appending a literal tab
+    # to the space-indented .kicad_mod writer produced "space before tab" and failed task check.
+    cont = indent + ("\t" if indent.startswith("\t") else "  ")
+    if name == "D_Axial_P7.62mm":
+        return f'''
+{indent}(fp_text user "K" (at 0 -2.1) (layer "F.SilkS") (uuid "{uid(identity + '-mark-k')}")
+{cont}(effects (font (size 0.8 0.8) (thickness 0.14))) )
+{indent}(fp_text user "A" (at 7.62 -2.1) (layer "F.SilkS") (uuid "{uid(identity + '-mark-a')}")
+{cont}(effects (font (size 0.8 0.8) (thickness 0.14))) )
+{indent}(fp_line (start 1.4 -1.25) (end 1.4 1.25) (stroke (width 0.35) (type solid))
+{cont}(layer "F.SilkS") (uuid "{uid(identity + '-cathode-band')}"))'''
+    if name == "TO92_CBE":
+        labels = (("C", 0), ("B", 2.54), ("E", 5.08))
+        return "\n" + "\n".join(
+            f'''{indent}(fp_text user "{label}" (at {x} -2.1) (layer "F.SilkS") (uuid "{uid(identity + '-mark-' + label.lower())}")
+{cont}(effects (font (size 0.8 0.8) (thickness 0.14))) )'''
+            for label, x in labels
+        )
+    return ""
+
+
 def write_board(netlist_path: pathlib.Path) -> None:
     tree = ET.parse(netlist_path)
     paths = {c.attrib["ref"]: c.findtext("tstamps") for c in tree.findall("./components/comp")}
-    descriptions = {c.attrib["ref"]: (c.findtext("description") or "") for c in tree.findall("./components/comp")}
     nets: dict[str, int] = {}
     pin_nets: dict[tuple[str, str], str] = {}
     for net in tree.findall("./nets/net"):
@@ -324,13 +417,13 @@ def write_board(netlist_path: pathlib.Path) -> None:
 \t\t(layer "F.Cu")
 \t\t(uuid "{uid('fp-' + part.ref)}")
 \t\t(at {part.bx} {part.by})
-\t\t{property_block(part.ref, part.value, descriptions[part.ref])}
+\t\t{property_block(part.ref, part.value, description_for(part))}
 \t\t(path "/{paths[part.ref]}")
 \t\t(sheetname "/")
 \t\t(sheetfile "atmosmesh-room.kicad_sch")
 \t\t(attr through_hole)
 \t\t(fp_rect (start {min(x for x, _ in relative)-1.25} {min(y for _, y in relative)-1.25}) (end {max(x for x, _ in relative)+1.25} {max(y for _, y in relative)+1.25})
-\t\t\t(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "{uid('silk-' + part.ref)}"))''')
+\t\t\t(stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab") (uuid "{uid('silk-' + part.ref)}")){semantic_footprint_markings(part.footprint.split(':', 1)[1], 'pcb-' + part.ref)}''')
         for index, ((x, y), (rx, ry)) in enumerate(zip(positions, relative), start=1):
             net_name = pin_nets.get((part.ref, str(index)))
             net_clause = f' (net {nets[net_name]} "{pcb_net_name(net_name)}")' if net_name else ""
@@ -395,7 +488,7 @@ def write_minimal_footprint_library() -> None:
   (fp_rect (start {min(x for x, _ in relative)-1.25} {min(y for _, y in relative)-1.25})
     (end {max(x for x, _ in relative)+1.25} {max(y for _, y in relative)+1.25})
     (stroke (width 0.15) (type solid)) (fill no) (layer "F.Fab")
-    (uuid "{uid('lib-silk-' + name)}"))''']
+    (uuid "{uid('lib-silk-' + name)}")){semantic_footprint_markings(name, 'lib-' + name, '  ')}''']
         for index, (x, y) in enumerate(relative, start=1):
             shape = "rect" if index == 1 else "circle"
             body.append(f'''  (pad "{index}" thru_hole {shape} (at {x:.3f} {y:.3f})
