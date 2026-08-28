@@ -13,6 +13,8 @@ PCB = ROOT / "atmosmesh-room.kicad_pcb"
 SCH = ROOT / "atmosmesh-room.kicad_sch"
 PRO = ROOT / "atmosmesh-room.kicad_pro"
 README = ROOT / "README.md"
+GENERATOR = ROOT / "generate_project.py"
+WIRING = ROOT / "wiring.md"
 
 
 def require(condition: bool, message: str) -> None:
@@ -124,6 +126,28 @@ def main() -> int:
         require(warning in upper, f"README is missing warning: {warning}")
     require(re.search(r'DEFAULT\s+OPEN', upper) is not None,
             "README is missing warning: DEFAULT OPEN")
+
+    # wiring.md's pad table is hand-authored and is what a perfboard builder reads, since the
+    # build rule is "authoritative by pin name". Nothing else keeps it honest against the code.
+    generator = GENERATOR.read_text(encoding="utf-8")
+    start = generator.index("IDEASPARK_PINS = {")
+    code_pins = {int(pad): name for pad, name
+                 in re.findall(r'(\d+): "([A-Z0-9]+)"', generator[start:generator.index("}", start)])}
+    wiring = WIRING.read_text(encoding="utf-8")
+    header = "| Pad | Name | Pad | Name |"
+    require(header in wiring, "wiring.md must carry the socket pad table")
+    table = wiring[wiring.index(header):]
+    table = table[:table.index("\n\n")]
+    doc_pins = {}
+    for left, left_name, right, right_name in re.findall(
+            r'^\|\s*(\d+)\s*\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(.+?)\s*\|$', table, re.M):
+        for pad, name in ((left, left_name), (right, right_name)):
+            doc_pins[int(pad)] = name.replace("**", "").split("—")[0].split("/")[0].strip()
+    for pad, name in sorted(code_pins.items()):
+        documented = doc_pins.get(pad)
+        require(documented is not None, f"wiring.md pad table is missing pad {pad}")
+        require(documented == name or name.startswith(documented) or documented.startswith(name),
+                f"wiring.md pad {pad} says {documented!r}, the generator says {name!r}")
 
     print("ROOM-01 structural validation: PASS")
     return 0

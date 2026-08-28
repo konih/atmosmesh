@@ -64,8 +64,10 @@ measurements establish the exact hardware.
   because the onboard OLED holds I²C pull-ups at 3.3 V. `C1`, `C3`, `C4` use available 220 nF
   ceramics (47–220 nF acceptable).
 - 2026-08-28: `validate_room_carrier.py` passed. KiCad 10.0.5 ERC reported 0 errors/warnings; DRC
-  reported 0 rule violations and 0 schematic-parity problems. Its 52 unconnected items are the
-  intentional unrouted ratsnest while physical identities block safe copper routing.
+  reported 0 rule violations and 0 schematic-parity problems. Its unconnected items are the
+  intentional unrouted ratsnest. **That count is now 62, not the 52 recorded here**: the pull-ups,
+  the SDS011 block and the removal of the buzzer driver all changed it, and the PCB is parked in
+  any case (D-027).
 - 2026-08-28: KiCad XML netlist and schematic PDF exported successfully; rendered PDF was visually
   inspected after hiding inherited template metadata and separating references/values.
 - 2026-08-28: `task check` passed and `task test` passed 121/121 host tests. Firmware build was not
@@ -105,3 +107,7 @@ measurements establish the exact hardware.
 - 2026-08-28: Operator completed the Zener inventory — 1N4733, 4738, 4739, 4740, 4741, 4742, 4744,
   4745, 4746, 4748. The lowest is still 5.1 V and no 1N4728 is held, so the "no Zener clamp" rule
   now rests on a complete list rather than a partial one.
+- 2026-08-28: `wiring.md`'s hand-authored socket pad table is now cross-checked against
+  `IDEASPARK_PINS` by the validator. It is what a perfboard builder actually reads under the
+  authoritative-by-pin-name rule, and nothing had been keeping it honest against the code.
+  Mutation-proved by drifting pad 26 from GPIO21 to GPIO19.
