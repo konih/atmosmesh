@@ -118,6 +118,11 @@ static_assert(kPirGpio != kBeeperGpio && kPirGpio != kSdsRxGpio && kPirGpio != k
               "the PIR pin collides with the beeper or the SDS011 UART");
 
 inline constexpr unsigned long kSampleIntervalMs = 1000UL;
+
+// Home Assistant cadence. The panel refreshes at 1 Hz because a person is looking at it; the
+// broker does not need that, and `expire_after` is 90 s. Motion and the particulate alarm are
+// published the moment they flip regardless, so an automation never waits out this interval.
+inline constexpr unsigned long kMqttPublishIntervalMs = 5000UL;
 inline constexpr unsigned long kBootSplashHoldMs = 1600UL;
 
 }  // namespace atmosmesh::room

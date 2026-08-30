@@ -34,7 +34,8 @@ pio device monitor --port /dev/cu.usbserial-0001 --baud 115200
 
 From the repository root use `task build-v1`, `task build-v1-5`, or `task build-all`. Canonical
 device actions are `flash-v1`/`monitor-v1` and `flash-v1-5`/`monitor-v1-5`; the existing
-`build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases.
+`build`/`flash`/`monitor` and `*-grove` tasks remain compatibility aliases. The Room product adds
+`build-room`/`flash-room`/`monitor-room`/`clean-room`.
 
 After explicit authorization and independent review, the coordinator flashed AtmosMesh Grove on
 2026-08-24. The former AT firmware was replaced. Reviewed head `c880afe`, including RC light, MQTT,
@@ -233,6 +234,38 @@ budget instead of the ESP8266 core's roughly five-second default. PubSubClient's
 response wait is separately bounded to one second, so a complete failed attempt can occupy roughly
 two seconds before the reconnect backoff resumes local work.
 
+### Room MQTT contract
+
+The Room image is ESP32, so it uses `esp-mqtt` over the same host-tested contract/session as
+AtmosMesh v1 — not Grove's PubSubClient. Without credentials, networking is disabled and the
+sensors and TFT continue.
+
+| Piece | Room value |
+| --- | --- |
+| State | `home/air/atmosmesh-room-0001/state` (not retained, every 5 s) |
+| Availability/LWT | `home/air/atmosmesh-room-0001/availability` (`online`/`offline`, retained) |
+| Discovery | `homeassistant/{sensor,binary_sensor}/atmosmesh_room_0001/<object_id>/config` (retained) |
+| Entities | `temperature_c`, `humidity_pct`, `illuminance_lx`, `pm25`, `pm10`, `motion`, `pm_alarm` |
+
+Room uses the nested `{value, unit, valid, age_ms}` payload shape and `value_template`s of the
+form `… if value_json.x.valid else none`, so an entity goes **unavailable** rather than reporting
+a number the sensor did not produce. This matters more here than on Grove: an SDS011 that has
+stopped sending frames must not appear in Home Assistant as clean air, and a PIR still inside its
+60 s warm-up must not publish "no motion" as though it were a measurement. Particulates are
+likewise invalid until the sensor's 30 s spin-up has elapsed.
+
+`motion` is a `binary_sensor` with device class `occupancy`. `pm_alarm` is a `binary_sensor` with
+device class `problem` and carries the same latch that sounds the beeper, so an automation can
+react to what the room heard. State is published every 5 s, and immediately whenever `motion` or
+`pm_alarm` changes, so neither waits out the interval.
+
+The client sets an explicit client id (`atmosmesh-room-0001`), a 45 s keepalive and a 30 s
+network timeout. The stock 15 s/10 s pair tore the session down about every ten seconds at the
+roughly −75 dBm this board sees; `expire_after` stays 90 s, so Home Assistant still marks entities
+unavailable long before a dead board could look live. Wi-Fi association is retried with a fresh
+`WiFi.begin()` every 30 s while unassociated — a single `begin()` can sit in `WL_DISCONNECTED`
+indefinitely on this board.
+
 ### Controlled hardware result (2026-08-24)
 
 - Latest reviewed head `4e4a820` flashed successfully: esptool wrote 310,224 bytes, verified the
@@ -363,7 +396,8 @@ export MQTT_USER="homeassistant"
 export MQTT_PASSWORD="from-kumulus-sops"
 ```
 
-Then `direnv allow` and use `task build-v1`, `task build-v1-5`, or `task build-all` (and the matching
+Then `direnv allow` and use `task build-v1`, `task build-v1-5`, `task build-room`, or
+`task build-all` (and the matching
 reviewed flash command only when authorized). Both product build/flash tasks run
 `scripts/gen-secrets-from-env`, which writes gitignored
 `firmware/include/atmosmesh/secrets.hpp` (also works from a git worktree by reading the

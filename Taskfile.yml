@@ -66,12 +66,20 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-grove-v1_5-common-cathode"
 
+  build-room:
+    desc: Build AtmosMesh Room (`pio run -e atmosmesh-room-v1`)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-room-v1"
+
   build-all:
     desc: Build every first-class AtmosMesh firmware product
     cmds:
       - task: build-v1
       - task: build-v1-5
       - task: build-aqua
+      - task: build-room
 
   build:
     desc: Compatibility alias for build-v1 (AtmosMesh v1 / ESP32)
@@ -121,6 +129,13 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1 -t upload --upload-port {{.ESP_PORT}}"
 
+  flash-room:
+    desc: Upload AtmosMesh Room to ESP_PORT; use reviewed image only
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-room-v1 -t upload --upload-port {{.ESP_PORT}}"
+
   monitor-v1:
     desc: Serial monitor for AtmosMesh v1 at 115200 on ESP_PORT
     dir: firmware
@@ -153,6 +168,18 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  monitor-room:
+    desc: Serial monitor for AtmosMesh Room at 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  clean-room:
+    desc: Clean AtmosMesh Room build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-room-v1 -t clean"
 
   run:
     desc: Flash then open the serial monitor

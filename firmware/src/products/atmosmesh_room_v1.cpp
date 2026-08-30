@@ -1,8 +1,9 @@
 // AtmosMesh Room product composition root — ideaspark ESP32-WROOM-32 + 1.14 inch ST7789 TFT.
 //
-// Bring-up scope: VEML7700 ambient light and SHT41 temperature/humidity on one 3.3 V I2C bus,
-// a D-SUN PIR on GPIO33, an SDS011 particulate sensor listened to on UART2, and a beeper on
-// GPIO25 that sounds when particulates go high. No MQTT and no Wi-Fi yet.
+// Scope: VEML7700 ambient light and SHT41 temperature/humidity on one 3.3 V I2C bus, a D-SUN
+// PIR on GPIO33, an SDS011 particulate sensor listened to on UART2, a beeper on GPIO25 that
+// chirps once at boot and sounds when particulates go high, and Wi-Fi/MQTT publishing every
+// reading to Home Assistant under atmosmesh-room-0001.
 //
 // D-024: the display is SPI and owns GPIO23/18/15/2/4/32. GPIO12 is the flash strap and
 // GPIO1/GPIO3 are the CP2102 USB-UART. room_pins.hpp turns that list into static_asserts, so a
@@ -24,6 +25,7 @@
 #include "atmosmesh/digital_edge.hpp"
 #include "atmosmesh/i2c_bus.hpp"
 #include "atmosmesh/pm_alarm.hpp"
+#include "atmosmesh/room_mqtt_runtime.hpp"
 #include "atmosmesh/room_pins.hpp"
 #include "atmosmesh/sds011_frame.hpp"
 #include "atmosmesh/sht4x_frame.hpp"
@@ -104,6 +106,13 @@ bool pir_ever_moved = false;
 unsigned long pir_last_motion_ms = 0;
 
 unsigned long last_sample_ms = 0;
+unsigned long last_publish_ms = 0;
+bool published_motion = false;
+bool published_alarm = false;
+bool link_dots_shown_up = false;
+bool link_dots_shown_wifi = false;
+unsigned long sht_last_ok_ms = 0;
+unsigned long veml_last_ok_ms = 0;
 bool heartbeat_on = false;
 bool title_alarm_shown = false;
 bool title_drawn = false;
@@ -113,11 +122,14 @@ struct Cell {
     char shown[10];
     int shown_bar_px;
     std::uint16_t shown_colour;
+    // The motion cell relabels itself, so the label is state rather than chrome drawn once.
+    const char* shown_label;
 };
 
 Cell cells[kCellCount] = {
-    {"TEMP C", "", -1, 0}, {"HUM %", "", -1, 0},  {"LUX", "", -1, 0},
-    {"PM2.5", "", -1, 0},  {"PM10", "", -1, 0},   {"MOTION", "", -1, 0},
+    {"TEMP C", "", -1, 0, nullptr}, {"HUM %", "", -1, 0, nullptr},
+    {"LUX", "", -1, 0, nullptr},    {"PM2.5", "", -1, 0, nullptr},
+    {"PM10", "", -1, 0, nullptr},   {"MOTION", "", -1, 0, nullptr},
 };
 
 // ---------------------------------------------------------------- colour rules
@@ -193,6 +205,10 @@ struct Beeper {
     int pulses_left = 0;
     bool on = false;
     unsigned long next_change_ms = 0;
+    // Nobody reading a serial log can hear the can. Timestamping the rising edge turns "it
+    // beeped" into a measured HIGH duration, which is what actually distinguishes a 60 ms chirp
+    // from the ~1.8 s drone this used to emit while setup() was busy elsewhere.
+    unsigned long on_since_ms = 0;
 
     void begin() {
         pinMode(room::kBeeperGpio, OUTPUT);
@@ -203,6 +219,7 @@ struct Beeper {
         if (pulses <= 0) return;
         pulses_left = pulses;
         on = true;
+        on_since_ms = now;
         digitalWrite(room::kBeeperGpio, HIGH);
         next_change_ms = now + room::kBeeperPulseMs;
     }
@@ -215,10 +232,13 @@ struct Beeper {
             digitalWrite(room::kBeeperGpio, LOW);
             on = false;
             --pulses_left;
+            Serial.printf("beeper: pulse held %lums (target %lums) remaining=%d\n",
+                          now - on_since_ms, room::kBeeperPulseMs, pulses_left);
             next_change_ms = now + room::kBeeperGapMs;
         } else if (pulses_left > 0) {
             digitalWrite(room::kBeeperGpio, HIGH);
             on = true;
+            on_since_ms = now;
             next_change_ms = now + room::kBeeperPulseMs;
         }
     }
@@ -246,6 +266,15 @@ void draw_status_dots() {
     if (!title_drawn) {
         return;
     }
+    // W: link health at a glance, so "is Home Assistant getting this?" does not need a serial
+    // cable. Amber is the honest middle state -- associated to Wi-Fi but not talking to a broker.
+    const bool mqtt_up = atmosmesh::room_mqtt_runtime_mqtt_up();
+    const bool wifi_up = atmosmesh::room_mqtt_runtime_wifi_up();
+    const std::uint16_t link = mqtt_up ? kGreen : (wifi_up ? kAmber : kRed);
+    tft.fillCircle(kW - 88, 9, 3, link);
+    draw_text(kW - 82, 5, "W", 1, link);
+    link_dots_shown_up = mqtt_up;
+    link_dots_shown_wifi = wifi_up;
     tft.fillCircle(kW - 66, 9, 3, sht_present ? kGreen : kRed);
     draw_text(kW - 60, 5, "T", 1, sht_present ? kGreen : kRed);
     tft.fillCircle(kW - 44, 9, 3, veml_present ? kGreen : kRed);
@@ -283,6 +312,7 @@ void draw_chrome() {
         tft.fillRect(x + 4, y + kRowH - 5, kColW - 10, 3, kBarTrack);
         cells[i].shown[0] = '\0';
         cells[i].shown_bar_px = -1;
+        cells[i].shown_label = cells[i].label;
     }
 }
 
@@ -311,9 +341,74 @@ void draw_cell(int i, bool valid, const char* text, float fraction, std::uint16_
     }
 }
 
+// Only the motion cell uses this. Labels are string literals, so comparing the stored pointer's
+// text is enough to know whether the strip needs repainting.
+void draw_cell_label(int i, const char* label) {
+    Cell& c = cells[i];
+    if (c.shown_label != nullptr && std::strcmp(c.shown_label, label) == 0) {
+        return;
+    }
+    const int x = cell_x(i);
+    const int y = cell_y(i);
+    tft.fillRect(x + 2, y + 2, kColW - 5, 9, kBackground);
+    draw_text(x + 4, y + 3, label, 1, kLabel);
+    c.shown_label = label;
+}
+
+// The motion cell.
+//
+// What this replaces: "MOTION / YES" for the live state, a bare "45s" for time since the last
+// movement, and a bare "45s" for the power-on warm-up countdown. Two opposite meanings shared
+// one rendering -- a number in that cell could mean "someone moved 45 seconds ago" or "the
+// sensor is not trustworthy for another 45 seconds" -- and "YES" answered a question the panel
+// never asked.
+//
+// Now the label states what the number means, so the two never collide, and the live state is a
+// word rather than a yes/no. The bar carries recency: full means someone is here or was moments
+// ago, empty means the room has been still for ten minutes.
+void draw_motion_cell(unsigned long now) {
+    char buf[10];
+
+    if (now < room::kPirWarmupMs) {
+        const unsigned long remaining_ms = room::kPirWarmupMs - now;
+        std::snprintf(buf, sizeof(buf), "%lus", (remaining_ms + 999UL) / 1000UL);
+        draw_cell_label(kCellPir, "PIR WARMUP");
+        const float done = 1.0F - static_cast<float>(remaining_ms) /
+                                      static_cast<float>(room::kPirWarmupMs);
+        draw_cell(kCellPir, true, buf, clamp01(done), kCyan);
+        return;
+    }
+
+    if (pir_motion) {
+        draw_cell_label(kCellPir, "MOTION");
+        draw_cell(kCellPir, true, "NOW", 1.0F, kAmber);
+        return;
+    }
+
+    if (!pir_ever_moved) {
+        // Never a confirmed movement since boot. That is an absence of evidence, not an empty
+        // room, so it stays muted and invalid rather than claiming a quiet reading.
+        draw_cell_label(kCellPir, "MOTION");
+        draw_cell(kCellPir, false, "--", 0.0F, kMuted);
+        return;
+    }
+
+    const unsigned long age_s = (now - pir_last_motion_ms) / 1000UL;
+    if (age_s < 60UL) {
+        std::snprintf(buf, sizeof(buf), "%lus", age_s);
+    } else if (age_s < 3600UL) {
+        std::snprintf(buf, sizeof(buf), "%lum", age_s / 60UL);
+    } else {
+        std::snprintf(buf, sizeof(buf), "%luh", age_s / 3600UL);
+    }
+    draw_cell_label(kCellPir, "LAST SEEN");
+    const float fresh = clamp01(1.0F - static_cast<float>(age_s) / 600.0F);
+    draw_cell(kCellPir, true, buf, fresh, age_s < 120UL ? kCyan : kMuted);
+}
+
 void draw_heartbeat() {
     heartbeat_on = !heartbeat_on;
-    tft.fillCircle(kW - 82, 9, 2,
+    tft.fillCircle(kW - 104, 9, 2,
                    heartbeat_on ? kCyan : (title_alarm_shown ? kAlarmBar : kTitleBar));
 }
 
@@ -443,6 +538,84 @@ void drain_sds011(unsigned long now) {
     }
 }
 
+// setup() has slow stretches -- a full I2C scan, a driver probe, the splash hold -- and a bare
+// delay() across them is what turned the boot chirp into a ~1.8 s drone: start() drives the pin
+// HIGH and only service() lowers it, and service() was reachable from loop() alone. Everything
+// that must keep running while setup() waits runs here instead.
+void wait_servicing(unsigned long duration_ms) {
+    const unsigned long started = millis();
+    while (millis() - started < duration_ms) {
+        const unsigned long now = millis();
+        beeper.service(now);
+        drain_sds011(now);
+        poll_pir(now);
+        delay(1);
+    }
+}
+
+// The 1 Hz block below does slow things: an SHT41 conversion, a VEML7700 auto-ranging read that
+// walks gain and integration time and can take several hundred milliseconds, and a screen full
+// of SPI. The beeper is timed in software, so nothing lowers its pin while any of that runs.
+// Measured: the first pulse of a particulate alarm held 535 ms against a 60 ms target, because
+// the alarm fired at the top of the block and the next service() call came a whole block later.
+// Servicing between the slow steps bounds a pulse to the longest single step instead.
+void service_beeper() {
+    beeper.service(millis());
+}
+
+// ---------------------------------------------------------------- home assistant
+
+atmosmesh::MqttReading reading_of(bool valid, float value, unsigned long now,
+                                  unsigned long stamp_ms) {
+    atmosmesh::MqttReading r;
+    r.valid = valid;
+    r.value = value;
+    // age_ms is "how old is the newest good sample", so a never-read sensor reports 0 rather
+    // than the uptime, which would read as a very stale measurement instead of no measurement.
+    r.age_ms = stamp_ms == 0UL ? 0UL : now - stamp_ms;
+    return r;
+}
+
+bool ever_published = false;
+
+void publish_room_state(unsigned long now, bool sht_ok, float t_c, float rh, bool veml_ok,
+                        float lux, bool sds_fresh) {
+    if (!atmosmesh::room_mqtt_runtime_enabled()) {
+        return;
+    }
+
+    // A PIR inside its warm-up window and an SDS011 inside its spin-up window are both producing
+    // numbers that mean nothing yet. They go out as invalid, which Home Assistant renders as
+    // unavailable -- the one state that is not a lie about the room.
+    const bool motion_valid = now >= room::kPirWarmupMs;
+    const bool pm_valid = sds_fresh && now >= room::kSdsWarmupMs;
+    const bool alarm_valid = pm_alarm.level() != atmosmesh::PmLevel::Unknown;
+    const bool alarm = pm_alarm.high();
+
+    const bool flipped = (motion_valid && pir_motion != published_motion) ||
+                         (alarm_valid && alarm != published_alarm);
+    if (ever_published && !flipped && (now - last_publish_ms) < room::kMqttPublishIntervalMs) {
+        return;
+    }
+
+    atmosmesh::RoomMqttState state;
+    state.temperature_c = reading_of(sht_ok, t_c, now, sht_last_ok_ms);
+    state.humidity_pct = reading_of(sht_ok, rh, now, sht_last_ok_ms);
+    state.illuminance_lx = reading_of(veml_ok, lux, now, veml_last_ok_ms);
+    state.pm25 = reading_of(pm_valid, sds_pm25, now, sds_last_frame_ms);
+    state.pm10 = reading_of(pm_valid, sds_pm10, now, sds_last_frame_ms);
+    state.motion = {pir_motion, motion_valid,
+                    pir_last_motion_ms == 0UL ? 0UL : now - pir_last_motion_ms};
+    state.pm_alarm = {alarm, alarm_valid,
+                      sds_last_frame_ms == 0UL ? 0UL : now - sds_last_frame_ms};
+
+    atmosmesh::room_mqtt_runtime_publish_state(state);
+    last_publish_ms = now;
+    published_motion = pir_motion;
+    published_alarm = alarm;
+    ever_published = true;
+}
+
 }  // namespace
 
 void setup() {
@@ -478,7 +651,14 @@ void setup() {
     beeper.begin();
     Serial.printf("beeper: gpio=%d pulse=%lums alarm=%d pulses\n", room::kBeeperGpio,
                   room::kBeeperPulseMs, room::kBeeperAlarmPulses);
-    beeper.start(1, millis());   // one boot chirp: proof the beeper is wired, before any alarm
+    // One boot chirp: proof the beeper is wired, before any alarm can claim credit for it.
+    // Serviced to completion right here -- the I2C scan and the splash hold that follow used to
+    // run with the pin still HIGH, so what the room actually heard was a two-second tone.
+    beeper.start(1, millis());
+    wait_servicing(room::kBeeperPulseMs + 20UL);
+
+    // Async: association overlaps the I2C scan and the splash rather than stalling boot.
+    atmosmesh::room_mqtt_runtime_begin();
 
     const BusIdle idle = probe_bus_idle();
     Serial.printf("i2c: idle sda(gpio%d)=%s scl(gpio%d)=%s\n", room::kI2cSdaGpio,
@@ -515,7 +695,7 @@ void setup() {
     }
 
     splash(found, count);
-    delay(room::kBootSplashHoldMs);
+    wait_servicing(room::kBootSplashHoldMs);
     draw_chrome();
 }
 
@@ -527,8 +707,15 @@ void loop() {
     poll_pir(now);
     drain_sds011(now);
     beeper.service(now);
+    // Ticked every pass so reconnect backoff runs on time, and so a fault on the I2C bus below
+    // does not also take Home Assistant delivery down with it.
+    atmosmesh::room_mqtt_runtime_tick(now);
 
     if (now - last_sample_ms < room::kSampleIntervalMs) {
+        // Yield. Without this the loop task spins flat out and the FreeRTOS idle task never
+        // runs, which is tolerable on a board with no radio and not on one with Wi-Fi and a
+        // TCP stack to feed. 1 ms still polls the PIR ~50 times inside its 50 ms debounce.
+        delay(1);
         return;
     }
     last_sample_ms = now;
@@ -542,11 +729,18 @@ void loop() {
         draw_status_dots();
     }
 
+    bool alarm_beep_due = false;
     const bool sds_warming = now < room::kSdsWarmupMs;
     if (sds_fresh && !sds_warming) {
         // The fan and laser need to spin up; the first frames are not evidence of anything.
         if (pm_alarm.update(sds_pm25, sds_pm10, now)) {
-            beeper.start(room::kBeeperAlarmPulses, now);
+            // Decided here, sounded at the end of the pass. Starting the pattern on this line
+            // put a 60 ms pulse in front of the VEML7700's auto-ranging read, which walks gain
+            // and integration time and blocks for about half a second; the pin stayed HIGH for
+            // all of it and the first pulse measured 517 ms. Started after the slow work, the
+            // whole 360 ms pattern runs in the idle remainder of the second, serviced every
+            // loop pass.
+            alarm_beep_due = true;
             Serial.printf("pm: ALARM pm2.5=%.1f pm10=%.1f -> beeping %d pulses\n",
                           static_cast<double>(sds_pm25), static_cast<double>(sds_pm10),
                           room::kBeeperAlarmPulses);
@@ -561,6 +755,12 @@ void loop() {
                       again.sda_high ? "HIGH" : "LOW", again.scl_high ? "HIGH" : "LOW",
                       pir_motion ? "MOTION" : "clear", sds_fresh ? "ok" : "no-frame",
                       now / 1000UL);
+        // The particulate and occupancy channels are independent of this bus, so they keep
+        // reaching Home Assistant; temperature and light go out as unavailable.
+        publish_room_state(now, false, 0.0F, 0.0F, false, 0.0F, sds_fresh);
+        if (alarm_beep_due) {
+            beeper.start(room::kBeeperAlarmPulses, millis());
+        }
         if (again.healthy()) {
             Serial.println("i2c: bus recovered - restarting to run full init");
             delay(50);
@@ -573,13 +773,21 @@ void loop() {
     float rh = 0.0F;
     const ShtResult sht = sht_present ? read_sht41(&t_c, &rh) : ShtResult::NoAck;
     const bool sht_ok = sht == ShtResult::Ok;
+    if (sht_ok) {
+        sht_last_ok_ms = now;
+    }
+    service_beeper();
 
     float lux = 0.0F;
     bool veml_ok = false;
     if (veml_present) {
         lux = veml.readLux(VEML_LUX_AUTO);
         veml_ok = !std::isnan(lux);
+        if (veml_ok) {
+            veml_last_ok_ms = now;
+        }
     }
+    service_beeper();
 
     const bool alarm = pm_alarm.high();
     if (alarm != title_alarm_shown) {
@@ -618,17 +826,14 @@ void loop() {
         draw_cell(kCellPm10, false, "--.-", 0.0F, kMuted);
     }
 
-    if (now < room::kPirWarmupMs) {
-        std::snprintf(buf, sizeof(buf), "%lus", (room::kPirWarmupMs - now) / 1000UL);
-        draw_cell(kCellPir, true, buf, 0.0F, kCyan);
-    } else if (pir_motion) {
-        draw_cell(kCellPir, true, "YES", 1.0F, kAmber);
-    } else if (pir_ever_moved) {
-        const unsigned long age = (now - pir_last_motion_ms) / 1000UL;
-        std::snprintf(buf, sizeof(buf), "%lus", age > 999UL ? 999UL : age);
-        draw_cell(kCellPir, true, buf, 0.0F, kMuted);
-    } else {
-        draw_cell(kCellPir, false, "--", 0.0F, kMuted);
+    draw_motion_cell(now);
+    service_beeper();
+
+    publish_room_state(now, sht_ok, t_c, rh, veml_ok, lux, sds_fresh);
+
+    if (atmosmesh::room_mqtt_runtime_mqtt_up() != link_dots_shown_up ||
+        atmosmesh::room_mqtt_runtime_wifi_up() != link_dots_shown_wifi) {
+        draw_status_dots();
     }
 
     draw_heartbeat();
@@ -639,11 +844,20 @@ void loop() {
                                                          : "crc-rejected";
     Serial.printf(
         "room: t=%.1fC rh=%.1f%% lux=%.1f pm2.5=%.1f pm10=%.1f frames=%lu pir=%s(raw=%s) "
-        "sht=%s veml=%s pm=%s uptime=%lus\n",
+        "sht=%s veml=%s pm=%s link=%s uptime=%lus\n",
         static_cast<double>(sht_ok ? t_c : 0.0F), static_cast<double>(sht_ok ? rh : 0.0F),
         static_cast<double>(veml_ok ? lux : 0.0F), static_cast<double>(sds_fresh ? sds_pm25 : 0.0F),
         static_cast<double>(sds_fresh ? sds_pm10 : 0.0F), sds_frame_count,
         pir_motion ? "MOTION" : "clear", pir_raw_high ? "HIGH" : "LOW", sht_note,
         veml_ok ? "ok" : "error",
-        !sds_fresh ? "no-data" : (sds_warming ? "warming" : (alarm ? "HIGH" : "ok")), now / 1000UL);
+        !sds_fresh ? "no-data" : (sds_warming ? "warming" : (alarm ? "HIGH" : "ok")),
+        !atmosmesh::room_mqtt_runtime_enabled() ? "off"
+        : atmosmesh::room_mqtt_runtime_mqtt_up() ? "mqtt"
+        : atmosmesh::room_mqtt_runtime_wifi_up() ? "wifi-only"
+                                                 : "down",
+        now / 1000UL);
+
+    if (alarm_beep_due) {
+        beeper.start(room::kBeeperAlarmPulses, millis());
+    }
 }
