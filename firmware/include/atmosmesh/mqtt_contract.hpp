@@ -58,10 +58,25 @@ struct AquaMqttState {
     MqttReading water_adc_raw;
 };
 
+// AtmosMesh Room. Every reading carries valid/age_ms rather than a bare number: an SDS011 that
+// has stopped talking must reach Home Assistant as "unavailable", never as clean air, and a PIR
+// still inside its warm-up window must not publish "no motion" as though it were a measurement.
+struct RoomMqttState {
+    MqttReading temperature_c;
+    MqttReading humidity_pct;
+    MqttReading illuminance_lx;
+    MqttReading pm25;
+    MqttReading pm10;
+    MqttBoolReading motion;
+    // The same latch that drives the beeper, so an automation can react to what the room heard.
+    MqttBoolReading pm_alarm;
+};
+
 enum class MqttProductKind {
     AtmosMeshV1,
     AtmosMeshGroveV1_5,
     AtmosMeshAquaV1,
+    AtmosMeshRoomV1,
 };
 
 struct MqttProductContract {
@@ -91,9 +106,11 @@ struct MqttWillConfig {
 std::string mqtt_state_json(const MqttStationState& state);
 std::string grove_mqtt_state_json(const GroveMqttState& state);
 std::string aqua_mqtt_state_json(const AquaMqttState& state);
+std::string room_mqtt_state_json(const RoomMqttState& state);
 const MqttProductContract& mqtt_v1_contract();
 const MqttProductContract& mqtt_grove_contract();
 const MqttProductContract& mqtt_aqua_contract();
+const MqttProductContract& mqtt_room_contract();
 MqttWillConfig mqtt_will_config(const MqttProductContract& contract);
 std::string mqtt_discovery_device_json();
 std::string mqtt_discovery_device_json(const MqttProductContract& contract);

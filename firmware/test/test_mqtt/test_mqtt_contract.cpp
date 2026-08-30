@@ -452,6 +452,132 @@ void test_aqua_session_replays_retained_discovery_and_availability_on_reconnect(
     TEST_ASSERT_FALSE(actions[4].retained);
 }
 
+void test_room_contract_uses_stable_ids_and_separate_topics() {
+    const auto& contract = atmosmesh::mqtt_room_contract();
+    TEST_ASSERT_EQUAL(atmosmesh::MqttProductKind::AtmosMeshRoomV1, contract.kind);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-room-v1", contract.product_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-room-0001", contract.station_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh_room_0001", contract.discovery_node);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-room-0001/state", contract.state_topic);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-room-0001/availability",
+                             contract.availability_topic);
+    // Sharing a topic with another station would let two boards overwrite each other's readings.
+    TEST_ASSERT_NOT_EQUAL(0, std::string(contract.state_topic)
+                                 .compare(atmosmesh::mqtt_v1_contract().state_topic));
+    TEST_ASSERT_NOT_EQUAL(0, std::string(contract.state_topic)
+                                 .compare(atmosmesh::mqtt_aqua_contract().state_topic));
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_room(contract.state_topic));
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(contract.state_topic));
+}
+
+void test_room_will_is_retained_offline_on_product_availability_topic() {
+    const auto will = atmosmesh::mqtt_will_config(atmosmesh::mqtt_room_contract());
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-room-0001/availability", will.topic);
+    TEST_ASSERT_EQUAL_STRING("offline", will.payload);
+    TEST_ASSERT_TRUE(will.retained);
+    // The v1 topic here would mark a different station dead whenever the room board dropped.
+    TEST_ASSERT_NOT_EQUAL(0, std::string(will.topic).compare(atmosmesh::kMqttAvailabilityTopic));
+}
+
+void test_room_state_marks_missing_particulates_invalid_rather_than_clean_air() {
+    atmosmesh::RoomMqttState state{};
+    state.temperature_c = {21.5F, true, 100};
+    state.humidity_pct = {44.0F, true, 100};
+    state.illuminance_lx = {318.0F, true, 100};
+    state.pm25.valid = false;   // sensor silent
+    state.pm25.age_ms = 9000;
+    state.pm10.valid = false;
+    state.pm10.age_ms = 9000;
+    state.motion = {false, true, 45000};
+    state.pm_alarm = {false, false, 9000};
+
+    const std::string json = atmosmesh::room_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                          json.find("\"station_id\":\"atmosmesh-room-0001\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                          json.find("\"product_id\":\"atmosmesh-room-v1\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"value\":21.5"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"unit\":\"lx\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"unit\":\"ug/m3\""));
+    // A silent SDS011 carries no value at all. A zero here would read in Home Assistant as
+    // perfectly clean air, which is the opposite of what is known.
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"pm25\":{\"value\""));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"pm10\":{\"value\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"pm25\":{\"unit\":\"ug/m3\",\"valid\":false"));
+    // Motion is a measured false here, so it does carry a value.
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"motion\":{\"value\":false"));
+    // The alarm latch has never seen a sample, so it carries none.
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"pm_alarm\":{\"valid\":false"));
+}
+
+void test_room_discovery_is_the_room_entity_set_not_the_v1_fallthrough() {
+    const auto& contract = atmosmesh::mqtt_room_contract();
+    const std::size_t count = atmosmesh::mqtt_discovery_config_count(contract);
+    TEST_ASSERT_EQUAL_INT(7, static_cast<int>(count));
+
+    bool saw_illuminance = false;
+    bool saw_motion = false;
+    bool saw_pm_alarm = false;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto cfg = atmosmesh::mqtt_discovery_config_at(contract, i);
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.topic.find("atmosmesh_room_0001"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                              cfg.payload.find("home/air/atmosmesh-room-0001/state"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                              cfg.payload.find("\"unique_id\":\"atmosmesh-room-0001_"));
+        // The v1 spec list leaked here before discovery_specs() became an exhaustive switch.
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("bmp_temperature"));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("gas_index"));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("\"hPa\""));
+        if (std::string(cfg.object_id) == "illuminance_lx") {
+            saw_illuminance = true;
+            TEST_ASSERT_EQUAL_STRING("sensor", cfg.component);
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"illuminance\""));
+        }
+        if (std::string(cfg.object_id) == "motion") {
+            saw_motion = true;
+            TEST_ASSERT_EQUAL_STRING("binary_sensor", cfg.component);
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"occupancy\""));
+        }
+        if (std::string(cfg.object_id) == "pm_alarm") {
+            saw_pm_alarm = true;
+            TEST_ASSERT_EQUAL_STRING("binary_sensor", cfg.component);
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"problem\""));
+        }
+        // Every room template must go unavailable rather than report a number, on invalid.
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("valid"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("none"));
+    }
+    TEST_ASSERT_TRUE(saw_illuminance);
+    TEST_ASSERT_TRUE(saw_motion);
+    TEST_ASSERT_TRUE(saw_pm_alarm);
+}
+
+void test_room_session_replays_retained_discovery_and_availability_on_reconnect() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_use_contract(session, atmosmesh::mqtt_room_contract());
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::RoomMqttState state{};
+    state.temperature_c = {21.0F, true, 0};
+    atmosmesh::mqtt_session_queue_payload(session, atmosmesh::room_mqtt_state_json(state));
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 0);
+    TEST_ASSERT_EQUAL_INT(9, static_cast<int>(actions.size()));
+    for (std::size_t i = 0; i < 7; ++i) {
+        TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions[i].kind);
+        TEST_ASSERT_TRUE(actions[i].retained);
+    }
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
+                      actions[7].kind);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-room-0001/availability", actions[7].topic.c_str());
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[8].kind);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-room-0001/state", actions[8].topic.c_str());
+    TEST_ASSERT_FALSE(actions[8].retained);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_mqtt_ids_and_topics_are_station_not_room);
@@ -473,5 +599,10 @@ int main() {
     RUN_TEST(test_aqua_state_omits_missing_readings_and_never_carries_pressure);
     RUN_TEST(test_aqua_discovery_has_exactly_three_entities_and_no_pressure);
     RUN_TEST(test_aqua_session_replays_retained_discovery_and_availability_on_reconnect);
+    RUN_TEST(test_room_contract_uses_stable_ids_and_separate_topics);
+    RUN_TEST(test_room_will_is_retained_offline_on_product_availability_topic);
+    RUN_TEST(test_room_state_marks_missing_particulates_invalid_rather_than_clean_air);
+    RUN_TEST(test_room_discovery_is_the_room_entity_set_not_the_v1_fallthrough);
+    RUN_TEST(test_room_session_replays_retained_discovery_and_availability_on_reconnect);
     return UNITY_END();
 }

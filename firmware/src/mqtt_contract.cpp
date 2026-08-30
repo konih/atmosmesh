@@ -60,6 +60,29 @@ constexpr DiscoverySpec kAquaDiscoverySpecs[] = {
      "{{ value_json.water_adc_raw | default(none) }}"},
 };
 
+// Room uses the nested {value, valid, age_ms} shape and the `if valid else none` template, not
+// grove/aqua's flat `| default(none)`. A missing SDS011 frame or an un-warmed PIR has to arrive
+// in Home Assistant as unavailable; `default(none)` cannot express the difference between a
+// reading of zero and no reading at all.
+constexpr DiscoverySpec kRoomDiscoverySpecs[] = {
+    {"sensor", "temperature_c", "Temperature", "temperature", "\u00B0C",
+     "{{ value_json.temperature_c.value if value_json.temperature_c.valid else none }}"},
+    {"sensor", "humidity_pct", "Humidity", "humidity", "%",
+     "{{ value_json.humidity_pct.value if value_json.humidity_pct.valid else none }}"},
+    {"sensor", "illuminance_lx", "Illuminance", "illuminance", "lx",
+     "{{ value_json.illuminance_lx.value if value_json.illuminance_lx.valid else none }}"},
+    {"sensor", "pm25", "PM2.5", "pm25", "\u00B5g/m\u00B3",
+     "{{ value_json.pm25.value if value_json.pm25.valid else none }}"},
+    {"sensor", "pm10", "PM10", "pm10", "\u00B5g/m\u00B3",
+     "{{ value_json.pm10.value if value_json.pm10.valid else none }}"},
+    {"binary_sensor", "motion", "Motion", "occupancy", nullptr,
+     "{{ 'ON' if value_json.motion.valid and value_json.motion.value else "
+     "('OFF' if value_json.motion.valid else none) }}"},
+    {"binary_sensor", "pm_alarm", "Particulates High", "problem", nullptr,
+     "{{ 'ON' if value_json.pm_alarm.valid and value_json.pm_alarm.value else "
+     "('OFF' if value_json.pm_alarm.valid else none) }}"},
+};
+
 constexpr MqttProductContract kV1Contract{
     MqttProductKind::AtmosMeshV1,
     kMqttDeviceId,
@@ -90,18 +113,38 @@ constexpr MqttProductContract kAquaContract{
     "home/air/atmosmesh-aqua-0001/availability",
 };
 
+constexpr MqttProductContract kRoomContract{
+    MqttProductKind::AtmosMeshRoomV1,
+    "atmosmesh-room-v1",
+    "atmosmesh-room-0001",
+    "atmosmesh_room_0001",
+    "AtmosMesh Room 0001",
+    "home/air/atmosmesh-room-0001/state",
+    "home/air/atmosmesh-room-0001/availability",
+};
+
 struct DiscoverySpecRange {
     const DiscoverySpec* specs;
     std::size_t count;
 };
 
+// An exhaustive switch with no default, on purpose. The if-chain this replaces fell through to
+// the v1 spec list for any unhandled kind, so a product added without its own branch published
+// v1's entities -- pressure, bmp_temperature, gas_index -- under its own topics, with no error
+// anywhere. Under -Wall a missing enumerator is now a compiler warning instead.
 DiscoverySpecRange discovery_specs(const MqttProductContract& contract) {
-    if (contract.kind == MqttProductKind::AtmosMeshGroveV1_5) {
-        return {kGroveDiscoverySpecs,
-                sizeof(kGroveDiscoverySpecs) / sizeof(kGroveDiscoverySpecs[0])};
-    }
-    if (contract.kind == MqttProductKind::AtmosMeshAquaV1) {
-        return {kAquaDiscoverySpecs, sizeof(kAquaDiscoverySpecs) / sizeof(kAquaDiscoverySpecs[0])};
+    switch (contract.kind) {
+        case MqttProductKind::AtmosMeshGroveV1_5:
+            return {kGroveDiscoverySpecs,
+                    sizeof(kGroveDiscoverySpecs) / sizeof(kGroveDiscoverySpecs[0])};
+        case MqttProductKind::AtmosMeshAquaV1:
+            return {kAquaDiscoverySpecs,
+                    sizeof(kAquaDiscoverySpecs) / sizeof(kAquaDiscoverySpecs[0])};
+        case MqttProductKind::AtmosMeshRoomV1:
+            return {kRoomDiscoverySpecs,
+                    sizeof(kRoomDiscoverySpecs) / sizeof(kRoomDiscoverySpecs[0])};
+        case MqttProductKind::AtmosMeshV1:
+            break;
     }
     return {kV1DiscoverySpecs, sizeof(kV1DiscoverySpecs) / sizeof(kV1DiscoverySpecs[0])};
 }
@@ -222,6 +265,20 @@ std::string aqua_mqtt_state_json(const AquaMqttState& state) {
     return out;
 }
 
+std::string room_mqtt_state_json(const RoomMqttState& state) {
+    std::string out = "{\"station_id\":\"atmosmesh-room-0001\",";
+    out += "\"product_id\":\"atmosmesh-room-v1\"";
+    append_reading(out, "temperature_c", state.temperature_c, "C", true);
+    append_reading(out, "humidity_pct", state.humidity_pct, "%", true);
+    append_reading(out, "illuminance_lx", state.illuminance_lx, "lx", true);
+    append_reading(out, "pm25", state.pm25, "ug/m3", true);
+    append_reading(out, "pm10", state.pm10, "ug/m3", true);
+    append_bool_reading(out, "motion", state.motion, true);
+    append_bool_reading(out, "pm_alarm", state.pm_alarm, true);
+    out += '}';
+    return out;
+}
+
 const MqttProductContract& mqtt_v1_contract() {
     return kV1Contract;
 }
@@ -232,6 +289,10 @@ const MqttProductContract& mqtt_grove_contract() {
 
 const MqttProductContract& mqtt_aqua_contract() {
     return kAquaContract;
+}
+
+const MqttProductContract& mqtt_room_contract() {
+    return kRoomContract;
 }
 
 MqttWillConfig mqtt_will_config(const MqttProductContract& contract) {
