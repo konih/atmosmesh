@@ -15,6 +15,7 @@ for an unfinished MVP story.
 | 8 | [RLS-08](stories/RLS-08.md) | Blocked | P0 | RLS-01–RLS-07 | Safe 48-hour unattended run |
 | — | [RLS-09](stories/RLS-09.md) | Optional | P3 | Confirmed NDIR sensor, RLS-08 | True CO₂ measurement |
 | — | [RLS-10](stories/RLS-10.md) | Optional | P3 | RLS-08 | Evaluate 480×320 TFT separately |
+| — | [RLS-11](stories/RLS-11.md) | Ready | P1 | Physical `atmosmesh-0001` disassembled | Archive AtmosMesh v1 code and live mentions |
 
 ## AtmosMesh Grove v1.5 variant
 
@@ -33,6 +34,7 @@ the order or completion state of the RLS MVP above.
 | V1.5-7 | [V15-07](stories/V15-07.md) | Blocked | P1 | Operator visual confirmation | Descriptive four-row Grove OLED page |
 | V1.5-8 | [V15-08](stories/V15-08.md) | Blocked | P1 | Independent review + operator visual evidence | Reversible OLED/LED visual diagnostic image |
 | V1.5-9 | [V15-09](stories/V15-09.md) | Blocked | P1 | Operator visual confirmation + controlled dry/wet evidence | Calibration-safe soil/system status LED |
+| V1.5-10 | [V15-10](stories/V15-10.md) | Ready | P1 | Serial `soil-led-status` while stuck | Grove LED reaches green when healthy; red/amber only for real faults |
 
 ## AtmosMesh Aqua variant
 
@@ -42,6 +44,17 @@ probe). Its work does not change the order or completion state of the RLS MVP or
 | Order | Story | Status | Priority | Depends on | Outcome |
 | ---: | --- | --- | --- | --- | --- |
 | Aqua-1 | [AQ-01](stories/AQ-01.md) | In flight | P2 | ADR-0001, D-019/ADR-0002 | Aqua product composition root, host-tested, build-verified, independently reviewed and merged to `main`; hardware wiring/flashing blocked on photo evidence |
+
+## Field corrections (multi-product)
+
+Logged 2026-08-31 from live hardware. These do not rewrite the MVP order above.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| F-1 | [ENV-01](stories/ENV-01.md) | Ready | P1 | Paired enclosed vs outside reference readings | Grove + Aqua temps stop reading enclosure heat as ambient (relocate/vent/replace; offset only if labeled) |
+| F-2 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT `motion` | Room occupancy polarity matches real presence |
+| F-3 | [V15-10](stories/V15-10.md) | Ready | P1 | (also listed under Grove) | Grove LED not stuck red/amber |
+| F-4 | [RLS-11](stories/RLS-11.md) | Ready | P1 | (also listed under RLS) | Disassembled `atmosmesh-0001` archived |
 
 ## AtmosMesh Room variant
 
@@ -55,6 +68,7 @@ MVP order.
 | Room-2 | [ROOM-02](stories/ROOM-02.md) | Blocked | P1 | ROOM-01 + VIN and 5 V budget measurements | SDS011 with crossed, series-protected UART and a diodeless default-open 5 V rail |
 | Room-3 | [ROOM-03](stories/ROOM-03.md) | Ready to solder | P1 | ROOM-01, ROOM-02 | 31×27 perfboard build plan with its own mutation-proved gate; the KiCad PCB is parked |
 | Room-4 | [ROOM-04](stories/ROOM-04.md) | Proposed | P2 | ROOM-02, ROOM-03 | Firmware duty-cycling via the SDS011's own hibernation command; the MOSFET switch was rejected on topology (D-030) |
+| Room-5 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT occupancy inverted | Flip PIR polarity so MQTT matches presence |
 
 ## Milestones
 
