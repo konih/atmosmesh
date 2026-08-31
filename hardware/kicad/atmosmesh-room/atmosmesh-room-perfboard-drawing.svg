@@ -1,0 +1,301 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1850" viewBox="0 0 2400 1850" role="img" aria-labelledby="title desc">
+  <title id="title">AtmosMesh Room perfboard planning drawing</title>
+  <desc id="desc">Front component view, mirrored back copper view, and readable wiring diagram for the provisional 31 by 27 hole AtmosMesh Room perfboard.</desc>
+  <defs>
+    <pattern id="holes" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="4.1" fill="#d6b86f" stroke="#6b531f" stroke-width="1.2"/>
+      <circle cx="11" cy="11" r="1.8" fill="#fbfaf6"/>
+    </pattern>
+    <pattern id="holesBack" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="4.2" fill="#c98d42" stroke="#6d421e" stroke-width="1.2"/>
+      <circle cx="11" cy="11" r="1.8" fill="#fff7e5"/>
+    </pattern>
+    <style>
+      .bg{fill:#f5f7f9}.panel{fill:white;stroke:#243746;stroke-width:2}.board{fill:#efe1b6;stroke:#5d4b25;stroke-width:3}
+      .boardBack{fill:#dfb169;stroke:#603d1d;stroke-width:3}.h1{font:700 40px system-ui,sans-serif;fill:#102a43}
+      .h2{font:700 25px system-ui,sans-serif;fill:#102a43}.h3{font:700 19px system-ui,sans-serif;fill:#102a43}
+      .label{font:600 15px system-ui,sans-serif;fill:#102a43}.small{font:500 12px system-ui,sans-serif;fill:#243746}
+      .tiny{font:600 10px system-ui,sans-serif;fill:#243746}.warn{font:700 17px system-ui,sans-serif;fill:#8f1d14}
+      .note{font:500 14px system-ui,sans-serif;fill:#334e68}.part{fill:#e6edf3;stroke:#334e68;stroke-width:2}
+      .sensor{fill:#d9f0e5;stroke:#24704a;stroke-width:2}.five{fill:#ffe3e0;stroke:#a6372d;stroke-width:2}
+      .ctrl{fill:#243746;stroke:#102a43;stroke-width:2}.socket{fill:#202124;stroke:#000;stroke-width:1.5}
+      .pad{fill:#e8c248;stroke:#3d3315;stroke-width:1}.nc{fill:#f2d7d5;stroke:#a6372d;stroke-width:1.5}
+      .wire3{fill:none;stroke:#d83a52;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}.wireg{fill:none;stroke:#1c2833;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+      .wiresda{fill:none;stroke:#007a78;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}.wirescl{fill:none;stroke:#6542a6;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+      .wire5{fill:none;stroke:#f08c00;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}.wirepir{fill:none;stroke:#1874c8;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+      .wireuart{fill:none;stroke:#9c36b5;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}.wirebeep{fill:none;stroke:#008f5a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+      .dash{stroke-dasharray:10 8}.junction{fill:#102a43}.box{fill:#f8fafc;stroke:#486581;stroke-width:2;rx:8}
+      .danger{fill:#fff0ed;stroke:#c0392b;stroke-width:2}.ok{fill:#e7f6ed;stroke:#2b7a4b;stroke-width:2}
+      .cap{fill:#fffdf7;stroke:#76520e;stroke-width:2}.capline{fill:none;stroke:#76520e;stroke-width:4;stroke-linecap:round}
+      .cappos{font:800 17px system-ui,sans-serif;fill:#b32139}
+    </style>
+  </defs>
+
+  <rect class="bg" width="2400" height="1600"/>
+  <text class="h1" x="50" y="58">AtmosMesh Room — 31 × 27 hole perfboard</text>
+  <text class="warn" x="50" y="92">PLANNING DRAWING — DO NOT ENERGISE. Dry-fit the Ideaspark board first; row spacing must be exactly 10 pitches.</text>
+  <text class="note" x="50" y="121">Component-side coordinates are authoritative. The copper view is deliberately mirrored. Check every connector by printed pin name.</text>
+
+  <!-- FRONT PANEL -->
+  <rect class="panel" x="35" y="150" width="1140" height="760" rx="14"/>
+  <text class="h2" x="60" y="190">FRONT / COMPONENT SIDE</text>
+  <text class="note" x="420" y="190">USB points toward column 1 (left)</text>
+  <g transform="translate(65,220)">
+    <rect class="board" x="0" y="0" width="722" height="634" rx="8"/>
+    <rect x="20" y="20" width="682" height="594" fill="url(#holes)"/>
+    <!-- zones -->
+    <rect x="20" y="20" width="352" height="154" fill="#bfe5d2" opacity=".38"/>
+    <rect x="20" y="416" width="352" height="198" fill="#ccefea" opacity=".38"/>
+    <rect x="372" y="20" width="176" height="132" fill="#ffdf9a" opacity=".46"/>
+    <rect x="372" y="174" width="176" height="154" fill="#d7f0e3" opacity=".42"/>
+    <rect x="372" y="328" width="176" height="286" fill="#f9c97c" opacity=".34"/>
+    <rect x="548" y="20" width="154" height="132" fill="#ffe0a8" opacity=".5"/>
+    <rect x="548" y="328" width="154" height="286" fill="#f5a57f" opacity=".34"/>
+
+    <!-- coordinate labels -->
+    <text class="small" x="20" y="-7">C1</text><text class="small" x="342" y="-7">C16</text><text class="small" x="675" y="-7">C31</text>
+    <text class="small" x="-29" y="34">R1</text><text class="small" x="-34" y="188">R8</text><text class="small" x="-40" y="408">R18</text><text class="small" x="-40" y="612">R27</text>
+
+    <!-- U1 body and sockets -->
+    <rect class="ctrl" x="42" y="174" width="308" height="220" rx="12"/>
+    <rect x="73" y="196" width="246" height="150" rx="7" fill="#111820"/>
+    <text x="196" y="264" text-anchor="middle" font-family="system-ui,sans-serif" font-size="24" font-weight="700" fill="white">U1 IDEASPARK</text>
+    <text x="196" y="294" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" fill="#c8d5df">ESP32 + 1.14″ TFT</text>
+    <rect x="42" y="251" width="25" height="66" fill="#b8c2cc"/><text class="tiny" x="46" y="286" transform="rotate(-90 46 286)">USB ←</text>
+    <rect class="socket" x="42" y="166" width="308" height="17" rx="3"/>
+    <rect class="socket" x="42" y="386" width="308" height="17" rx="3"/>
+    <g fill="#f0c94f">
+      <circle cx="53" cy="174" r="5"/><circle cx="75" cy="174" r="5"/><circle cx="97" cy="174" r="5"/><circle cx="119" cy="174" r="5"/><circle cx="141" cy="174" r="5"/><circle cx="163" cy="174" r="5"/><circle cx="185" cy="174" r="5"/><circle cx="207" cy="174" r="5"/><circle cx="229" cy="174" r="5"/><circle cx="251" cy="174" r="5"/><circle cx="273" cy="174" r="5"/><circle cx="295" cy="174" r="5"/><circle cx="317" cy="174" r="5"/><circle cx="339" cy="174" r="5"/><circle cx="361" cy="174" r="5"/>
+      <circle cx="53" cy="394" r="5"/><circle cx="75" cy="394" r="5"/><circle cx="97" cy="394" r="5"/><circle cx="119" cy="394" r="5"/><circle cx="141" cy="394" r="5"/><circle cx="163" cy="394" r="5"/><circle cx="185" cy="394" r="5"/><circle cx="207" cy="394" r="5"/><circle cx="229" cy="394" r="5"/><circle cx="251" cy="394" r="5"/><circle cx="273" cy="394" r="5"/><circle cx="295" cy="394" r="5"/><circle cx="317" cy="394" r="5"/><circle cx="339" cy="394" r="5"/><circle cx="361" cy="394" r="5"/>
+    </g>
+    <text class="tiny" x="43" y="160">1 VIN</text><text class="tiny" x="43" y="419">16 3V3</text>
+    <text class="tiny" x="175" y="160">8 GPIO25</text><text class="tiny" x="194" y="419">23 GPIO5</text>
+    <text class="tiny" x="214" y="160">9 GPIO33</text><text class="tiny" x="257" y="419">26 GPIO21</text>
+    <text class="tiny" x="320" y="419">29 GPIO22</text>
+
+    <!-- edge modules -->
+    <rect class="sensor" x="35" y="40" width="178" height="78" rx="8"/>
+    <text class="h3" x="47" y="64">J_VEML · lux</text><text class="small" x="47" y="86">VIN · 3Vo NC · GND</text><text class="small" x="47" y="105">SCL · SDA</text>
+    <rect class="part" x="232" y="41" width="118" height="76" rx="7"/><text class="label" x="244" y="66">I²C protect</text><text class="small" x="244" y="88">330R ×2</text><text class="small" x="244" y="106">3k3 PU ×2</text>
+    <rect class="cap" x="124" y="125" width="89" height="30" rx="6"/><text class="tiny" x="136" y="145">C3 · 100n</text>
+    <rect class="sensor" x="35" y="482" width="178" height="76" rx="8"/>
+    <text class="h3" x="47" y="507">J_SHT · T/RH</text><text class="small" x="47" y="530">VIN · GND · SCL · SDA</text><text class="small" x="47" y="548">keep at ventilated edge</text>
+    <rect class="part" x="230" y="469" width="128" height="104" rx="7"/><text class="label" x="242" y="493">Test points</text><text class="small" x="242" y="515">3V3 · 5V · GND</text><text class="small" x="242" y="535">SDA · SCL</text><text class="small" x="242" y="555">+ C1 / C2</text>
+    <rect class="cap" x="35" y="568" width="88" height="30" rx="6"/><text class="tiny" x="47" y="588">C4 · 100n</text>
+    <rect class="cap" x="133" y="568" width="91" height="30" rx="6"/><text class="tiny" x="145" y="588">C1 · 100n</text>
+    <rect class="cap" x="234" y="578" width="116" height="30" rx="6"/><text class="tiny" x="244" y="598">+ C2 · 100µ</text>
+
+    <!-- right blocks -->
+    <rect class="five" x="390" y="45" width="140" height="76" rx="8"/><text class="h3" x="403" y="69">5 V SELECT</text><text class="small" x="403" y="91">VIN ◀ JP ▶ EXT</text><text class="tiny" x="403" y="109">ONE SHUNT ONLY</text>
+    <rect class="sensor" x="392" y="198" width="136" height="80" rx="8"/><text class="h3" x="404" y="222">J_BEEP</text><text class="small" x="404" y="244">S · VCC · −</text><text class="small" x="404" y="263">GPIO25 via 100R</text>
+    <rect class="five" x="390" y="386" width="145" height="158" rx="8"/><text class="h3" x="402" y="410">SDS011</text><text class="small" x="402" y="433">JP_SDS OPEN</text><text class="small" x="402" y="454">5V · GND</text><text class="small" x="402" y="475">RXD ← GPIO17</text><text class="small" x="402" y="496">TXD → GPIO16</text><text class="small" x="402" y="518">1k on each UART</text><text class="tiny" x="402" y="536">MODULE ORDER UNCONFIRMED</text>
+    <rect class="five" x="563" y="386" width="125" height="158" rx="8"/><text class="h3" x="575" y="410">D-SUN PIR</text><text class="small" x="575" y="433">GND · OUT · VCC</text><text class="small" x="575" y="454">JP_PIR OPEN</text><text class="small" x="575" y="475">1N5819 power</text><text class="small" x="575" y="496">2N3904 interface</text><text class="small" x="575" y="517">GPIO33 active LOW</text>
+    <rect class="cap" x="390" y="552" width="145" height="40" rx="6"/><text class="tiny" x="400" y="569">+ C6 · 470µ</text><text class="tiny" x="400" y="585">C7 · 100n</text>
+    <rect class="cap" x="563" y="552" width="125" height="40" rx="6"/><text class="tiny" x="575" y="576">+ C5 · 100µ</text>
+    <rect class="part" x="565" y="43" width="122" height="84" rx="8"/><text class="h3" x="577" y="67">STATUS</text><circle cx="585" cy="91" r="8" fill="#e53935"/><circle cx="620" cy="91" r="8" fill="#43a047"/><circle cx="655" cy="91" r="8" fill="#f9a825"/><text class="tiny" x="574" y="116">3V3 · SDS · PIR</text>
+
+    <text class="tiny" x="25" y="603">LIGHT EDGE</text><text class="tiny" x="390" y="603">SDS 5 V DOMAIN</text><text class="tiny" x="565" y="603">PIR 5 V DOMAIN</text>
+  </g>
+
+  <!-- front legend -->
+  <g transform="translate(820,230)">
+    <rect class="danger" x="0" y="0" width="325" height="155" rx="10"/>
+    <text class="h3" x="18" y="30">NEVER WIRE THESE U1 PINS</text>
+    <text class="label" x="18" y="58">TFT: GPIO23 / 18 / 15 / 2 / 4 / 32</text>
+    <text class="label" x="18" y="84">Flash strap: GPIO12</text>
+    <text class="label" x="18" y="110">USB UART: GPIO1 / GPIO3</text>
+    <text class="label" x="18" y="136">Reset: EN</text>
+    <rect class="ok" x="0" y="175" width="325" height="207" rx="10"/>
+    <text class="h3" x="18" y="205">USED CONTROLLER PINS</text>
+    <text class="label" x="18" y="235">GPIO21 → SDA through 330 Ω</text>
+    <text class="label" x="18" y="263">GPIO22 → SCL through 330 Ω</text>
+    <text class="label" x="18" y="291">GPIO25 → buzzer S through 100 Ω</text>
+    <text class="label" x="18" y="319">GPIO33 ← PIR NPN collector</text>
+    <text class="label" x="18" y="347">GPIO16 ← SDS011 TXD through 1 kΩ</text>
+    <text class="label" x="18" y="375">GPIO17 → SDS011 RXD through 1 kΩ</text>
+    <rect class="box" x="0" y="402" width="325" height="182" rx="10"/>
+    <text class="h3" x="18" y="432">FRONT-VIEW RULE</text>
+    <text class="note" x="18" y="460">Columns 1 → 31 run left to right.</text>
+    <text class="note" x="18" y="486">Rows 1 → 27 run top to bottom.</text>
+    <text class="note" x="18" y="512">U1 rows: R8 and R18.</text>
+    <text class="note" x="18" y="538">U1 columns: C2 through C16.</text>
+    <text class="warn" x="18" y="569">Measure before soldering sockets.</text>
+  </g>
+
+  <!-- BACK PANEL -->
+  <rect class="panel" x="1195" y="150" width="1170" height="760" rx="14"/>
+  <text class="h2" x="1220" y="190">BACK / COPPER SIDE — MIRRORED</text>
+  <text class="warn" x="1705" y="190">LEFT EDGE IS C31, NOT C1</text>
+  <g transform="translate(1225,220)">
+    <rect class="boardBack" x="0" y="0" width="722" height="634" rx="8"/>
+    <rect x="20" y="20" width="682" height="594" fill="url(#holesBack)"/>
+    <text class="small" x="20" y="-7">C31</text><text class="small" x="342" y="-7">C16</text><text class="small" x="675" y="-7">C1</text>
+    <text class="small" x="-29" y="34">R1</text><text class="small" x="-34" y="188">R8</text><text class="small" x="-40" y="408">R18</text><text class="small" x="-40" y="612">R27</text>
+
+    <!-- protected physical route corridors, mirrored from component view -->
+    <path class="wireg" d="M35 585 H687 M95 585 V420 M655 585 V390"/>
+    <path class="wire3" d="M85 555 H350 V410 M350 410 H665 V80"/>
+    <path class="wiresda" d="M410 394 V100 H610 M410 394 H510 V520 H625"/>
+    <path class="wirescl" d="M344 394 V122 H588 M344 394 H486 V542 H603"/>
+    <path class="wirebeep" d="M520 174 V248 H305"/>
+    <path class="wirepir" d="M498 174 V486 H90"/>
+    <path class="wireuart" d="M388 394 V470 H270 M366 394 V495 H270"/>
+    <path class="wire5" d="M270 84 H120 V420 M120 420 H260 M120 420 H70"/>
+
+    <!-- via/joint labels -->
+    <g><circle class="junction" cx="410" cy="394" r="7"/><circle class="junction" cx="344" cy="394" r="7"/><circle class="junction" cx="520" cy="174" r="7"/><circle class="junction" cx="498" cy="174" r="7"/><circle class="junction" cx="388" cy="394" r="7"/><circle class="junction" cx="366" cy="394" r="7"/></g>
+    <rect x="270" y="70" width="150" height="64" fill="#fff7e3" stroke="#8a5a00" stroke-width="2" rx="8"/><text class="label" x="282" y="94">JP_5V_SRC</text><text class="small" x="282" y="116">exactly one shunt</text>
+    <rect x="565" y="61" width="111" height="86" fill="#e3f5ec" stroke="#24704a" stroke-width="2" rx="8"/><text class="label" x="576" y="86">I²C edge</text><text class="small" x="576" y="108">VEML + PU</text><text class="small" x="576" y="129">SDA / SCL</text>
+    <rect x="262" y="225" width="113" height="62" fill="#e3f5ec" stroke="#24704a" stroke-width="2" rx="8"/><text class="label" x="274" y="250">J_BEEP</text><text class="small" x="274" y="272">S / 3V3 / GND</text>
+    <rect x="215" y="438" width="126" height="93" fill="#ffe7d1" stroke="#b35b00" stroke-width="2" rx="8"/><text class="label" x="227" y="462">J_SDS</text><text class="small" x="227" y="483">5V / GND</text><text class="small" x="227" y="504">RXD / TXD</text><text class="tiny" x="227" y="522">verify order</text>
+    <rect x="40" y="438" width="132" height="93" fill="#ffe0dc" stroke="#a6372d" stroke-width="2" rx="8"/><text class="label" x="52" y="462">J_PIR</text><text class="small" x="52" y="483">GND / OUT / VCC</text><text class="small" x="52" y="504">active-low NPN</text>
+    <rect x="564" y="493" width="116" height="76" fill="#e3f5ec" stroke="#24704a" stroke-width="2" rx="8"/><text class="label" x="576" y="518">J_SHT</text><text class="small" x="576" y="540">3V3/GND</text><text class="small" x="576" y="558">SCL/SDA</text>
+
+    <rect x="330" y="160" width="210" height="250" fill="none" stroke="#5a3518" stroke-width="3" stroke-dasharray="7 6"/>
+    <text class="label" x="347" y="206">U1 SOCKET AREA</text>
+    <text class="small" x="347" y="229">seen from solder side</text>
+    <text class="warn" x="347" y="255">pin order is mirrored</text>
+    <text class="small" x="347" y="282">Do not count from this side.</text>
+    <text class="small" x="347" y="304">Return to the front view,</text>
+    <text class="small" x="347" y="326">identify the printed pin name,</text>
+    <text class="small" x="347" y="348">then continuity-check the joint.</text>
+
+    <text class="tiny" x="32" y="605">BLACK = GND</text><text class="tiny" x="145" y="605" fill="#8f1d14">RED = 3V3</text><text class="tiny" x="252" y="605" fill="#8a5200">ORANGE = 5V</text><text class="tiny" x="383" y="605" fill="#006f6b">TEAL/PURPLE = I²C</text><text class="tiny" x="556" y="605" fill="#6f2380">PURPLE = UART</text>
+  </g>
+  <g transform="translate(1975,230)">
+    <rect class="danger" x="0" y="0" width="360" height="175" rx="10"/>
+    <text class="h3" x="18" y="31">COPPER-SIDE CHECKLIST</text>
+    <text class="label" x="18" y="62">1. Power removed; both 5 V jumpers open.</text>
+    <text class="label" x="18" y="91">2. No solder bridges between adjacent pads.</text>
+    <text class="label" x="18" y="120">3. 5 V has no continuity to 3V3/GPIO.</text>
+    <text class="label" x="18" y="149">4. Check every route end by pin name.</text>
+    <rect class="box" x="0" y="195" width="360" height="202" rx="10"/>
+    <text class="h3" x="18" y="226">ROUTE CORRIDOR KEY</text>
+    <path class="wireg" d="M22 252 H82"/><text class="label" x="99" y="258">GND return</text>
+    <path class="wire3" d="M22 282 H82"/><text class="label" x="99" y="288">3.3 V only</text>
+    <path class="wire5" d="M22 312 H82"/><text class="label" x="99" y="318">5 V fenced domain</text>
+    <path class="wiresda" d="M22 342 H82"/><text class="label" x="99" y="348">SDA / signal</text>
+    <path class="wireuart" d="M22 372 H82"/><text class="label" x="99" y="378">UART crossed pair</text>
+    <rect class="danger" x="0" y="417" width="360" height="163" rx="10"/>
+    <text class="h3" x="18" y="449">IMPORTANT</text>
+    <text class="note" x="18" y="478">These colored lines are route corridors,</text>
+    <text class="note" x="18" y="502">not an exact hole-to-hole solder map.</text>
+    <text class="note" x="18" y="526">The logical diagram below is the</text>
+    <text class="note" x="18" y="550">connection authority.</text>
+  </g>
+
+  <!-- WIRING DIAGRAM -->
+  <rect class="panel" x="35" y="935" width="2330" height="625" rx="14"/>
+  <text class="h2" x="60" y="978">READABLE WIRING DIAGRAM — NETS AND PROTECTION</text>
+  <text class="note" x="720" y="978">Connector labels are listed in physical pin order. “OPEN” means no shunt fitted.</text>
+
+  <!-- rails -->
+  <path class="wire3" d="M105 1030 H2185"/><text class="label" x="65" y="1036" fill="#b32139">3V3</text>
+  <path class="wireg" d="M105 1515 H2185"/><text class="label" x="65" y="1521">GND</text>
+
+  <!-- ESP block -->
+  <rect class="ctrl" x="85" y="1090" width="285" height="330" rx="12"/>
+  <text x="227" y="1123" text-anchor="middle" font-family="system-ui,sans-serif" font-size="21" font-weight="700" fill="white">U1 IDEASPARK ESP32</text>
+  <text x="227" y="1148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#d9e2ec">1.14″ TFT board</text>
+  <text x="110" y="1190" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO21 / SDA (pad 26)</text>
+  <text x="110" y="1235" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO22 / SCL (pad 29)</text>
+  <text x="110" y="1280" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO25 (pad 8)</text>
+  <text x="110" y="1325" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO33 (pad 9)</text>
+  <text x="110" y="1370" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO16 / RX2 (pad 21)</text>
+  <text x="110" y="1415" font-family="system-ui,sans-serif" font-size="15" fill="white">GPIO17 / TX2 (pad 22)</text>
+  <path class="wire3" d="M190 1090 V1030"/><path class="wireg" d="M255 1420 V1515"/>
+
+  <!-- I2C -->
+  <rect class="box" x="480" y="1070" width="565" height="242" rx="10"/>
+  <text class="h3" x="500" y="1100">EXTERNAL I²C · 100 kHz first commissioning</text>
+  <path class="wiresda" d="M370 1185 H480 M500 1185 H995"/>
+  <rect class="part" x="408" y="1168" width="75" height="34" rx="4"/><text class="small" x="420" y="1190">330 Ω</text>
+  <path class="wirescl" d="M370 1230 H480 M500 1230 H995"/>
+  <rect class="part" x="408" y="1213" width="75" height="34" rx="4"/><text class="small" x="420" y="1235">330 Ω</text>
+  <path class="wire3" d="M590 1030 V1155"/><rect class="part" x="560" y="1100" width="62" height="35" rx="4"/><text class="tiny" x="571" y="1122">3k3 PU</text><path class="wiresda" d="M590 1135 V1185"/>
+  <path class="wire3" d="M680 1030 V1155"/><rect class="part" x="650" y="1100" width="62" height="35" rx="4"/><text class="tiny" x="661" y="1122">3k3 PU</text><path class="wirescl" d="M680 1135 V1230"/>
+  <rect class="sensor" x="760" y="1095" width="250" height="72" rx="7"/><text class="label" x="775" y="1120">J_VEML: VIN · 3Vo NC · GND</text><text class="small" x="775" y="1145">SCL · SDA · address 0x10</text>
+  <rect class="sensor" x="760" y="1243" width="250" height="57" rx="7"/><text class="label" x="775" y="1267">J_SHT: VIN · GND · SCL · SDA</text><text class="small" x="775" y="1288">address 0x44</text>
+  <path class="wire3" d="M815 1095 V1030 M815 1243 V1030"/><path class="wireg" d="M850 1167 V1515 M850 1300 V1515"/>
+
+  <!-- buzzer -->
+  <rect class="box" x="480" y="1340" width="565" height="145" rx="10"/>
+  <text class="h3" x="500" y="1370">KEYES ACTIVE BUZZER · active HIGH</text>
+  <path class="wirebeep" d="M370 1275 H430 V1400 H745"/>
+  <rect class="part" x="515" y="1382" width="78" height="36" rx="4"/><text class="small" x="532" y="1405">100 Ω</text>
+  <rect class="sensor" x="745" y="1368" width="250" height="75" rx="7"/><text class="label" x="760" y="1392">J_BEEP: S · VCC · −</text><text class="small" x="760" y="1415">VCC = 3V3; − = GND</text>
+  <path class="wire3" d="M865 1368 V1030"/><path class="wireg" d="M920 1443 V1515"/>
+
+  <!-- 5V source -->
+  <rect class="danger" x="1080" y="1065" width="400" height="180" rx="10"/>
+  <text class="h3" x="1100" y="1095">5 V SOURCE SELECT</text>
+  <rect class="part" x="1100" y="1120" width="105" height="44" rx="5"/><text class="label" x="1115" y="1147">U1 VIN</text>
+  <rect class="part" x="1100" y="1180" width="105" height="44" rx="5"/><text class="label" x="1115" y="1207">J_5V_EXT</text>
+  <path class="wire5" d="M1205 1142 H1280 M1205 1202 H1280 M1280 1142 V1202 M1280 1172 H1450"/>
+  <text class="warn" x="1225" y="1115">JP_5V_SRC: one shunt only</text>
+  <text class="small" x="1310" y="1207">+5V_DOMAIN</text>
+  <path class="wireg" d="M1150 1224 V1515"/>
+
+  <!-- PIR -->
+  <rect class="danger" x="1510" y="1065" width="405" height="238" rx="10"/>
+  <text class="h3" x="1530" y="1095">D-SUN PIR · 5 V MEASUREMENTS PENDING</text>
+  <path class="wire5" d="M1450 1172 H1528"/>
+  <rect class="part" x="1530" y="1153" width="92" height="38" rx="4"/><text class="tiny" x="1540" y="1177">JP_PIR OPEN</text>
+  <path class="wire5" d="M1622 1172 H1690"/>
+  <rect class="part" x="1690" y="1153" width="84" height="38" rx="4"/><text class="tiny" x="1701" y="1177">1N5819</text>
+  <path class="wire5" d="M1774 1172 H1888"/>
+  <rect class="five" x="1665" y="1210" width="225" height="74" rx="6"/><text class="label" x="1680" y="1236">J_PIR: GND · OUT · VCC</text><text class="small" x="1680" y="1260">VCC from protected rail</text>
+  <path class="wireg" d="M1690 1284 V1515"/>
+
+  <!-- PIR NPN -->
+  <rect class="box" x="1510" y="1325" width="405" height="160" rx="10"/>
+  <text class="h3" x="1530" y="1355">PIR OUTPUT → ACTIVE-LOW GPIO33</text>
+  <path class="wirepir" d="M1665 1248 H1490 V1395 H1590"/>
+  <rect class="part" x="1518" y="1377" width="72" height="36" rx="4"/><text class="small" x="1533" y="1400">10 kΩ</text>
+  <circle cx="1650" cy="1400" r="28" fill="#e6edf3" stroke="#334e68" stroke-width="2"/><text class="tiny" x="1628" y="1404">2N3904</text>
+  <path class="wireg" d="M1650 1428 V1515"/><path class="wirepir" d="M1678 1400 H1875 V1320 H370"/>
+  <path class="wire3" d="M1810 1030 V1375"/><rect class="part" x="1775" y="1357" width="70" height="36" rx="4"/><text class="small" x="1790" y="1380">10 kΩ</text><path class="wirepir" d="M1810 1393 V1400"/>
+  <path class="wireg" d="M1590 1400 V1460 H1650"/><rect class="part" x="1545" y="1435" width="80" height="35" rx="4"/><text class="small" x="1558" y="1458">100 kΩ</text>
+
+  <!-- SDS -->
+  <rect class="danger" x="1945" y="1065" width="380" height="420" rx="10"/>
+  <text class="h3" x="1965" y="1095">SDS011 · UART2 ONLY</text>
+  <path class="wire5" d="M1450 1172 H1965"/>
+  <rect class="part" x="1965" y="1153" width="100" height="38" rx="4"/><text class="tiny" x="1976" y="1177">JP_SDS OPEN</text>
+  <path class="wire5" d="M2065 1172 H2295"/>
+  <rect class="five" x="2015" y="1210" width="280" height="94" rx="7"/><text class="label" x="2030" y="1237">J_SDS carrier order:</text><text class="label" x="2030" y="1263">5V · GND · RXD · TXD</text><text class="warn" x="2030" y="1288">module order not confirmed</text>
+  <path class="wireg" d="M2085 1304 V1515"/>
+  <path class="wireuart" d="M370 1365 H1985 V1340 H2185"/>
+  <rect class="part" x="1985" y="1322" width="72" height="36" rx="4"/><text class="small" x="2004" y="1345">1 kΩ</text>
+  <text class="small" x="2070" y="1334">TXD → GPIO16/RX2</text>
+  <path class="wireuart" d="M370 1410 H1965 V1400 H2185"/>
+  <rect class="part" x="1965" y="1382" width="72" height="36" rx="4"/><text class="small" x="1984" y="1405">1 kΩ</text>
+  <text class="small" x="2050" y="1394">GPIO17/TX2 → RXD</text>
+  <text class="warn" x="1970" y="1455">Never GPIO1/TX0 or GPIO3/RX0.</text>
+
+  <text class="warn" x="82" y="1544">Before power: no 5 V continuity to 3V3 or any GPIO; verify SDS011 printed connector labels; confirm 3V3 and 5V rails with a meter.</text>
+
+  <!-- CAPACITOR DETAIL -->
+  <rect class="panel" x="35" y="1580" width="2330" height="235" rx="14"/>
+  <text class="h2" x="60" y="1622">CAPACITOR PLACEMENT AND POLARITY</text>
+  <text class="note" x="535" y="1622">Every capacitor is wired directly across its named local supply and GND. Keep leads short.</text>
+  <path class="wire3" d="M95 1660 H1125"/><text class="label" x="60" y="1666" fill="#b32139">3V3</text>
+  <path class="wire5" d="M1245 1660 H2290"/><text class="label" x="1197" y="1666" fill="#8a5200">5 V</text>
+  <path class="wireg" d="M95 1780 H2290"/><text class="label" x="58" y="1786">GND</text>
+
+  <!-- C1 -->
+  <g transform="translate(180,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-18 1714 H18 M0 1714 V1780"/><text class="label" x="30" y="1702">C1 · 100 nF</text><text class="small" x="30" y="1723">at U1 3V3</text></g>
+  <!-- C2 polarized -->
+  <g transform="translate(420,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-14 1714 Q0 1724 14 1714 M0 1718 V1780"/><text class="cappos" x="-34" y="1692">+</text><text class="label" x="30" y="1702">C2 · 100 µF</text><text class="small" x="30" y="1723">+ to 3V3</text></g>
+  <!-- C3 -->
+  <g transform="translate(690,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-18 1714 H18 M0 1714 V1780"/><text class="label" x="30" y="1702">C3 · 100 nF</text><text class="small" x="30" y="1723">at VEML VIN</text></g>
+  <!-- C4 -->
+  <g transform="translate(950,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-18 1714 H18 M0 1714 V1780"/><text class="label" x="30" y="1702">C4 · 100 nF</text><text class="small" x="30" y="1723">at SHT VIN</text></g>
+  <!-- C5 polarized -->
+  <g transform="translate(1350,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-14 1714 Q0 1724 14 1714 M0 1718 V1780"/><text class="cappos" x="-34" y="1692">+</text><text class="label" x="30" y="1702">C5 · 100 µF</text><text class="small" x="30" y="1723">+ to PIR protected 5 V</text></g>
+  <!-- C6 polarized -->
+  <g transform="translate(1735,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-14 1714 Q0 1724 14 1714 M0 1718 V1780"/><text class="cappos" x="-34" y="1692">+</text><text class="label" x="30" y="1702">C6 · 470 µF</text><text class="small" x="30" y="1723">+ to SDS protected 5 V</text></g>
+  <!-- C7 -->
+  <g transform="translate(2110,0)"><path class="capline" d="M0 1660 V1702 M-18 1702 H18 M-18 1714 H18 M0 1714 V1780"/><text class="label" x="30" y="1702">C7 · 100 nF</text><text class="small" x="30" y="1723">at SDS 5 V</text></g>
+  <text class="warn" x="111" y="1807">Electrolytics C2/C5/C6: positive lead to the named rail, negative stripe to GND. Ceramics C1/C3/C4/C7 are non-polarized.</text>
+</svg>
