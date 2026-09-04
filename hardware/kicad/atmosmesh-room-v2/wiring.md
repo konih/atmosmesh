@@ -13,7 +13,7 @@ repeated here. What changes is the sensor set, the power split and three small c
 the new diode and MOSFET stock.
 
 Evidence level: the ideaspark pad map, VEML7700, SHT41 and buzzer orders are operator-confirmed on
-Room. The SCD41 breakout, SPS30, ENS160+AHT20, CJMCU-226 and LD2410S orders are **from datasheets
+Room. The SCD41 breakout, SPS30, ENS160+AHT20, CJMCU-226 and LD2450 orders are **from datasheets
 and common module layouts only** and must be confirmed from photographs of the actual parts
 (R2-01 acceptance criterion 1). A companion zone drawing is in
 [`atmosmesh-room-v2-zones.svg`](atmosmesh-room-v2-zones.svg).
@@ -42,10 +42,10 @@ row  8  │ U1 left  ●●●●●●●●●●●●●●● pads 1–15 (
 row 18  │ U1 right ●●●●●●●●●●●●●●● pads 16–30 (3V3…GPIO23) │                    │                    │
 row 19  ├─────────────────────────┼────────────────────┼────────────────────┤
         │ VENTILATED EDGE         │ CO₂                │ PRESENCE           │
-        │ J_SHT    C_SHT          │ J_SCD (4)          │ J_RAD (5)          │
-        │ TP_3V3C  TP_3V3S        │ C_SCD_BULK 100 µF  │ JP_RAD_SRC  C_RAD  │
-        │ TP_5V    TP_GND         │ C_SCD 100 nF       │ Q_RAD  R_RAD_IN    │
-        │                 J_ENS   │                    │ R_RAD_PD R_RAD_PU  │
+        │ J_SHT    C_SHT          │ J_SCD (4)          │ J_RAD (4) LD2450   │
+        │ TP_3V3C  TP_3V3S        │ C_SCD_BULK 100 µF  │ C_RAD_BULK 100 µF  │
+        │ TP_5V    TP_GND         │ C_SCD 100 nF       │ C_RAD 100 nF       │
+        │                 J_ENS   │                    │ R_RAD_TX 1 kΩ      │
 row 27  └─────────────────────────┴────────────────────┴────────────────────┘
          ◄────── 3.3 V only ──────► ◄── 3.3 V + 5 V in ──► ◄──── 5 V domain ────►
 ```
@@ -61,7 +61,7 @@ row 27  └───────────────────────
 | CO₂ | 17–24 | 19–27 | `J_SCD`, `C_SCD_BULK`, `C_SCD` |
 | 5 V entry | 25–31 | 1–7 | `J_5V_EXT`, `D_EXT`, `JP_5V_SRC`, `F1`, `D_LED_5V`, `R_LED_5V` |
 | 5 V consumers | 25–31 | 8–18 | `J_INA`, `J_SPS`, `C_SPS_BULK`, `C_SPS`; optional gate `Q_PM_N`, `Q_PM_P`, `R_PM_B`, `R_PM_C`, `R_PM_EB` |
-| Presence | 25–31 | 19–27 | `J_RAD`, `JP_RAD_SRC`, `C_RAD`, `Q_RAD`, `R_RAD_IN`, `R_RAD_PD`, `R_RAD_PU` |
+| Presence | 25–31 | 19–27 | `J_RAD`, `C_RAD_BULK`, `C_RAD`, `R_RAD_TX` |
 
 Placement rules behind the map:
 
@@ -92,13 +92,13 @@ carrier touches:
 | ---: | --- | --- | --- |
 | 1 | `VIN` | `+5V_SRC` | USB 5 V leaves the board here (measure first: Room's `+5V_USB_CONFIRMED` rule) |
 | 2, 17 | `GND` | `GND` | Both to the ground rail |
-| 16 | `3V3` | `+3V3_CTRL` | Controller rail: buzzer, `R_RAD_PU`, `C1`/`C2` only |
+| 16 | `3V3` | `+3V3_CTRL` | Controller rail: buzzer, `C1`/`C2` only |
 | 8 | `GPIO25` | `BEEP` | `Q_BEEP` gate through `R_BEEP_G` |
-| 9 | `GPIO33` | `PRESENCE` | `Q_RAD` collector + `R_RAD_PU` |
+| 9 | `GPIO33` | — | Unwired. Spare input, reserved for an `OUT`-pin radar if a second LD2410S is ever bought |
 | 7 | `GPIO26` | `AUX` | Optional: `Q_AUX` gate (fan PWM) |
 | 6 | `GPIO27` | `PM_EN` | Optional: 5 V domain gate; else `INA_ALERT` or unwired |
-| 21 | `GPIO16 / RX2` | `RAD_TX` | Radar UART, optional, 3.3 V logic only |
-| 22 | `GPIO17 / TX2` | `RAD_RX` | Radar UART, optional |
+| 21 | `GPIO16 / RX2` | `RAD_TX` | Radar frames in, through `R_RAD_TX` 1 kΩ; the only presence source |
+| 22 | `GPIO17 / TX2` | `RAD_RX` | Radar configuration out |
 | 26 | `GPIO21 / SDA` | controller side of `R_SDA` | I²C |
 | 29 | `GPIO22 / SCL` | controller side of `R_SCL` | I²C |
 
@@ -123,7 +123,7 @@ this section is rewritten before anything is soldered (R2-01 open question 1).
                                                                        0.5 A hold                                                   │
                                                                                                   +5V_PM ◄──────────────────────────┘
                                                                                                     ├─► J_SPS VDD   (C_SPS_BULK 100 µF + C_SPS 100 nF)
-                                                                                                    ├─► JP_RAD_SRC (5 V side)
+                                                                                                    ├─► J_RAD 5V    (C_RAD_BULK 100 µF + C_RAD 100 nF)
                                                                                                     └─► J_AUX +     (optional fan)
 
  GND: one ground rail; U1 pads 2 and 17, U2 GND, every module GND, every bulk-capacitor negative.
@@ -143,8 +143,11 @@ does not pass through `D_EXT`: the ideaspark board already has its own diode bet
 `VIN`, and a second one would put the SPS30 below its minimum.
 
 Budget through USB with both jumpers as drawn: ESP32 Wi-Fi peak ≈ 300 mA + TFT ≈ 40 mA + SCD41
-burst ≈ 200 mA + SPS30 fan start ≈ 80 mA ≈ 620 mA peak. A USB 2.0 port is rated 500 mA; use a
-supply or the bench PSU through `J_5V_EXT` for the first run (R2-01 open question 5).
+burst ≈ 200 mA + SPS30 fan start ≈ 80 mA + LD2450 radar on the order of 100 mA ≈ 720 mA peak. A
+USB 2.0 port is rated 500 mA; use a supply or the bench PSU through `J_5V_EXT` for the first run
+(R2-01 open question 5). On the 5 V domain alone, SPS30 + radar + fan sit near 280 mA continuous
+against the RXEF050's 0.5 A hold; the radar's datasheet figure decides whether `F1` moves up to
+the RXEF075.
 
 Indicators, same rule as Room (red or green LED, never blue or white):
 
@@ -300,7 +303,7 @@ is common) and record it for firmware.
  NC / GPIO27  ── ALE     open-drain alert, optional (GPIO27 is taken if the 5 V gate is fitted)
  +5V_PM       ── VBS     bus-voltage sense — tie to VIN− so it reads the load side
  F1 / gate out ── VIN+   from the PPTC (or from Q_PM_P collector)
- +5V_PM       ── VIN−    to J_SPS VDD, JP_RAD_SRC, J_AUX
+ +5V_PM       ── VIN−    to J_SPS VDD, J_RAD 5V, J_AUX
 
  current flow:  F1 ──► VIN+ ══ R_shunt ══ VIN− ──► load      (VIN+ more positive = positive current)
 ```
@@ -308,35 +311,36 @@ is common) and record it for firmware.
 Address `0x40` with A0/A1 at GND, the module default; if the board has solder jumpers, leave them.
 At 0.1 Ω the SPS30's 80 mA peak drops 8 mV and the fuse's 0.5 A hold current 50 mV: harmless.
 
-### 5.7 Presence radar (`J_RAD`, 5 pins) — supply per datasheet, not yet read
+### 5.7 Presence radar (`J_RAD`, HLK-LD2450, 4 pins) — 5 V domain, UART only
 
-HLK-LD2410S pin names by type knowledge: `VCC`, `GND`, `OUT`, `TX`, `RX` (label names vary between
-LD24xx variants; wire by label). UART on every LD24xx is 3.3 V logic. **Supply voltage is the open
-item** (R2-01 open question 3): `JP_RAD_SRC` is a three-pin jumper, default **open**, that puts
-either `+3V3_SENS` or `+5V_PM` on `VCC` once the datasheet says which.
+The LD2410S went to the Spot ([SP-01](../../../agent-context/stories/SP-01.md)) because that
+board has no 5 V domain; Room v2 has one, so it takes the LD2450. Pin names by type knowledge:
+`5V`, `GND`, `RX`, `TX` on a 1.25 mm connector (some boards carry a fifth, unused pin; wire by
+label). 5 V supply, current on the order of 100 mA — **read the datasheet**, it sets `F1`. UART
+256000 baud 8N1, continuous target frames, 3.3 V logic per the module description — **confirm**.
+There is no `OUT` pin: presence exists only once the frame decoder runs (R2-03).
 
 ```text
- +3V3_SENS ──┐
-             ├─ JP_RAD_SRC (default OPEN) ── J_RAD VCC ──┤C_RAD 100 nF ── GND
- +5V_PM    ──┘
- GND       ── J_RAD GND
+ +5V_PM ── J_RAD 5V ──┬── C_RAD_BULK 100 µF (+)
+                      └── C_RAD 100 nF
+ GND    ── J_RAD GND
 
- J_RAD OUT ── R_RAD_IN 10 kΩ ── Q_RAD base ── R_RAD_PD 100 kΩ ── GND
-                                 Q_RAD emitter ── GND
-                                 Q_RAD collector ── GPIO33 (pad 9) ── R_RAD_PU 10 kΩ ── +3V3_CTRL
-
- J_RAD TX  ── GPIO16 / RX2 (pad 21)     optional; leave unwired until R2-03 speaks the protocol
- J_RAD RX  ── GPIO17 / TX2 (pad 22)     optional
+ J_RAD TX ── R_RAD_TX 1 kΩ ── GPIO16 / RX2 (pad 21)     frames into the ESP32
+ J_RAD RX ─────────────────── GPIO17 / TX2 (pad 22)     configuration commands out
 ```
 
-Identical to Room's PIR stage, so the same inversion applies: radar `OUT` high (presence) →
-`Q_RAD` on → GPIO33 **LOW**. Firmware treats GPIO33 LOW as `presence: on` on the carrier, and the
-polarity is confirmed on the bench before it is trusted (ROOM-05 lesson). `Q_RAD` is a 2N3904 or
-S8050 from the kit; verify C/B/E from its datasheet. Even if the module turns out to be a 3.3 V
-part, keep the stage: it costs three parts and makes `OUT`'s level irrelevant. `R_RAD_PU` is on
-the controller rail because it belongs to a controller GPIO.
+`R_RAD_TX` is Room's `R_SDS_RX` pattern: a 5 V module talking into a 3.3 V GPIO gets a series
+resistor that limits the current if the logic level turns out higher than claimed, and it costs
+nothing when the level is 3.3 V as expected. Measure `J_RAD TX` idle-high with the meter before
+GPIO16 is connected; stop if it reads above 3.3 V and fit a divider instead.
 
-The LD2450 stays in the drawer.
+Placement: the radar's antenna face looks into the room, with no metal and no copper in front of
+it, **and not across the SPS30's fan or the AUX fan** — a 24 GHz radar sees a spinning fan as a
+moving target, and a presence sensor that reports the station's own fan is worse than a PIR.
+Put `J_RAD` at the row-27 edge facing away from the 5 V consumers block, or on a short lead.
+
+GPIO33 stays free. If a second LD2410S is bought later, its `OUT` pin goes there through the PIR
+transistor stage from the Room wiring, and the LD2450 returns to the drawer.
 
 ### 5.8 Buzzer (`J_BEEP`, 3 pins) — MOSFET low-side driver
 
@@ -444,29 +448,29 @@ driver, which is why it gets a designator now even if the header stays empty.
 | `D_EXT` | 1N5822 Schottky 3 A | 1 of 5 |
 | `D_AUX` (optional) | 1N5819 Schottky 1 A | 1 of 10 |
 | `Q_BEEP`, `Q_AUX` (optional) | IRLB8721 N-MOSFET, TO-220 | 2 of 10 |
-| `Q_RAD`, `Q_PM_N` (optional) | 2N3904 or S8050 NPN | transistor kit |
+| `Q_PM_N` (optional) | 2N3904 or S8050 NPN | transistor kit |
 | `Q_PM_P` (optional) | S8550 PNP | transistor kit |
 | `R_SDA`, `R_SCL` | 330 Ω | E24 kit |
 | `R_PU_SDA`, `R_PU_SCL` | 3.3 kΩ (adjust after rise-time measurement) | E24 kit |
-| `R_RAD_IN`, `R_RAD_PU`, `R_PM_EB` | 10 kΩ | E24 kit |
-| `R_RAD_PD`, `R_BEEP_PD`, `R_AUX_PD`, `R_PM_PD` | 100 kΩ | E24 kit |
+| `R_PM_EB` | 10 kΩ | E24 kit |
+| `R_BEEP_PD`, `R_AUX_PD`, `R_PM_PD` | 100 kΩ | E24 kit |
 | `R_BEEP_G`, `R_AUX_G` | 100 Ω | E24 kit |
 | `R_PM_B` | 4.7 kΩ | E24 kit |
-| `R_PM_C` | 1 kΩ | E24 kit |
+| `R_PM_C`, `R_RAD_TX` | 1 kΩ | E24 kit |
 | `R_LED_SENS` | 470 Ω | E24 kit |
 | `R_LED_5V` | 1 kΩ | E24 kit |
 | `C_VEML`, `C_SHT`, `C_ENS`, `C_SCD`, `C_SPS`, `C_RAD`, `C1` | 100 nF ceramic | ceramic assortment |
 | `C_REG_IN` | 10 µF electrolytic | Elko assortment |
 | `C_REG_OUT` | 22 µF electrolytic | Elko assortment |
-| `C_SCD_BULK`, `C_SPS_BULK` | 100 µF electrolytic | Elko assortment |
+| `C_SCD_BULK`, `C_SPS_BULK`, `C_RAD_BULK` | 100 µF electrolytic | Elko assortment |
 | `C2` | 10–47 µF electrolytic at U1 3V3 | Elko assortment |
 | `D_LED_SENS`, `D_LED_5V` | red or green 3 mm LED | LED assortment |
-| `J_VEML` 5, `J_SHT` 4, `J_ENS` 8, `J_SCD` 4, `J_INA` 8, `J_RAD` 5, `J_BEEP` 3 | female header strips | header stock |
+| `J_VEML` 5, `J_SHT` 4, `J_ENS` 8, `J_SCD` 4, `J_INA` 8, `J_RAD` 4, `J_BEEP` 3 | female header strips | header stock |
 | `J_SPS` | 5-pin header + JST ZH 1.5 mm pigtail (to source) | **not in stock** |
 | `J_5V_EXT`, `J_AUX` | 2-pin screw terminal or header | stock |
-| `JP_5V_SRC`, `JP_RAD_SRC` | 3-pin header + jumper | stock |
+| `JP_5V_SRC` | 3-pin header + jumper | stock |
 | `TP_*` | six test-point pins | stock |
-| Sensors | SCD41, SPS30, ENS160+AHT20, SHT41, VEML7700, CJMCU-226, LD2410S | 1 each |
+| Sensors | SCD41, SPS30, ENS160+AHT20, SHT41, VEML7700, CJMCU-226, LD2450 | 1 each |
 | Fan on `J_AUX` (optional) | small axial fan, marking dictated as "EXAV-XV-B0"; rating to read from the label | 1 |
 
 Not used on purpose: the 1N4148 (no small-signal clamping needed; the series resistors and the
@@ -489,7 +493,7 @@ enclosed PSU, R2-06).
 7. Sleeve every 5 V lead in heat shrink. Then the 5 V domain: `J_5V_EXT`, `D_EXT`, `JP_5V_SRC`
    (open), `F1`, the gate block if fitted, `J_SPS` with its capacitors, the `VIN+`/`VIN−` wiring
    through `J_INA`, `D_LED_5V`.
-8. Presence block: `Q_RAD`, its three resistors, `C_RAD`, `J_RAD`, `JP_RAD_SRC` (open).
+8. Presence block, 5 V domain: `R_RAD_TX`, `C_RAD_BULK`, `C_RAD`, `J_RAD`; sleeve its 5 V lead.
 9. AUX block if fitted: `Q_AUX`, `R_AUX_G`, `R_AUX_PD`, `D_AUX`, `J_AUX`.
 10. Remaining test points and `D_LED_SENS`.
 

@@ -50,10 +50,10 @@
 <text x="384.0" y="468.0" font-size="9" fill="#222">C_SCD 100n</text>
 <rect x="540.0" y="420.0" width="140" height="180" fill="#fee2e2" stroke="#555" stroke-width="1" opacity="0.9"/>
 <text x="544.0" y="433.0" font-size="11" font-weight="bold">PRESENCE</text>
-<text x="544.0" y="446.0" font-size="9" fill="#222">J_RAD (5)</text>
-<text x="544.0" y="457.0" font-size="9" fill="#222">JP_RAD_SRC C_RAD</text>
-<text x="544.0" y="468.0" font-size="9" fill="#222">Q_RAD R_RAD_IN</text>
-<text x="544.0" y="479.0" font-size="9" fill="#222">R_RAD_PD R_RAD_PU</text>
+<text x="544.0" y="446.0" font-size="9" fill="#222">J_RAD (4) LD2450</text>
+<text x="544.0" y="457.0" font-size="9" fill="#222">C_RAD_BULK 100u</text>
+<text x="544.0" y="468.0" font-size="9" fill="#222">C_RAD 100n</text>
+<text x="544.0" y="479.0" font-size="9" fill="#222">R_RAD_TX 1k</text>
 <circle cx="70.0" cy="70.0" r="2.2" fill="#8a7d5a"/>
 <circle cx="90.0" cy="70.0" r="2.2" fill="#8a7d5a"/>
 <circle cx="110.0" cy="70.0" r="2.2" fill="#8a7d5a"/>

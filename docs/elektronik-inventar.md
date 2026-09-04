@@ -686,15 +686,19 @@ Anspruch auf die Stückzahl, keine Verdrahtungsfreigabe.
   1× SHT41, 1× D-SUN-PIR, 1× SDS011, 1× Buzzer-Modul
 - **AtmosMesh Room v2** (`agent-context/stories/R2-01.md`,
   `hardware/kicad/atmosmesh-room-v2/wiring.md`): das zweite ideaspark-Board, SCD41, SPS30,
-  1× ENS160+AHT20, 1× SHT41, 1× VEML7700, CJMCU-226 (INA226), HLK-LD2410S, der kleine Lüfter,
+  1× ENS160+AHT20, 1× SHT41, 1× VEML7700, CJMCU-226 (INA226), HLK-LD2450 (5-V-Domäne; der
+  3,3-V-LD2410S ging an SP-01), der kleine Lüfter,
   1× AMS1117-3.3, 1× RXEF050 (+1× RXEF075 als Reserve), 2× IRLB8721, 1× S8050, 1× S8550,
   1× 2N3904 oder S8050, 1× 1N5822, 1× 1N5819, 2× 100 µF, 1× 22 µF, 1× 10 µF, 7× 100 nF,
   E24-Widerstände laut Stückliste, 1× JST-ZH-Kabel (zu beschaffen)
-- danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 2× VEML7700, 3× AMS1117-3.3,
-  8× IRLB8721, 0× LD2410S (der LD2450 bleibt frei), 0× Lüfter
-- ohne Projekt: 5× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 6× BME280, 4× BMI160, 2× DS18B20,
-  5× Bodenfeuchtemodule, SGP40 und SGP41, 2× ADS1115, die 433-MHz-Paare, RFM12S, LD2450,
-  4× OLED — `agent-context/stories/SP-01.md` schlägt den ersten Zugriff darauf vor
+- **AtmosMesh Spot, erste Einheit** (`agent-context/stories/SP-01.md`): 1× ESP32-C3 SuperMini
+  OLED, 1× SHT41, 1× VEML7700, HLK-LD2410S (der 3,3-V-Radar; ein reines 3,3-V-Board kann den
+  LD2450 nicht betreiben), optional 1× BME280 am Außenkabel und 1× DS18B20-Fühler
+- danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 1× VEML7700, 1× SHT41 (von 4: Room,
+  Room v2, Spot), 3× AMS1117-3.3, 8× IRLB8721, 0× LD2410S, 0× LD2450, 0× Lüfter
+- ohne Projekt: 4× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 5× BME280, 4× BMI160, 1× DS18B20,
+  5× Bodenfeuchtemodule, SGP40 und SGP41, 2× ADS1115, die 433-MHz-Paare, RFM12S, 4× OLED.
+  Weitere Spot-Einheiten bekommen statt des SHT41 einen BME280 auf denselben Header
 
 ## Noch offen / später prüfen
 
