@@ -51,7 +51,9 @@
     Belegung des einfachen SuperMini. `BOOT`- und `RST`-Taster und ein kleines rotes Bauteil
     mit weißem Punkt (vermutlich die Antenne) am USB-fernen Ende. **Reihenabstand 7 Raster
     (17,78 mm), Probestecken bestätigt:** im 14×20-Lochraster sitzt das Modul mit je drei freien
-    Spalten links und rechts. OLED-I²C-Pins sind nicht aufgedruckt; Bus-Scan klärt sie
+    Spalten links und rechts. **Bus-Scan am 4. September 2026** (`firmware/tools/c3scan`): das
+    OLED antwortet auf `0x3C` an SDA = GPIO5, SCL = GPIO6, sonst nichts auf dem Bus; Chip
+    ESP32-C3 Rev. 4, 4 MB Flash, MAC E4:EC:E6:92:05:D4 (dieses Exemplar)
 - 5× ESP32-C6-Module (Ergänzung 4. September 2026, gezählt, nicht per Foto bestätigt; genaue
   Modulvariante und Flashgröße unbekannt, bisher nur im englischen Inventar geführt)
 - 1× Heltec WiFi LoRa 32 V2

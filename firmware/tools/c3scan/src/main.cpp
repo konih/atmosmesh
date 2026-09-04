@@ -50,9 +50,11 @@ void loop() {
     int total = 0;
     for (const Pair& p : kPairs) {
         int n = scanPair(p);
-        if (n == 0) Serial.printf("  SDA=GPIO%d SCL=GPIO%d -> nothing%s%s\n", p.sda, p.scl,
-                                  p.note[0] ? "  [" : "", p.note[0] ? p.note : "");
-        if (n == 0 && p.note[0]) Serial.print("]\n");
+        if (n == 0) {
+            Serial.printf("  SDA=GPIO%d SCL=GPIO%d -> nothing", p.sda, p.scl);
+            if (p.note[0]) Serial.printf("  [%s]", p.note);
+            Serial.println();
+        }
         total += n;
     }
     Serial.printf("--- %d device(s) total; next pass in 15 s ---\n", total);
