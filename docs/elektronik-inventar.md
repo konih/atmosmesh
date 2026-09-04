@@ -193,10 +193,15 @@
   - auf den Modulen finden sich Angaben zu 315 beziehungsweise 433 MHz; konkrete Frequenzzuordnung vor Einsatz prüfen
 - 1× RFM12S V4.0
   - Funk-Transceiver-Modul
-- 1× Board mit Kennzeichnung „H34A“ und NDR4208
-  - NDR4208 als 433,92-MHz-SAW-Resonator identifiziert
-  - vermutlich Teil eines einfachen 433-MHz-Senders oder einer Funkfernbedienung
-  - genaue Funktion, Versorgung und Pinbelegung des H34A-Boards noch offen
+- 2× H34A Sender + 2× H3V4F Empfänger, 433 MHz (Stückzahl und Zuordnung am 4. September 2026
+  vom Operator bestätigt; zuvor 1× H34A mit offener Funktion)
+  - H34A: ASK/OOK-Sender, 433,92 MHz. Der aufgelötete NDR4208 ist der zugehörige SAW-Resonator
+    und legt die Frequenz fest
+  - H3V4F: der passende ASK/OOK-Empfänger, 433 MHz
+  - zweites 433-MHz-Set neben dem XY-MK-5V/FS1000A-Paar; beide Sets sind untereinander
+    kompatibel, da gleiche Modulation und gleiches Band. Typenwissen, nicht am Exemplar geprüft
+  - Versorgung und Pinbelegung (typisch VCC, DATA, GND, ANT) am Modul ablesen; Antennenlänge
+    für 433 MHz rund 17 cm Draht
   - kein CO₂- oder anderer Raumluftsensor
 - mehrere ESP8266MOD – siehe Mikrocontroller
 - 1× Heltec WiFi LoRa 32 V2 – siehe Mikrocontroller
@@ -619,6 +624,6 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 - genaue Typnummer, Spannung und Leistung des Peltier-Elements
 - genaue Identifikation des Moduls „5M001“
 - Ausgangsspannung und Anschlussbelegung des AC/DC-Netzteils 5V07 / 12V04 sicher per Multimeter verifizieren
-- genaue Identifikation, Funktion und Pinbelegung des H34A-Boards mit NDR4208
+- Versorgung und Pinbelegung der H34A-Sender und H3V4F-Empfänger am Modul ablesen
 - genaue Zuordnung und Stückzahl der zusätzlichen SANMIM-Stromversorgungsmodule
 - physischer Abgleich des kompletten 4duino SensorKit 40-in-1
