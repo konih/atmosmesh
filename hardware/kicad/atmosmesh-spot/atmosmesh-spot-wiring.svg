@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="940" viewBox="0 0 1260 940" font-family="Helvetica, Arial, sans-serif">
-<rect width="1260" height="940" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940" font-family="Helvetica, Arial, sans-serif">
+<rect width="1440" height="940" fill="#ffffff"/>
 <text x="30" y="30" font-size="17" text-anchor="start" fill="#111" font-weight="bold">AtmosMesh Spot, first unit — wiring by pin name</text>
 <text x="30" y="50" font-size="10" text-anchor="start" fill="#444" font-weight="normal">One 3.3 V domain; every pin name as printed on the part (photo-verified 2026-09-04, LD2410S per manual Table 3-2, OLED pins by scan). No BME280 (2026-09-05). Rails: red 3V3, black GND, blue SDA, green SCL; orange radar, purple 1-Wire.</text>
 <line x1="60" y1="110" x2="1200" y2="110" stroke="#c62828" stroke-width="3"/>
