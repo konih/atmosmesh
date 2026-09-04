@@ -442,6 +442,17 @@ nicht mehr auf einer Vermutung.
     SDS011-Lasers gegen dessen 8000-h-Lebensdauer
   - Gate-Vorwiderstand und Gate-Pulldown sind trotzdem vorzusehen; ein offenes Gate ist undefiniert
   - genaue Typvariante (IRLZ34 gegenüber IRLZ34N) am Bauteil ablesen
+- 10× IRLB8721, TO-220 (Ergänzung 4. September 2026, abgelesen, nicht per Foto bestätigt)
+  - N-Kanal, **logic-level**; Datenblattwerte: 30 V, R_DS(on) rund 9 mΩ bei 10 V und rund
+    16 mΩ bei 4,5 V Gate-Spannung, Schwellenspannung 1,35–2,35 V. Typenwissen, nicht am Exemplar
+    geprüft
+  - schaltet an einem 3,3-V-GPIO sauber durch und hat deutlich weniger Durchlasswiderstand als der
+    IRLZ34; für Lasten von einigen Ampere die bessere Wahl
+  - Pinfolge TO-220 mit Blick auf die Beschriftung: Gate, Drain, Source; die Kühlfahne liegt auf
+    Drain. Vor dem Einlöten am Datenblatt gegenprüfen
+  - nur 30 V Sperrspannung: für 5-V- und 12-V-Lasten reichlich, nicht für höhere Spannungen
+  - Gate-Vorwiderstand und Gate-Pulldown auch hier vorsehen; induktive Lasten mit Freilaufdiode
+    (1N5819/1N5822 aus dem Diodensortiment)
 
 ## ICs / Chips
 
