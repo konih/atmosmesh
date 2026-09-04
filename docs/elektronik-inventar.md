@@ -218,19 +218,33 @@
 
 ## Stromversorgung
 
-- Mini-Stromversorgungsmodul, Beschriftung ungefähr „5M001“ – noch genauer identifizieren
-- 1× kleines offenes AC/DC-Schaltnetzteil, Kennzeichnung 5V07 / 12V04
+Stückzahlen am 4. September 2026 vom Operator gezählt und abgelesen, nicht per Foto bestätigt.
+
+- 3× kleines offenes AC/DC-Schaltnetzteil, Kennzeichnung 5V07 / 12V04 (zuvor 1×; das dritte
+  Exemplar wurde als „5D07“ abgelesen, vermutlich dieselbe Familie, Aufdruck prüfen)
   - geplanter Einsatz: 5-V-Versorgung
-  - tatsächliche Ausgangsspannung und Anschlussbelegung vor endgültiger Erfassung noch per Multimeter verifizieren
-- 1× SANMIM AC/DC-Schaltnetzteil
-  - Platinenkennzeichnung: SM-PLG06A
-  - Variante: SM-104-3.3V-02
+  - die Familie gibt es als 5 V / 0,7 A **oder** 12 V / 0,4 A; welches jedes Board ist, steht
+    nicht sicher fest. Ausgangsspannung und Anschlussbelegung **je Exemplar** vor Einsatz per
+    Multimeter verifizieren und auf dem Board vermerken
+- 4× SANMIM AC/DC-Schaltnetzteil SM-PLG06A, Variante SM-104-3.3V-02 (Stückzahl bestätigt; zuvor
+  „mindestens 4“)
   - Ausgang: 3,3 V
   - als 3,3-V-Netzteil identifiziert; nicht mehr als unbekannt führen
-- weitere ähnliche SANMIM-Stromversorgungsmodule vorhanden
-  - frühere Sichtung: mindestens 4 Stück einer SANMIM-Ausführung
-  - genaue Zuordnung und Stückzahl der zusätzlichen Exemplare später prüfen
-- weitere Stromversorgungsboards mit großen Spulen und Kondensatoren
+- 2× SANMIM Wandlerboard, abgelesen als SM-PLB03A, Aufdruck „1603“ (vermutlich Datecode)
+  - große Drossel mit Aufschrift „SM001“. Das ist die Spule, nicht das Board: der frühere Eintrag
+    „Mini-Stromversorgungsmodul 5M001“ meinte dieses Board und ist damit erledigt
+  - gleiche Baureihe wie das SM-PLG06A, also mit hoher Wahrscheinlichkeit ein **offenes
+    AC/DC-Modul mit Netzspannungsseite**; bis zum Ablesen von Eingang und Ausgang so behandeln
+  - Ausgangsspannung und -strom vom Aufdruck ablesen, sonst messen
+- 1× Breadboard-Netzteilmodul (Bauart MB102), DC/DC, linear
+  - Eingang: Hohlstecker, beschriftet 9 V (typisch 6,5–12 V), Ein/Aus-Taster
+  - Ausgänge: 3,3 V und 5 V, je Schiene per Jumper wählbar; zwei AMS1117 (5,0 V und 3,3 V) auf
+    dem Board, kein Schaltregler
+  - Linearregler: bei 9 V Eingang fallen auf der 5-V-Schiene 4 V × I als Wärme ab, über etwa
+    200–300 mA wird der Regler heiß. Nicht für den SDS011-Lüfter oder Servos vorsehen
+  - keine Netzspannung, darf offen auf dem Breadboard betrieben werden
+- weitere Stromversorgungsboards mit großen Spulen und Kondensatoren: nach dieser Zählung keine
+  unzugeordneten mehr bekannt; taucht eines auf, hier eintragen
 
 - 4× AMS1117-3.3 Linearregler, SOT-223 (Ergänzung 4. September 2026, abgelesen, nicht per Foto
   bestätigt); Aufdruck laut Operator „AMS1117 3.3 GMTC 1608“, wobei `1608` nach einem Datecode
@@ -637,8 +651,8 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 - genaue Varianten der drei L293D-artigen Motor-Shields
 - genaue LED-/Controller-Typen und Gesamtstückzahl der RGB-LED-Module
 - genaue Typnummer, Spannung und Leistung des Peltier-Elements
-- genaue Identifikation des Moduls „5M001“
-- Ausgangsspannung und Anschlussbelegung des AC/DC-Netzteils 5V07 / 12V04 sicher per Multimeter verifizieren
+- Ausgangsspannung und Anschlussbelegung der drei AC/DC-Netzteile 5V07 / 12V04 je Exemplar per
+  Multimeter verifizieren; Aufdruck des als „5D07“ gelesenen Exemplars prüfen
+- SM-PLB03A: Eingang, Ausgangsspannung und -strom vom Aufdruck ablesen; Netzspannungsseite bestätigen
 - Versorgung und Pinbelegung der H34A-Sender und H3V4F-Empfänger am Modul ablesen
-- genaue Zuordnung und Stückzahl der zusätzlichen SANMIM-Stromversorgungsmodule
 - physischer Abgleich des kompletten 4duino SensorKit 40-in-1
