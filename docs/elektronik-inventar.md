@@ -23,6 +23,16 @@
     - konkrete Board-Ausführung per Foto identifiziert
   - 2× weitere ESP32-Devboards
     - genaue Varianten später bestimmen
+- 2× ideaspark-ESP32-Boards mit Display oben, ESP-WROOM-32 (Ergänzung 4. September 2026)
+  - 1× ideaspark ESP32 1,14"-TFT-LCD-Board: der Controller des AtmosMesh-Room-Aufbaus
+    (`hardware/kicad/atmosmesh-room/README.md`, Pinout in
+    `hardware/ideaspark-esp32-tft-pinout.png`)
+  - 1× weiteres Board derselben Bauart, vom Operator als „mit OLED oben“ bezeichnet. ideaspark
+    liefert diese Boards mit 0,96"-OLED (monochrom, I²C) **oder** 1,14"-TFT (Farbe, SPI); welche
+    Variante das ist, am Display und am Aufdruck prüfen. Nur die TFT-Variante ist pinkompatibel zum
+    Room-Träger
+  - möglicherweise sind das zwei der oben als „2× weitere ESP32-Devboards“ geführten Boards;
+    beim nächsten Zählen auflösen
 - 1× Heltec WiFi LoRa 32 V2
   - LoRa 866–915 MHz
   - 0,96" OLED
@@ -655,7 +665,9 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 - genaue Anzahl und Varianten der ESP8266-Boards
 - genaue Anzahl der Arduino-Nano-kompatiblen Boards
 - weitere Arduino-Nano-/Mini-/Pro-Mini-artige Boards identifizieren; bis dahin nicht zur Stückzahl addieren
-- genaue Varianten der zwei zusätzlichen ESP32-Devboards
+- genaue Varianten der zwei zusätzlichen ESP32-Devboards; klären, ob die beiden ideaspark-Boards
+  darunter sind
+- zweites ideaspark-Board: OLED- oder TFT-Variante am Gerät prüfen
 - Controller und konkrete Pinreihenfolge des neuen 128×64-I²C-OLEDs prüfen
 - Schnittstelle, Controller und konkrete Pinreihenfolge des bereits verbauten 128×32-OLEDs prüfen
 - genaue GL55xx-Variante und Kennwerte des losen Fotowiderstands bestimmen
