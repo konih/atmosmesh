@@ -192,7 +192,13 @@
   - einfache ASK-/OOK-Funkmodule
   - auf den Modulen finden sich Angaben zu 315 beziehungsweise 433 MHz; konkrete Frequenzzuordnung vor Einsatz prüfen
 - 1× RFM12S V4.0
-  - Funk-Transceiver-Modul
+  - HopeRF-Funk-Transceiver (sendet und empfängt), **FSK**, gesteuert per SPI, **3,3 V**; keine
+    5-V-Logik anschließen
+  - Band ist je Modul fest (433, 868 oder 915 MHz) und meist aufgedruckt; am Modul ablesen
+  - spricht wegen der anderen Modulation **nicht** mit den ASK-Modulen FS1000A/XY-MK-5V oder
+    H34A/H3V4F, nur mit einem weiteren Modul der RFM12-Familie
+- 1× 433-MHz-Set bestätigt (4. September 2026): Tüte mit FS1000A und XY-MK-5V trägt die Angabe
+  433 MHz; die Frequenzfrage zu diesem Set ist damit beantwortet
 - 2× H34A Sender + 2× H3V4F Empfänger, 433 MHz (Stückzahl und Zuordnung am 4. September 2026
   vom Operator bestätigt; zuvor 1× H34A mit offener Funktion)
   - H34A: ASK/OOK-Sender, 433,92 MHz. Der aufgelötete NDR4208 ist der zugehörige SAW-Resonator
@@ -646,7 +652,8 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 - genaue Modellnummer und Versorgung des D-SUN-PIR-Moduls
 - genaue Variante, Pinbelegung und Versorgung des HC-20-Sound-Moduls
 - genaue Pinbelegung und Variante des 4-Pin-Joystick-/Taster-Moduls „XINDA“
-- genaue Frequenzzuordnung und Pinbelegung des XY-MK-5V-/FS1000A-Funksets
+- Pinbelegung des XY-MK-5V-/FS1000A-Funksets am Modul ablesen (Band 433 MHz ist bestätigt)
+- RFM12S: Band vom Aufdruck ablesen
 - genaue Relais-, Trigger- und Versorgungsvariante des 8-Kanal-Relaismoduls
 - genaue Varianten der drei L293D-artigen Motor-Shields
 - genaue LED-/Controller-Typen und Gesamtstückzahl der RGB-LED-Module
