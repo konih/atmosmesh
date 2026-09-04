@@ -232,6 +232,21 @@
   - genaue Zuordnung und Stückzahl der zusätzlichen Exemplare später prüfen
 - weitere Stromversorgungsboards mit großen Spulen und Kondensatoren
 
+- 4× AMS1117-3.3 Linearregler, SOT-223 (Ergänzung 4. September 2026, abgelesen, nicht per Foto
+  bestätigt); Aufdruck laut Operator „AMS1117 3.3 GMTC 1608“, wobei `1608` nach einem Datecode
+  aussieht und `GMTC` Hersteller- oder Loskennung sein kann
+  - 3,3-V-Festspannungs-LDO, 1 A, Dropout rund 1,1–1,3 V bei Volllast, Eingang bis 15 V.
+    Typenwissen, nicht am Exemplar geprüft; unter diesem Namen laufen viele Nachbauten
+  - Pinfolge SOT-223 mit Blick auf die Beschriftung: GND (Adjust), VOUT, VIN; die Fahne liegt auf
+    VOUT. Am Datenblatt gegenprüfen, eine Verwechslung von VIN und VOUT legt 5 V auf die
+    3,3-V-Schiene
+  - braucht am Ausgang einen Kondensator mit ausreichender ESR-Lage (Datenblatt: 22 µF Tantal
+    oder Elko); ein 100-nF-Keramik allein reicht nicht für Stabilität
+  - **thermisch begrenzt:** P ≈ (5 V − 3,3 V) × I. Bei 500 mA sind das 0,85 W, in SOT-223 ohne
+    Kupferfläche zu viel. Für Dauerlasten über etwa 300 mA Kupferfläche oder Kühlkörper vorsehen
+  - Einsatz: Ersatz für den DevKit-Regler (Vorfall vom 17. August 2026,
+    `hardware/incident-2026-08-17-ldo.md`) und als separater 5-V-auf-3,3-V-Regler, wenn die
+    3,3-V-Last nicht mehr an das Devboard-`3V3` gehängt werden soll (siehe `hardware/power.md`)
 - Sicherungshalter mit Sicherungen, Aufschrift laut Operator „D63“ (Ergänzung 4. September 2026,
   abgelesen, nicht per Foto bestätigt)
   - 10× mit 5-A-Sicherung, 10× mit 1-A-Sicherung
