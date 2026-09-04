@@ -406,9 +406,12 @@ or stays unwired.
 
 ### 5.11 Optional: AUX switched 5 V output (`J_AUX`, IRLB8721 + 1N5819)
 
-The ENV-01 lesson was sensors starving in still air inside a housing. A small 5 V fan drawing air
+The ENV-01 lesson was sensors starving in still air inside a housing. A small fan drawing air
 past the SCD41 and SHT41, pulsed a few seconds before each measurement, is the cheapest fix, and
-the stock now has exactly the parts for the driver.
+the stock now has both the driver parts and a fan: one small axial fan, marking dictated as
+**"EXAV-XV-B0"** (spelling unverified). Its rated voltage, frame size, current and lead count are
+still to be read from the label. It goes on `J_AUX` only if the label says 5 V; a 12 V fan does not
+start reliably at 5 V and would need its own supply, not this domain.
 
 ```text
  +5V_PM ── J_AUX +  ──┬── D_AUX 1N5819 cathode (band)      flyback across the load
@@ -418,10 +421,13 @@ the stock now has exactly the parts for the driver.
  GPIO26 (pad 7) ── R_AUX_G 100 Ω ── Q_AUX gate ── R_AUX_PD 100 kΩ ── GND
 ```
 
-Low-side is correct here because a fan has no logic connection to anything. The load current runs
+Low-side is correct here because a two-wire fan has no logic connection to anything. If the fan
+turns out to have a tacho or PWM lead, leave that lead unconnected: a tacho output referenced to
+a switched ground is meaningless, and the speed is set by `Q_AUX` anyway. The load current runs
 through `F1` and the INA226 shunt with the SPS30, so the 0.5 A hold current is the shared budget:
-a 40 mm 5 V fan at ≈ 100 mA plus the SPS30's 80 mA peak leaves room; a bigger fan means the next
-PPTC up (RXEF075) and a fresh look at the USB budget. PWM at a few hundred hertz to a few kHz on
+a 40 mm 5 V fan at ≈ 100 mA plus the SPS30's 80 mA peak leaves room; above about 150 mA of fan
+current the next PPTC up (RXEF075) is the right `F1`, with a fresh look at the USB budget. Log the
+fan's start-up current on the INA226 during commissioning, the same way as the SPS30's. PWM at a few hundred hertz to a few kHz on
 GPIO26 sets the speed. Fit `D_AUX` with the band toward `J_AUX +`; a MOSFET without the flyback
 diode sees the fan's inductive kick on every off-edge.
 
@@ -461,6 +467,7 @@ driver, which is why it gets a designator now even if the header stays empty.
 | `JP_5V_SRC`, `JP_RAD_SRC` | 3-pin header + jumper | stock |
 | `TP_*` | six test-point pins | stock |
 | Sensors | SCD41, SPS30, ENS160+AHT20, SHT41, VEML7700, CJMCU-226, LD2410S | 1 each |
+| Fan on `J_AUX` (optional) | small axial fan, marking dictated as "EXAV-XV-B0"; rating to read from the label | 1 |
 
 Not used on purpose: the 1N4148 (no small-signal clamping needed; the series resistors and the
 transistor stages do that job), the 1N4007 family (too slow and too lossy for a 5 V rail), the

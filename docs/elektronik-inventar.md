@@ -368,6 +368,21 @@ Stückzahlen am 4. September 2026 vom Operator gezählt und abgelesen, nicht per
     speisen. Siehe [hardware/power.md](hardware/power.md)
   - genaue Typen und Stückzahl später bestimmen
 
+### Lüfter
+
+- 1× kleiner Axiallüfter, Kennzeichnung vom Operator diktiert als „EXAV-XV-B0“ (Ergänzung
+  4. September 2026, abgelesen, nicht per Foto bestätigt; Schreibweise der Kennzeichnung unsicher,
+  am Etikett prüfen)
+  - Nennspannung, Rahmenmaß, Stromaufnahme und Anschluss (2-polig oder mit Tacho-/PWM-Leitung)
+    noch nicht abgelesen. Vor dem Einsatz am Etikett prüfen: ein 12-V-Lüfter läuft an 5 V nicht
+    sicher an und gehört nicht an die 5-V-Domäne
+  - vorgesehener Einsatz: Gehäuselüfter für AtmosMesh Room v2, gepulst vor jeder Messung, damit
+    SCD41 und SHT41 nicht in stehender Luft messen (ENV-01). Treiber: IRLB8721 low-side mit
+    1N5819-Freilaufdiode am `J_AUX`-Ausgang des v2-Trägers (siehe
+    `hardware/kicad/atmosmesh-room-v2/wiring.md`, Abschnitt 5.11)
+  - Stromaufnahme zählt mit dem SPS30 zusammen gegen die 0,5-A-Haltestrom-PPTC der 5-V-Domäne;
+    liegt sie über etwa 150 mA, ist die RXEF075 die passende Sicherung
+
 ## Thermoelektrik
 
 - 1× Peltier-Element / thermoelektrisches Kühl-/Heizelement
@@ -649,6 +664,9 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
     Schutzkonzept ausgelegt ist
 
 ## Noch offen / später prüfen
+
+- Lüfter „EXAV-XV-B0“: Kennzeichnung, Nennspannung, Maß, Strom und Anschlussbelegung am Etikett
+  ablesen; erst dann ist er für die 5-V-Domäne des Room-v2-Trägers freigegeben.
 
 - Elektrolytkondensatoren: klären, ob das per Foto bestätigte 36-Werte-Sortiment (925 Stück,
   1–1500 µF) dieselbe Box wie die frühere „24 Werte, 0,1–1000 µF“ ist oder ein zweites Sortiment
