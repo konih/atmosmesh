@@ -400,6 +400,21 @@ approval.
 | Small axial fan, marking dictated as "EXAV-XV-B0" | 1 | 2-wire DC load (tacho/PWM lead unknown) | Marking spelling, rated voltage, frame size, current and lead count are all still to be read from the label. Intended as the Room v2 enclosure fan on the `J_AUX` low-side output (IRLB8721 + 1N5819 flyback, [wiring.md §5.11](../../hardware/kicad/atmosmesh-room-v2/wiring.md)), pulsed before each measurement against the ENV-01 still-air problem. A 12 V fan does not start reliably at 5 V and does not belong on the 5 V domain. Its current shares the RXEF050 0.5 A hold budget with the SPS30; above ~150 mA the RXEF075 is the right fuse |
 | Second ideaspark ESP32 board with display on top | 1 (plus the one in the Room build) | ESP-WROOM-32 | Operator describes it as OLED on top. ideaspark sells this board with a 0.96" mono I²C OLED **or** the 1.14" colour SPI TFT the Room carrier is drawn for; only the TFT variant is pin-compatible with the Room carrier. Check the glass and print before assuming a second Room controller |
 
+## Reservations (2026-09-04)
+
+Parts below are spoken for and are not free stock for other builds. A reservation is a claim on
+the count, not wiring approval; every part still passes its photo and measurement gates.
+
+| Reserved for | Parts | Left free after the reservation |
+| --- | --- | --- |
+| AtmosMesh Room (built, running) | 1 ideaspark ESP32 TFT board, 1 VEML7700, 1 SHT41, 1 D-SUN PIR, 1 SDS011, 1 buzzer module | — |
+| AtmosMesh Room v2 ([R2-01](../../agent-context/stories/R2-01.md), [wiring](../../hardware/kicad/atmosmesh-room-v2/wiring.md)) | 1 ideaspark ESP32 board (the second one), SCD41, SPS30, 1 ENS160+AHT20, 1 SHT41, 1 VEML7700, CJMCU-226 INA226, HLK-LD2410S, the small axial fan, 1 AMS1117-3.3, 1 RXEF050 (+1 RXEF075 contingency), 2 IRLB8721, 1 S8050, 1 S8550, 1 2N3904 or S8050, 1 1N5822, 1 1N5819, 2 × 100 µF, 1 × 22 µF, 1 × 10 µF, 7 × 100 nF, E24 resistors per the BOM, 1 JST ZH pigtail (to buy) | 0 SCD41, 0 SPS30, 1 ENS160+AHT20, 2 VEML7700, SHT41 spares minus one, 3 AMS1117-3.3, 8 IRLB8721, 0 LD2410S (LD2450 stays free), 0 fans |
+
+Unreserved and looking for a project: 5 ESP32-C3 SuperMini OLED boards, 5 ESP32-C6 modules,
+6 BME280, 2 VEML7700, 4 BMI160, 2 DS18B20 probes, 5 capacitive soil modules, SGP40 and SGP41,
+2 ADS1115, the 433 MHz pairs, the RFM12S, the second ENS160+AHT20, the LD2450, 4 OLEDs.
+[SP-01](../../agent-context/stories/SP-01.md) proposes the first draw on that list.
+
 ## Non-negotiable limits
 
 - Never wire SDS011 (d011v2) to RX0/TX0 (GPIO3/GPIO1). Those pins are USB console only.

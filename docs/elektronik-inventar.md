@@ -33,6 +33,20 @@
     Room-Träger
   - möglicherweise sind das zwei der oben als „2× weitere ESP32-Devboards“ geführten Boards;
     beim nächsten Zählen auflösen
+- 5× ESP32-C3 SuperMini mit 0,42"-OLED (Ergänzung 4. September 2026, vom Operator gezählt, nicht
+  per Foto bestätigt; bisher nur im englischen Inventar geführt)
+  - ESP32-C3 (RISC-V, Wi-Fi + BLE), USB-C, Keramikantenne, Onboard-3,3-V-Regler, **kein 5-V-Ausgang
+    für Sensoren vorsehen**: alles an diesem Board bleibt 3,3 V
+  - OLED nach Typenwissen SSD1306-kompatibel, 72×40 Pixel, I²C auf `0x3C`, üblicherweise an
+    GPIO5 (SDA) und GPIO6 (SCL) — am Board und im Verkäufer-Pinout prüfen, Revisionen weichen ab
+  - Strapping-Pins des C3: GPIO2, GPIO8 (Onboard-LED) und GPIO9 (BOOT-Taster) nicht als Eingänge
+    belegen; ADC1 auf GPIO0–4
+  - bekannte Eigenheit der SuperMini-Boards: die Keramikantenne koppelt schlecht, mit voller
+    Sendeleistung reißt Wi-Fi ab; Sendeleistung in der Firmware auf etwa 8,5 dBm begrenzen
+  - vorgesehener Einsatz: AtmosMesh Spot (`agent-context/stories/SP-01.md`), zugleich der
+    Toolchain-Nachweis für ESP32-C3 in PlatformIO, den R2-01 ausklammert
+- 5× ESP32-C6-Module (Ergänzung 4. September 2026, gezählt, nicht per Foto bestätigt; genaue
+  Modulvariante und Flashgröße unbekannt, bisher nur im englischen Inventar geführt)
 - 1× Heltec WiFi LoRa 32 V2
   - LoRa 866–915 MHz
   - 0,96" OLED
@@ -662,6 +676,25 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
     isolieren und zugentlasten. Die 5-V-Domäne ist auf dem Room-Board bewusst räumlich abgetrennt;
     ein abgerutschter 5-V-Draht auf einen GPIO ist genau der Fehler, gegen den das gesamte
     Schutzkonzept ausgelegt ist
+
+## Reservierungen (Stand 4. September 2026)
+
+Reservierte Teile sind kein freier Bestand für andere Aufbauten. Eine Reservierung ist ein
+Anspruch auf die Stückzahl, keine Verdrahtungsfreigabe.
+
+- **AtmosMesh Room** (aufgebaut, im Gehäuse, läuft): 1× ideaspark-ESP32-TFT-Board, 1× VEML7700,
+  1× SHT41, 1× D-SUN-PIR, 1× SDS011, 1× Buzzer-Modul
+- **AtmosMesh Room v2** (`agent-context/stories/R2-01.md`,
+  `hardware/kicad/atmosmesh-room-v2/wiring.md`): das zweite ideaspark-Board, SCD41, SPS30,
+  1× ENS160+AHT20, 1× SHT41, 1× VEML7700, CJMCU-226 (INA226), HLK-LD2410S, der kleine Lüfter,
+  1× AMS1117-3.3, 1× RXEF050 (+1× RXEF075 als Reserve), 2× IRLB8721, 1× S8050, 1× S8550,
+  1× 2N3904 oder S8050, 1× 1N5822, 1× 1N5819, 2× 100 µF, 1× 22 µF, 1× 10 µF, 7× 100 nF,
+  E24-Widerstände laut Stückliste, 1× JST-ZH-Kabel (zu beschaffen)
+- danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 2× VEML7700, 3× AMS1117-3.3,
+  8× IRLB8721, 0× LD2410S (der LD2450 bleibt frei), 0× Lüfter
+- ohne Projekt: 5× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 6× BME280, 4× BMI160, 2× DS18B20,
+  5× Bodenfeuchtemodule, SGP40 und SGP41, 2× ADS1115, die 433-MHz-Paare, RFM12S, LD2450,
+  4× OLED — `agent-context/stories/SP-01.md` schlägt den ersten Zugriff darauf vor
 
 ## Noch offen / später prüfen
 
