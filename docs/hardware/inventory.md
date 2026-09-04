@@ -345,6 +345,15 @@ matters.
 This does not extend to capacitors, diodes or transistors, whose stock is still only what the
 tables above record.
 
+## Operator-reported stock, continued (2026-09-04)
+
+Read out by the operator; not photo-verified. Same rule as every other row: stock is not wiring
+approval.
+
+| Component | Quantity | Interface | Verification and safety status |
+| --- | ---: | --- | --- |
+| ENS160 + AHT20 combo module | 2 | I²C. ENS160 at 0x52/0x53 (ADDR pin); AHT20 **fixed 0x38**. Operator counted 8 pins; the usual header is VIN, 3V3, GND, SCL, SDA, CS, ADD, INT | ENS160 outputs TVOC, an air-quality index and an **eCO₂ estimate derived from VOC — not a CO₂ measurement**; only the SCD41 may be labelled CO₂. The AHT20 supplies the ENS160's temperature/humidity compensation. Two modules on one bus collide at 0x38, so the pair serves two builds. Modules carry a regulator for the 1.8 V ENS160 core; feed **3V3** until regulator and pull-ups are inspected. Heater warm-up and first-use conditioning times come from the datasheet, not from memory |
+
 ## Non-negotiable limits
 
 - Never wire SDS011 (d011v2) to RX0/TX0 (GPIO3/GPIO1). Those pins are USB console only.

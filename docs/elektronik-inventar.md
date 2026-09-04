@@ -49,6 +49,22 @@
 > ermöglichen parallele Aufbauten — Room, Aqua und Bench — nicht mehrere gleiche Sensoren an einem
 > Bus. Für mehrere Sensoren desselben Typs wäre ein I²C-Multiplexer nötig; ein solcher ist im
 > Bestand nicht erfasst.
+- 2× ENS160 + AHT20 Kombimodul (Ergänzung 4. September 2026, vom Operator abgelesen, nicht per
+  Foto bestätigt)
+  - ScioSense ENS160: digitaler Metalloxid-Multigassensor, liefert TVOC, einen Luftqualitätsindex
+    und einen **eCO₂-Schätzwert**. eCO₂ wird aus dem VOC-Signal abgeleitet und ist **keine
+    CO₂-Messung**; als CO₂ darf nur der SCD41 bezeichnet werden. Gleiche Regel wie beim MQ135
+  - AHT20: Temperatur- und Luftfeuchtigkeitssensor; liefert dem ENS160 die Kompensationswerte
+  - I²C. ENS160 auf 0x52 oder 0x53 (ADDR-Pin), AHT20 **fest auf 0x38**. Zwei dieser Module an
+    einem Bus kollidieren daher beim AHT20; die zwei Exemplare sind für zwei Aufbauten, nicht für
+    einen Bus
+  - Operator: 8 Pins. Übliche Belegung dieser Module ist VIN, 3V3, GND, SCL, SDA, CS, ADD, INT;
+    am Modul vor dem Anschluss ablesen
+  - Versorgung: der ENS160-Kern läuft mit 1,8 V, Module tragen dafür einen eigenen Regler. Bis
+    Regler und Pull-ups am Modul geprüft sind, gilt **3V3** wie bei allen I²C-Breakouts
+  - der ENS160 heizt: nach dem Einschalten Aufwärmzeit im Minutenbereich, beim ersten Betrieb ein
+    deutlich längerer Einlauf; Werte dazu aus dem Datenblatt übernehmen, nicht raten
+  - alle Angaben außer Stückzahl und Pinzahl sind Typenwissen, keine Prüfung am Exemplar
 - 1× Nova Fitness SDS011 Feinstaubsensor
   - PM2.5 / PM10
   - zusammen mit USB-Adapter/Kabel USB2TT004
@@ -529,6 +545,8 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 
 - Elektrolytkondensatoren: klären, ob das per Foto bestätigte 36-Werte-Sortiment (925 Stück,
   1–1500 µF) dieselbe Box wie die frühere „24 Werte, 0,1–1000 µF“ ist oder ein zweites Sortiment
+- ENS160 + AHT20: Pinbelegung und Reglerbestückung am Modul per Foto bestätigen; ADDR-Pin-Zustand
+  ab Werk prüfen
 - Dioden: klären, ob Erfassung 1 (1N4001–1N4007, 1N5818/1N5819) und Erfassung 2 (8 Typen,
   100 Stück) zwei Sortimente sind; Erfassung 2 per Foto des Etiketts bestätigen
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren
