@@ -162,10 +162,14 @@
 
 ## ADC / Analog
 
-- ADS1115 ADC + PGA – mehrere vorhanden
-  - 16 Bit
-  - I²C
-  - PGA
+- 2× ADS1115 ADC + PGA Breakout (Stückzahl am 4. September 2026 gezählt; zuvor „mehrere
+  vorhanden“)
+  - 16 Bit, 4 Eingänge (single-ended) oder 2 Differenzpaare, programmierbarer Verstärker (PGA)
+  - I²C, Adresse 0x48 bis 0x4B über den ADDR-Pin (an GND, VDD, SDA oder SCL); beide Module
+    können an einem Bus sitzen
+  - Versorgung 2,0–5,5 V; für ESP32-Aufbauten **3V3**, und Eingangsspannungen dürfen VDD nicht
+    überschreiten
+  - für das Room-Board nicht vorgesehen (D-032 in `agent-context/decisions.md`)
 - Potentiometer-Module
 - Joystick-Controller-Board, Keyes-SJoys, 5 Pins
 
