@@ -3,8 +3,10 @@
 The first Spot is the **In/Out variant with the DS18B20 probe** (operator decision,
 4 September 2026): SHT41 and VEML7700 on the board, an HLK-LD2410S radar for presence, a BME280
 on a cable outside the window, and a temperature probe. Story:
-[`SP-01`](../../../agent-context/stories/SP-01.md). Companion drawing:
-[`atmosmesh-spot-layout.svg`](atmosmesh-spot-layout.svg).
+[`SP-01`](../../../agent-context/stories/SP-01.md). Companion drawings:
+[`atmosmesh-spot-layout.svg`](atmosmesh-spot-layout.svg) (hole-by-hole placement) and
+[`atmosmesh-spot-wiring.svg`](atmosmesh-spot-wiring.svg) (schematic-style net drawing, every
+pin by its printed name).
 
 **One 3.3 V domain.** The SuperMini's `5V` pin is not wired to anything. Every part below is
 datasheet- or operator-confirmed to run from 3.3 V, and no signal on the board can exceed 3.3 V.
