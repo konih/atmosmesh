@@ -7,7 +7,7 @@
 
 ## Computer & Mikrocontroller
 
-- 1× Raspberry Pi 1
+- 1× Raspberry Pi 1 Model B (Modell am 4. September 2026 bestätigt; nur ein Pi 1 insgesamt)
 - 1× Raspberry Pi 3 Model B Rev. 1.2
 - 1× Raspberry Pi Zero 2 W
 - 1× Arduino Uno
