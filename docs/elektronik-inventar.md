@@ -84,6 +84,14 @@
   - Luftfeuchtigkeit
   - physisch vorhanden; möglicherweise identisch mit dem B24-Modul aus dem 4duino SensorKit
 - 1× YL-69 / Y69 Bodenfeuchtesensor
+- 6× BME280 Breakout (Ergänzung 4. September 2026, abgelesen, nicht per Foto bestätigt; fünf
+  aus der Zählung vom selben Tag plus ein weiteres gefundenes Exemplar, Gesamtzahl bestätigen)
+  - Bosch BME280: Luftfeuchtigkeit, Luftdruck und Temperatur in einem Chip; damit der einzige
+    Sensor im Bestand, der alle drei Größen liefert. Nicht mit dem BMP280 verwechseln, der keine
+    Feuchte misst
+  - I²C-Adresse 0x76 oder 0x77 über SDO, wie beim BMP280; auch SPI möglich
+  - Breakout-Variante, Versorgung, Pull-ups und Pinfolge am Modul ablesen; bis dahin **3V3**
+  - Typenwissen, nicht am Exemplar geprüft
 - 1× GY-BMP280
   - Luftdruck
   - Temperatur
@@ -635,6 +643,7 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 - Sicherungshalter „D63“: Halter-Nennspannung, Sicherungsformat und Auslösecharakteristik per
   Foto bestätigen
 - CJMCU-226: Shuntwert und Pinbelegung am Modul per Foto bestätigen; Stückzahl bestätigen
+- BME280: Gesamtstückzahl (6?) bestätigen; Breakout-Variante und Pinfolge per Foto
 - Dioden: klären, ob Erfassung 1 (1N4001–1N4007, 1N5818/1N5819) und Erfassung 2 (8 Typen,
   100 Stück) zwei Sortimente sind; Erfassung 2 per Foto des Etiketts bestätigen
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren
