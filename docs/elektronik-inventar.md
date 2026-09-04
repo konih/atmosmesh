@@ -206,6 +206,19 @@
   - genaue Zuordnung und Stückzahl der zusätzlichen Exemplare später prüfen
 - weitere Stromversorgungsboards mit großen Spulen und Kondensatoren
 
+- Sicherungshalter mit Sicherungen, Aufschrift laut Operator „D63“ (Ergänzung 4. September 2026,
+  abgelesen, nicht per Foto bestätigt)
+  - 10× mit 5-A-Sicherung, 10× mit 1-A-Sicherung
+  - Sicherungsformat (vermutlich 5×20 mm), Bauform des Halters (Leiterplatte, Kabel, Panel) und
+    ob „D63“ den Halter oder die Sicherung bezeichnet: am Teil ablesen
+  - **Nennspannung des Halters ablesen, bevor er auf der Netzseite eingesetzt wird.** Ein Halter
+    für 32 V DC auf der 230-V-Primärseite ist keine Absicherung, sondern ein Isolationsfehler
+  - Auslösecharakteristik (flink/träge) der Sicherungen ablesen; sie steht nicht in der
+    Stromangabe
+  - naheliegende Zuordnung: die beiden 230-V/5-V-Netzteile mit 5 A und 1 A. Der Sicherungswert
+    gehört zur abgesicherten Last, nicht zur Netzteilbezeichnung; eine 5-A-Sicherung vor dem
+    1-A-Netzteil schützt nichts
+
 > [!danger] Offene Netzspannungs-Netzteile
 > Das 5V07/12V04-Board und das SANMIM SM-PLG06A sind offene AC/DC-Schaltnetzteile mit einer Netzspannungsseite. Sie sind **keine gewöhnlichen Breadboard-DC/DC-Module** und dürfen nicht offen oder ungeschützt wie Niederspannungsmodule verwendet werden. Messung und Betrieb nur in einem geeigneten berührungssicheren Aufbau durch eine entsprechend qualifizierte Person.
 
@@ -547,6 +560,8 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
   1–1500 µF) dieselbe Box wie die frühere „24 Werte, 0,1–1000 µF“ ist oder ein zweites Sortiment
 - ENS160 + AHT20: Pinbelegung und Reglerbestückung am Modul per Foto bestätigen; ADDR-Pin-Zustand
   ab Werk prüfen
+- Sicherungshalter „D63“: Halter-Nennspannung, Sicherungsformat und Auslösecharakteristik per
+  Foto bestätigen
 - Dioden: klären, ob Erfassung 1 (1N4001–1N4007, 1N5818/1N5819) und Erfassung 2 (8 Typen,
   100 Stück) zwei Sortimente sind; Erfassung 2 per Foto des Etiketts bestätigen
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren
