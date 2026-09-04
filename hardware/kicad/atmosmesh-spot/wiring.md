@@ -267,9 +267,21 @@ use them; label them on the board.
   **GND with SDA** on the other, so neither clock nor data is twisted with the other. Leave the
   other two pairs unconnected at both ends. A flat 4-core telephone cable also works for a window
   frame; there the pairing rule does not apply and the length limit is the same.
-- **Bus speed 50 kHz** on this variant (firmware flag). With 2.2 kΩ carrier pull-ups plus the
-  breakouts' own, expect roughly 1.6 kΩ total; capture SDA at the board end on the DSO2D15 after
-  the cable is at its final length and record the rise time (must be under 1 µs).
+- **Bus speed 50 kHz** on this variant (firmware flag). Pull-up sum, from what has been read off
+  the boards (operator, 4 September): the VEML7700 carries a `103` part, so 10 kΩ per line if it
+  is a resistor or a two-element array; the SHT41 has an **empty** `103` footprint, so nothing.
+  The SuperMini's OLED and the outdoor BME280 are unread and assumed 10 kΩ each until measured.
+
+  | Fitted pull-ups per line | Total | Sink at 3.3 V |
+  | --- | ---: | ---: |
+  | carrier 2.2 kΩ + VEML7700 10 kΩ | 1.8 kΩ | 1.8 mA |
+  | + BME280 10 kΩ | 1.5 kΩ | 2.2 mA |
+  | + OLED 10 kΩ | 1.3 kΩ | 2.5 mA |
+
+  All inside the 3 mA limit, so nothing has to be lifted. Confirm with the meter, unpowered:
+  VEML7700 `SDA` to `VIN` and `SCL` to `VIN` about 10 kΩ each (a `103` capacitor would read open);
+  SHT41 the same pairs open. Then capture SDA at the board end on the DSO2D15 after the cable is
+  at its final length and record the rise time (must be under 1 µs).
 - **Outdoor end:** breakout in a vented shield under the sill, out of rain and sun, cable in a
   drip loop, no coating on the sensor.
 - **Not in stock.** The JST-PH set has pre-crimped 24 AWG leads that make a tidy pigtail at the
@@ -287,7 +299,8 @@ use them; label them on the board.
 5. `R_OUT_SDA`, `R_OUT_SCL`, `D_CL1`–`D_CL4` (diode-test each), `C_OUT`, `J_OUT`.
 6. `C_RAD_BULK` (polarity!), `C_RAD`, `J_RAD`.
 7. `R_1W`, `J_1W`.
-8. Unpowered: resistance SDA to 3V3 and SCL to 3V3 (≈ 2.2 kΩ with no modules plugged in); every
+8. Unpowered: resistance SDA to 3V3 and SCL to 3V3 (≈ 2.2 kΩ with no modules plugged in, about
+   1.8 kΩ with the VEML7700 plugged in, unchanged by the SHT41); every
    GPIO pad to 3V3 and to GND open circuit; `J_OUT` and `J_1W` poles to their nets.
 
 ## 8. Staged bring-up
