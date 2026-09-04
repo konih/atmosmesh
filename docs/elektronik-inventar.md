@@ -45,6 +45,13 @@
     Sendeleistung reißt Wi-Fi ab; Sendeleistung in der Firmware auf etwa 8,5 dBm begrenzen
   - vorgesehener Einsatz: AtmosMesh Spot (`agent-context/stories/SP-01.md`), zugleich der
     Toolchain-Nachweis für ESP32-C3 in PlatformIO, den R2-01 ausklammert
+  - **Pinbelegung per Foto bestätigt (4. September 2026, Fotos danach gelöscht):** USB links,
+    OLED oben. Reihe A (Seite mit `PWR`- und `IO8`-LED), vom USB-Ende: `5V GD 3V RX TX 2 1 0`;
+    Reihe B, vom USB-Ende: `10 9 8 7 6 5 4 3`. `RX`/`TX` sind GPIO20/21. Das ist **nicht** die
+    Belegung des einfachen SuperMini. `BOOT`- und `RST`-Taster und ein kleines rotes Bauteil
+    mit weißem Punkt (vermutlich die Antenne) am USB-fernen Ende. **Reihenabstand 7 Raster
+    (17,78 mm), Probestecken bestätigt:** im 14×20-Lochraster sitzt das Modul mit je drei freien
+    Spalten links und rechts. OLED-I²C-Pins sind nicht aufgedruckt; Bus-Scan klärt sie
 - 5× ESP32-C6-Module (Ergänzung 4. September 2026, gezählt, nicht per Foto bestätigt; genaue
   Modulvariante und Flashgröße unbekannt, bisher nur im englischen Inventar geführt)
 - 1× Heltec WiFi LoRa 32 V2
@@ -58,11 +65,29 @@
 ## Sensoren
 
 - 4× SHT41 (Stückzahl korrigiert am 28. August 2026, zuvor 1×)
+  - **Breakout per Foto bestätigt (4. September 2026), eines von vieren geprüft; die übrigen drei
+    vor dem Einsatz mit dieser Beschreibung abgleichen:** Aufdruck `SHT4X`, Pins `VIN GND SCL
+    SDA`. Rückseite: `662K`-Regler (3,3 V), 6-poliger Pegelwandler, 8-poliges Widerstandsarray
+    `103` (bestückt) und **zwei leere Lötplätze** an der Oberkante. Auf dieser Boardklasse sind
+    die leeren Plätze die hostseitigen Pull-ups: **das Board liefert dem Bus keinen Pull-up**,
+    der Träger muss sie stellen. Gleiche Bauart wie das VEML7700-Breakout `HW-900` (dort alle
+    vier Array-Elemente in Gebrauch, also ~10 kΩ je Leitung hostseitig)
+  - BME280-Breakout `GY-BM E/P 280` (Foto 4. September 2026): 6-polig `VCC GND SCL SDA CSB SDO`,
+    **kein Regler**, nur ein Kondensator und 4× `103` → **nur 3,3 V**; SDO über 10 kΩ nach GND,
+    also Adresse `0x76`. Sensor markiert `31E / UP`; ob BME280 oder BMP280 auf dem geteilten
+    Board sitzt, entscheidet das Chip-ID-Register beim ersten Scan (0x60 = BME280, 0x58 = BMP280)
   - digitaler Temperatur- und Luftfeuchtigkeitssensor
   - I²C, feste Adresse **0x44** (Variante SHT4x-Bxxx: 0x45)
   - Breakout-Pinreihenfolge operator-bestätigt: **VIN / GND / SCL / SDA**
   - am 25. August 2026 als eingetroffen erfasst
-- 4× VEML7700 (Ergänzung 28. August 2026)
+- 4× VEML7700 (Ergänzung 28. August 2026; das englische Inventar führt 3× — beim nächsten Zählen
+  auflösen)
+  - **Breakout per Foto bestätigt (4. September 2026), eines von vieren geprüft:** Board `HW-900`,
+    Rückseite „I2C Lux Sensor Vin/logic:3-5V“, Pins `VIN 3VO GND SCL SDA` (Room-Reihenfolge).
+    Bestückung: 5-poliger Regler (`3VO` ist dessen Ausgang), 6-poliger Pegelwandler, 8-poliges
+    Widerstandsarray `103`, zwei Kondensatoren; hostseitig rund 10 kΩ je Leitung. **Die übrigen
+    drei Boards vor dem Einsatz mit dieser Beschreibung abgleichen** — gleicher Aufdruck `HW-900`
+    heißt gleiche Bauart, alles andere ist eine neue Variante und wird eigens erfasst
   - Umgebungslichtsensor, Lux
   - I²C, **feste Adresse 0x10**
   - Breakout-Pinreihenfolge operator-bestätigt: **VIN / 3Vo / GND / SCL / SDA**; `3Vo` ist der
@@ -127,6 +152,13 @@
   - I²C-Adresse 0x76 oder 0x77 über SDO, wie beim BMP280; auch SPI möglich
   - Breakout-Variante, Versorgung, Pull-ups und Pinfolge am Modul ablesen; bis dahin **3V3**
   - Typenwissen, nicht am Exemplar geprüft
+  - **Breakout per Foto bestätigt (4. September 2026), eines von sechs geprüft:** violettes Board
+    `GY-BM E/P 280`, 6-polig `VCC GND SCL SDA CSB SDO`, **kein Regler** (ein Kondensator, 4× `103`),
+    also **nur 3,3 V**; SDO über 10 kΩ nach GND → `0x76`, CSB über 10 kΩ nach VCC → I²C. Sensor
+    markiert `31E / UP`. Das Board ist für BME280 und BMP280 gemeinsam aufgelegt: welcher Chip
+    sitzt, sagt das Chip-ID-Register beim ersten Scan (0x60 = BME280, 0x58 = BMP280). **Die
+    übrigen fünf Boards vor dem Einsatz mit dieser Beschreibung abgleichen**; ein Board mit
+    Regler oder anderer Pinfolge ist eine eigene Variante
 - 1× GY-BMP280
   - Luftdruck
   - Temperatur
