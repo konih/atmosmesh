@@ -1,23 +1,23 @@
 Ref,Qty,Part,Value or type,Stock source,Note
-U1,1,ESP32-C3 SuperMini with 0.42in OLED,3.3 V logic; on-board LDO,1 of 5,board on the bench; verify pin names on silkscreen
-U2,1,SHT41 breakout,I2C 0x44,1 of 4,J_SHT; last free unit after Room and Room v2
-U3,1,VEML7700 breakout,I2C 0x10,1 of 3,J_VEML; 3Vo pin left unwired
-U4,1,HLK-LD2410S,24 GHz presence radar; 3.0-3.6 V; all pins 0-3.3 V,1 of 1,J_RAD; datasheet-confirmed; J2 order 3V3 GND OT1 RX OT2
-U5,1,BME280 breakout 4-pin,I2C 0x76,1 of 6,outdoor on the cable via J_OUT; photograph pins and pull-ups
+U1,1,ESP32-C3 SuperMini with 0.42in OLED,3.3 V logic; on-board LDO,1 of 5,pin map photo-verified 2026-09-04: row A 5V GD 3V RX TX 2 1 0 / row B 10 9 8 7 6 5 4 3 from the USB end; rows 7 pitches apart (dry-fit confirmed 2026-09-04)
+U2,1,SHT41 breakout marked SHT4X,I2C 0x44; 662K LDO + level shifter on board; no host-side pull-ups,1 of 4,J_SHT; VIN GND SCL SDA photo-verified
+U3,1,VEML7700 breakout HW-900,I2C 0x10; LDO + level shifter + 103 array (~10k per line),1 of 3,J_VEML; VIN 3VO GND SCL SDA photo-verified; 3VO left unwired
+U4,1,HLK-LD2410S,24 GHz presence radar; 3.0-3.6 V; all pins 0-3.3 V,1 of 1,J_RAD; silkscreen 3V3 GND OT1 RX OT2 photo-verified against the manual
+U5,1,BME280 breakout GY-BM E/P 280 6-pin,I2C 0x76; no regulator (3.3 V only); four 10k,1 of 6,outdoor on the cable via J_OUT; VCC GND SCL SDA used; CSB and SDO left open; chip ID 0x60 confirms BME280
 U6,1,DS18B20 encapsulated probe 2.5 m,1-Wire,1 of 2,J_1W; ring out cable colours
-PCB,1,perfboard 14 x 20 holes double-sided,2.54 mm,stock,
-S1;S2,2,female header strip 8-pin,2.54 mm,header stock,U1 socket rows at col 4 and col 10 rows 2-9
-J_SHT,1,female header 4-pin,2.54 mm,header stock,row 12 cols 1-4
-J_VEML,1,female header 5-pin,2.54 mm,header stock,row 12 cols 7-11
-J_RAD,1,female header 5-pin,2.54 mm (measure radar pins),header stock,row 19 cols 1-5; radar upright
-J_OUT,1,PCB screw terminal 4-pole,5.08 mm assumed (measure),1 of 10,col 13 rows 12/14/16/18; outdoor cable
-J_1W,1,PCB screw terminal 3-pole,5.08 mm assumed (measure),1 of 10,row 19 cols 8/10/12; probe cable
-R_PU_SDA;R_PU_SCL,2,resistor,2.2 kOhm,E24 kit,row 11; In/Out value
-R_OUT_SDA;R_OUT_SCL,2,resistor,100 Ohm,E24 kit,row 14; series to the cable
+PCB,1,perfboard 14 x 20 holes double-sided (4 x 6 cm),2.54 mm,stock,elongated edge pads on both short edges; the row-1 strip sits under the USB overhang
+S1;S2,2,female header strip 8-pin,2.54 mm,header stock,U1 socket rows at col 4 (row A) and col 11 (row B) rows 3-10
+J_SHT,1,female header 4-pin,2.54 mm,header stock,row 15 cols 1-4
+J_VEML,1,female header 5-pin,2.54 mm,header stock,row 15 cols 7-11
+J_RAD,1,female header 5-pin,2.54 mm (measure radar pins),header stock,row 20 cols 1-5; radar upright; label side outward
+J_OUT,1,PCB screw terminal 4-pole,5.08 mm assumed (measure),1 of 10,col 13 rows 14/16/18/20; outdoor cable
+J_1W,1,PCB screw terminal 3-pole,5.08 mm assumed (measure),1 of 10,row 20 cols 8/10/12; probe cable
+R_PU_SDA;R_PU_SCL,2,resistor,2.2 kOhm,E24 kit,row 14; In/Out value
+R_OUT_SDA;R_OUT_SCL,2,resistor,100 Ohm,E24 kit,row 16; series to the cable
 R_1W,1,resistor,4.7 kOhm,E24 kit,row 17; 1-Wire pull-up
-D_CL1;D_CL2;D_CL3;D_CL4,4,Schottky diode,1N5819,4 of 10,row 15; rail clamps on OUT_SDA and OUT_SCL
+D_CL1;D_CL2;D_CL3;D_CL4,4,Schottky diode,1N5819,4 of 10,row 18; rail clamps on OUT_SDA and OUT_SCL
 C1;C_SHT;C_VEML;C_RAD;C_OUT,5,ceramic capacitor,100 nF,ceramic assortment,one per supply pin
-C_RAD_BULK,1,electrolytic capacitor,100 uF >= 6.3 V,Elko assortment,row 16; radar transmit peaks ~118 mA; observe polarity
-TP_3V3;TP_GND;TP_SDA;TP_SCL,4,test-point pin,,stock,row 14
-CABLE,1,4-core cable up to 3 m,flat 4-core or Cat5 offcut,to source,VIN+SCL on one pair and GND+SDA on the other if twisted
+C_RAD_BULK,1,electrolytic capacitor low ESR,100 uF >= 6.3 V,Elko assortment,row 19; radar transmit peaks ~118 mA; observe polarity
+TP_3V3;TP_GND;TP_SDA;TP_SCL,4,test-point pin,,stock,row 17
+CABLE,1,4-core cable up to 3 m,flat 4-core or Cat5 offcut,to source,VCC+SCL on one pair and GND+SDA on the other if twisted
 SHIELD,1,vented housing for the outdoor BME280,inverted cup or plate stack,workshop,not electronics
