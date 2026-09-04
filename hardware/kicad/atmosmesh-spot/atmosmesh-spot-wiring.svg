@@ -73,9 +73,9 @@
 <text x="93.0" y="270" font-size="8" text-anchor="middle" fill="#111" font-weight="normal">100n</text>
 <line x1="76" y1="250" x2="83.0" y2="250" stroke="#333" stroke-width="1"/>
 <line x1="103.0" y1="250" x2="110" y2="250" stroke="#333" stroke-width="1"/>
-<text x="120" y="470" font-size="8" text-anchor="end" fill="#777" font-weight="normal">n.c.</text>
-<text x="120" y="502" font-size="8" text-anchor="end" fill="#777" font-weight="normal">n.c.</text>
 <text x="120" y="534" font-size="8" text-anchor="end" fill="#777" font-weight="normal">n.c.</text>
+<text x="120" y="566" font-size="8" text-anchor="end" fill="#777" font-weight="normal">n.c. (ADC, kept free)</text>
+<text x="120" y="598" font-size="8" text-anchor="end" fill="#777" font-weight="normal">n.c. (ADC, kept free)</text>
 <text x="390" y="374" font-size="8" text-anchor="start" fill="#777" font-weight="normal">n.c.</text>
 <text x="390" y="406" font-size="8" text-anchor="start" fill="#777" font-weight="normal">n.c.</text>
 <text x="390" y="438" font-size="8" text-anchor="start" fill="#777" font-weight="normal">n.c.</text>
@@ -201,9 +201,9 @@
 <text x="440" y="556" font-size="9" text-anchor="start" fill="#6a1b9a" font-weight="normal">1-Wire → GPIO4</text>
 <polyline points="1216.0,530 1216.0,900 392,900 392,594 384,594" fill="none" stroke="#ef6c00" stroke-width="2"/>
 <text x="1222.0" y="897" font-size="9" text-anchor="start" fill="#ef6c00" font-weight="normal">OT2 → GPIO3 (presence, high = occupied)</text>
-<polyline points="1120.0,530 1120.0,916 76,916 76,562 126,562" fill="none" stroke="#ef6c00" stroke-width="2"/>
-<text x="1126.0" y="913" font-size="9" text-anchor="start" fill="#ef6c00" font-weight="normal">OT1 (radar TX) → GPIO1 (UART1 RX)</text>
-<polyline points="1168.0,530 1168.0,932 92,932 92,594 126,594" fill="none" stroke="#ef6c00" stroke-width="2"/>
-<text x="1174.0" y="929" font-size="9" text-anchor="start" fill="#ef6c00" font-weight="normal">RX ← GPIO0 (UART1 TX)</text>
+<polyline points="1120.0,530 1120.0,916 46,916 46,466 126,466" fill="none" stroke="#ef6c00" stroke-width="2"/>
+<text x="1126.0" y="913" font-size="9" text-anchor="start" fill="#ef6c00" font-weight="normal">OT1 (radar TX) → board RX = GPIO20 (UART0 RX, Serial0)</text>
+<polyline points="1168.0,530 1168.0,932 62,932 62,498 126,498" fill="none" stroke="#ef6c00" stroke-width="2"/>
+<text x="1174.0" y="929" font-size="9" text-anchor="start" fill="#ef6c00" font-weight="normal">RX ← board TX = GPIO21 (UART0 TX)</text>
 <text x="30" y="926" font-size="9" text-anchor="start" fill="#444" font-weight="normal">Not shown: TP_3V3/TP_GND/TP_SDA/TP_SCL on the rails. Layout in atmosmesh-spot-layout.svg; build order and bring-up in wiring.md.</text>
 </svg>
