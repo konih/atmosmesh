@@ -66,11 +66,20 @@ the other way round when the USB points at row 1, swap the columns, never the ne
 | `5V` — **not wired** | `10` GPIO10 |
 | `GD` GND | `9` GPIO9 — BOOT button, strapping: unused |
 | `3V` 3V3 — the rail | `8` GPIO8 — `IO8` LED, strapping: unused |
-| `RX` GPIO20 — boot log: unused | `7` GPIO7 |
-| `TX` GPIO21 — boot log: unused | `6` GPIO6 — SCL (scan-confirmed: OLED at 0x3C) |
+| `RX` GPIO20 — UART0 RX ← radar `OT1` | `7` GPIO7 |
+| `TX` GPIO21 — UART0 TX → radar `RX` | `6` GPIO6 — SCL (scan-confirmed: OLED at 0x3C) |
 | `2` GPIO2 — strapping: unused | `5` GPIO5 — SDA (scan-confirmed) |
-| `1` GPIO1 — UART1 RX ← radar `OT1` | `4` GPIO4 — 1-Wire |
-| `0` GPIO0 — UART1 TX → radar `RX` | `3` GPIO3 — radar `OT2` |
+| `1` GPIO1 — ADC-capable, kept free | `4` GPIO4 — 1-Wire |
+| `0` GPIO0 — ADC-capable, kept free | `3` GPIO3 — radar `OT2` |
+
+> **Why the marked `RX`/`TX` pins carry the radar (changed 5 September).** On this board the
+> USB console is the chip's native USB-serial, so UART0 on GPIO20/21 is a free hardware UART
+> (`Serial0` in the Arduino core, `Serial` being USB). The Room v1 rule "never put a sensor on
+> UART0" does not apply here: that board's UART0 *was* the console. The one side effect is the
+> ROM boot log, which the ESP32-C3 prints on `TX` at 115200 baud at every reset and the radar
+> therefore receives; it cannot form a radar command (those need the `FD FC FB FA` header and a
+> valid length), so it is harmless. Using the labelled pins keeps GPIO0/GPIO1, two of the five
+> ADC pins, free for a later analog sensor.
 
 Beyond pin `0`/`3` the module continues for about two more pitches: `RST` and `BOOT` buttons and
 a small red part with a white dot, presumed to be the antenna. That end is the keep-out.
@@ -160,11 +169,11 @@ SDA (U1 GPIO5, col 11 row 8):  J_SHT SDA, J_VEML SDA, TP_SDA
 SCL (U1 GPIO6, col 11 row 7):  J_SHT SCL, J_VEML SCL, TP_SCL
 
 U1 GPIO3 (col 11 row 10) ── J_RAD OT2      presence in, high = occupied
-U1 GPIO1 (col 4 row 9)   ── J_RAD OT1      radar UART TX → C3 UART1 RX
-U1 GPIO0 (col 4 row 10)  ── J_RAD RX       C3 UART1 TX → radar UART RX
+U1 RX = GPIO20 (col 4 row 6) ── J_RAD OT1  radar UART TX → C3 UART0 RX
+U1 TX = GPIO21 (col 4 row 7) ── J_RAD RX   C3 UART0 TX → radar UART RX
 U1 GPIO4 (col 11 row 9)  ── J_1W DQ        1-Wire, with R_1W to +3V3
 U1 5V    ── nothing
-U1 GPIO2, 7, 8, 9, 10, RX (GPIO20), TX (GPIO21) ── nothing
+U1 GPIO0, 1, 2, 7, 8, 9, 10 ── nothing
 ```
 
 Pull-up sum per line: carrier 4.7 kΩ in parallel with the VEML7700's 10 kΩ gives about 3.2 kΩ;
@@ -212,8 +221,8 @@ sensor away from the OLED.
               J_RAD (J2 on the module, order as printed: 3V3 GND OT1 RX OT2)
  +3V3 ──────── 1  3V3     3.0–3.6 V; C_RAD_BULK 100 µF + C_RAD 100 nF right here
  GND  ──────── 2  GND
- GPIO1 ─────── 3  OT1     the module's UART TX (0–3.3 V) → C3 UART1 RX
- GPIO0 ─────── 4  RX      the module's UART RX (0–3.3 V) ← C3 UART1 TX
+ RX (GPIO20) ── 3  OT1     the module's UART TX (0–3.3 V) → C3 UART0 RX
+ TX (GPIO21) ── 4  RX      the module's UART RX (0–3.3 V) ← C3 UART0 TX
  GPIO3 ─────── 5  OT2     presence: HIGH = somebody, LOW = nobody (0–3.3 V)
 ```
 

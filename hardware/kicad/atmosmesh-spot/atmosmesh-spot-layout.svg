@@ -367,10 +367,10 @@
 <text x="369.0" y="580.0" font-size="6.5" text-anchor="middle" fill="#fff">GND</text>
 <text x="254.0" y="563.0" font-size="9" font-weight="bold">J_1W</text>
 <text x="447.0" y="138.0" font-size="8.5" fill="#222">grey ring = U1 socket pin (female 8-pin strips at col 4 and col 11)</text>
-<text x="447.0" y="164.0" font-size="8.5" fill="#222">pin names as printed on the module; RX/TX = GPIO20/21, unused</text>
+<text x="447.0" y="164.0" font-size="8.5" fill="#222">pin names as printed on the module; RX/TX = GPIO20/21 = UART0 for the radar</text>
 <text x="447.0" y="190.0" font-size="8.5" fill="#222">red = keep-out (module end with buttons and antenna)</text>
 <text x="447.0" y="242.0" font-size="8.5" fill="#222">black = female header pin · grey block = 5.08 mm terminal pole</text>
-<text x="447.0" y="294.0" font-size="8.5" fill="#222">GPIO3 → radar OT2 · GPIO1 ← radar OT1 · GPIO0 → radar RX</text>
+<text x="447.0" y="294.0" font-size="8.5" fill="#222">GPIO3 → radar OT2 · RX ← radar OT1 · TX → radar RX · GPIO0/1 free (ADC)</text>
 <text x="447.0" y="320.0" font-size="8.5" fill="#222">GPIO4 → 1-Wire · GPIO5/6 = SDA/SCL (OLED at 0x3C, scan-confirmed)</text>
 <text x="447.0" y="424.0" font-size="8.5" fill="#222">row 14: R_PU_SDA 4k7 · R_PU_SCL 4k7 · C1</text>
 <text x="447.0" y="476.0" font-size="8.5" fill="#222">row 16: C_SHT · C_VEML</text>
