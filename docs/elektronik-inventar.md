@@ -161,6 +161,27 @@
 - Potentiometer-Module
 - Joystick-Controller-Board, Keyes-SJoys, 5 Pins
 
+## Strom- und Leistungsmessung
+
+- 1× CJMCU-226 Modul mit INA226 (Ergänzung 4. September 2026, abgelesen, nicht per Foto
+  bestätigt; Stückzahl 1 angenommen)
+  - Texas Instruments INA226: bidirektionaler Strom-, Spannungs- und Leistungsmonitor, 16 Bit,
+    I²C. Misst die Spannung über einem Shunt (±81,92 mV Vollausschlag) und die Busspannung
+    0–36 V; Strom und Leistung werden im Chip berechnet. Typenwissen, nicht am Exemplar geprüft
+  - I²C-Adresse über A0/A1 wählbar, 0x40 bis 0x4F; mehrere Module an einem Bus sind damit möglich
+  - Versorgung 2,7–5,5 V; für ESP32-Aufbauten **3V3**, damit die I²C-Pegel stimmen
+  - Operator: 8 Pins. Übliche Belegung dieser Module: VCC, GND, SDA, SCL, ALE (Alert), VBS
+    (Busspannung), IN+, IN−; am Modul ablesen
+  - **Shuntwert am Modul ablesen.** CJMCU-226-Boards tragen meist 0,1 Ω (Aufdruck `R100`), was
+    ±0,8 A Messbereich bedeutet; manche 0,01 Ω für ±8 A. Ohne den Wert ist jede Stromangabe
+    falsch skaliert
+  - Messung high-side oder low-side möglich, Gleichtaktbereich 0–36 V
+
+  **Konstruktive Folge:** Der tatsächliche Strom der 5-V-Domäne auf dem Room-Board (SDS011-Lüfter
+  und -Laser, Tastverhältnis) lässt sich damit im Betrieb loggen statt nur am Labornetzteil
+  abzulesen. Die Aussage in `hardware/spec-comparison.md` zu rund 650 mA Spitzenkoinzidenz wäre
+  damit messbar, nicht nur gerechnet.
+
 ## Funk & Kommunikation
 
 - 1× RFID-RC522-Modul
@@ -573,6 +594,7 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
   ab Werk prüfen
 - Sicherungshalter „D63“: Halter-Nennspannung, Sicherungsformat und Auslösecharakteristik per
   Foto bestätigen
+- CJMCU-226: Shuntwert und Pinbelegung am Modul per Foto bestätigen; Stückzahl bestätigen
 - Dioden: klären, ob Erfassung 1 (1N4001–1N4007, 1N5818/1N5819) und Erfassung 2 (8 Typen,
   100 Stück) zwei Sortimente sind; Erfassung 2 per Foto des Etiketts bestätigen
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren
