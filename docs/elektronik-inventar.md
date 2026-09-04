@@ -73,6 +73,17 @@
 > ermöglichen parallele Aufbauten — Room, Aqua und Bench — nicht mehrere gleiche Sensoren an einem
 > Bus. Für mehrere Sensoren desselben Typs wäre ein I²C-Multiplexer nötig; ein solcher ist im
 > Bestand nicht erfasst.
+- 2× 24-GHz-Präsenzradar-Module von Hi-Link (Ergänzung 4. September 2026, vom Operator gezählt,
+  bisher nur im englischen Inventar geführt): 1× HLK-LD2450, 1× vermutlich HLK-LD2410S
+  - **HLK-LD2410S, Datenblatt gelesen am 4. September 2026** (Handbuch V1.3 und
+    Serienprotokoll V1.00 unter `docs/hardware/datasheets/`): Versorgung 3,0–3,6 V, mittlerer
+    Strom 0,04–0,6 mA, Sendespitzen um 118 mA; Stiftleiste J2 in Aufdruckreihenfolge
+    `3V3 GND OT1 RX OT2`; `OT2` ist der Präsenzausgang (High = belegt), `OT1` ist der UART-**TX**
+    trotz des Namens; alle Signale 0–3,3 V; UART 115200 8N1. Damit ein reines 3,3-V-Teil, direkt
+    an einen ESP32-GPIO anschließbar. Rastermaß der Stiftleiste am Teil messen. Reserviert für den
+    ersten AtmosMesh Spot (`agent-context/stories/SP-01.md`)
+  - HLK-LD2450: Mehrziel-Tracking-Radar, nach Typenwissen 5-V-Versorgung mit 3,3-V-UART-Logik
+    (256000 Baud), **kein** Präsenz-Pin; Datenblatt noch nicht gelesen. Reserviert für Room v2
 - 2× ENS160 + AHT20 Kombimodul (Ergänzung 4. September 2026, vom Operator abgelesen, nicht per
   Foto bestätigt)
   - ScioSense ENS160: digitaler Metalloxid-Multigassensor, liefert TVOC, einen Luftqualitätsindex
@@ -693,7 +704,9 @@ Anspruch auf die Stückzahl, keine Verdrahtungsfreigabe.
   E24-Widerstände laut Stückliste, 1× JST-ZH-Kabel (zu beschaffen)
 - **AtmosMesh Spot, erste Einheit** (`agent-context/stories/SP-01.md`): 1× ESP32-C3 SuperMini
   OLED, 1× SHT41, 1× VEML7700, HLK-LD2410S (der 3,3-V-Radar; ein reines 3,3-V-Board kann den
-  LD2450 nicht betreiben), optional 1× BME280 am Außenkabel und 1× DS18B20-Fühler
+  LD2450 nicht betreiben), 1× BME280 am Außenkabel, 1× DS18B20-Fühler, 4× 1N5819, 2 Schraubklemmen,
+  Buchsenleisten (erste Einheit = In/Out mit Fühler; Stückliste
+  `hardware/kicad/atmosmesh-spot/BOM.csv`)
 - danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 1× VEML7700, 1× SHT41 (von 4: Room,
   Room v2, Spot), 3× AMS1117-3.3, 8× IRLB8721, 0× LD2410S, 0× LD2450, 0× Lüfter
 - ohne Projekt: 4× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 5× BME280, 4× BMI160, 1× DS18B20,
