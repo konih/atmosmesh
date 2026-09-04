@@ -19,7 +19,7 @@ Evidence level per part:
 | --- | --- | --- | --- |
 | HLK-LD2410S | **confirmed**, manual Table 3-2 | **confirmed**, 3.0–3.6 V, all pins 0–3.3 V | [`docs/hardware/datasheets/`](../../../docs/hardware/datasheets/README.md) |
 | SHT41, VEML7700 | **photo-confirmed** on the spares, 4 September | 3.3 V into their own LDO and level shifter | photo pass, inventory |
-| ESP32-C3 SuperMini OLED | **photo-confirmed** silkscreen, 4 September | 3.3 V logic, on-board LDO | photo pass; OLED I²C pins still by scan |
+| ESP32-C3 SuperMini OLED | **photo-confirmed** silkscreen, 4 September; **OLED at 0x3C on GPIO5/GPIO6 by scan** | 3.3 V logic, on-board LDO | photo pass and `firmware/tools/c3scan` |
 | BME280 breakout `GY-BM E/P 280` | **photo-confirmed**, 6-pin | **3.3 V only**, no regulator, four 10 kΩ | photo pass; BME vs BMP by chip ID |
 | DS18B20 probe | cable colours are a claim; **ring out** | 3.3 V parasite or powered | Maxim datasheet (to file) |
 
@@ -73,8 +73,8 @@ the other way round when the USB points at row 1, swap the columns, never the ne
 | `GD` GND | `9` GPIO9 — BOOT button, strapping: unused |
 | `3V` 3V3 — the rail | `8` GPIO8 — `IO8` LED, strapping: unused |
 | `RX` GPIO20 — boot log: unused | `7` GPIO7 |
-| `TX` GPIO21 — boot log: unused | `6` GPIO6 — SCL (by scan) |
-| `2` GPIO2 — strapping: unused | `5` GPIO5 — SDA (by scan) |
+| `TX` GPIO21 — boot log: unused | `6` GPIO6 — SCL (scan-confirmed: OLED at 0x3C) |
+| `2` GPIO2 — strapping: unused | `5` GPIO5 — SDA (scan-confirmed) |
 | `1` GPIO1 — UART1 RX ← radar `OT1` | `4` GPIO4 — 1-Wire |
 | `0` GPIO0 — UART1 TX → radar `RX` | `3` GPIO3 — radar `OT2` |
 
@@ -83,9 +83,10 @@ a small red part with a white dot, presumed to be the antenna. That end is the k
 
 > **Row spacing is settled:** the operator pushed the module into this perfboard on 4 September
 > and it fits with three free columns on each side, so the rows are **7 pitches (17.78 mm)**
-> apart at columns 4 and 11. **Still to verify before soldering:** the OLED's I²C pins by a bus
-> scan on GPIO5/6 — they are not printed on the board. If the scan on GPIO5/6 does not show
-> `0x3C`, the OLED is on other pins and the I²C net moves with it.
+> apart at columns 4 and 11. **The OLED's I²C pins are settled too:** the scanner in
+> `firmware/tools/c3scan`, run on this board on 4 September, found the OLED at `0x3C` on
+> SDA = GPIO5, SCL = GPIO6 and nothing on any other pair. Nothing about `U1` is an assumption
+> any more; only the row-A/row-B side when the USB faces row 1 is checked once at the dry-fit.
 
 Firmware limits Wi-Fi TX power to about 8.5 dBm at start-up (ceramic antenna).
 
