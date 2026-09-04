@@ -13,9 +13,48 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | GY-BMP280 | Pressure and temperature | **3V3** (chip 1.71–3.6 V) | I²C (6-pin module) | Operator: VCC, GND, SCL, SDA, CSB, SDO. Straps below. Regulator/5 V still unconfirmed |
 | Mini OLED, 4 pins | Station local status (D-001) | **3V3** | I²C **0x3C** (fallback 0x3D) | Serial 2026-08-14: ACK at 0x3C, SDA=GPIO5, SCL=GPIO4. Cheap 0.96" SSD1306: alternate COM 0x12 skips rows; firmware default is U8g2 SSD1306 ALT0 (COM 0x02 sequential). SH1106 is compile fallback ID=1 |
 | LCD 1602 I²C | Not the product display | **3V3 only** if reused | I²C backpack 0x27/0x3F | Spare. Station firmware drives the OLED, not this panel |
-| MQ135 module | Experimental gas trend | 5 V heater | Analog through divider | Bench 10 kΩ series + 20 kΩ to GND on GPIO34. Never label as CO₂ |
+| 2.54 mm Dupont connection assortment | Passive prototype interconnects | None (passive) | Male and female contacts/headers, single-row housings (~1–10 positions), and 40-pin male headers | Project stock confirmed sufficient; exact quantity not verified. Inspect each crimp, current requirement, and pin assignment before use |
+| Radial aluminum electrolytic capacitor assortment | Passive filtering and energy storage | None (passive) | Polarized; 36 variants spanning 1–1500 µF and 10–63 V | Photo-confirmed label 2026-09-04: 925 pieces. Check polarity and rated voltage on each capacitor; never reverse-bias or exceed its voltage rating. No quality, ESR, or ripple-current rating inferred from the photo |
+| Diode assortment kit | Passive rectification, protection, and switching | None (passive) | 100 pieces across 8 types: 1N4148 ×25, 1N4007 ×25, 1N5819 ×10, 1N5408 ×5, 1N5399 ×10, FR107 ×10, FR207 ×10, 1N5822 ×5 | User-read inventory 2026-09-04; not photo-verified. Before use, verify type, polarity/cathode band, and permitted voltage, current, and switching parameters from the actual marking and a matching datasheet; types are not interchangeable |
+| MQ135 modules (~2 total) | Experimental gas trend | 5 V heater | Analog through divider | Bench 10 kΩ series + 20 kΩ to GND on GPIO34. Never label as CO₂. Approximate total stock user-confirmed 2026-09-04 |
 | Open AC/DC `5V07 / 12V04` | Candidate station 5 V rail | 230 V AC primary | DC output unverified | **Must measure** before use. Family is 5 V/700 mA *or* 12 V/~400 mA. Open mains PCB — enclose first. See [power.md](power.md) |
 | SANMIM SM-PLG06A / SM-104-3.3V-02 | Spare 3.3 V AC/DC | 230 V AC primary | 3.3 V | Not required for MVP; do not parallel with ESP32 `3V3`. Open mains PCB |
+
+## User-confirmed component stock (2026-09-04)
+
+These are rough stock counts, not wiring approval. Unless a row says otherwise, the identity was
+read or described by the user without front/back photo verification. Exact module revision,
+markings, supply, pin order, signal levels, and electrical limits remain unverified where noted;
+inspect the actual part before it enters an RLS-01 or ROOM-01 wiring decision.
+
+| Component | Quantity | User-stated identity / role | Verification and safety status |
+| --- | ---: | --- | --- |
+| Adjustable PIR motion module | 5 | HC-SR501 | Exact board revision, front/back markings, supply, pin order, and signal level unverified |
+| ESP32-C6 module | 5 | Exact marking may be an ESP32-C6-MINI family part | Exact module identity, revision, and flash size are not photo-verified |
+| Gas-trend sensor breakouts | 1 each | SGP41 (VOC/NOx trends) and GY-SGP40 (VOC trend) | Keep separate; exact breakout supply and pins unverified. Neither is a CO₂ sensor |
+| Classic ESP32 DevKit | 2 | USB-C, CH340C, ESP-WROOM-32; seller-described Wi-Fi/Bluetooth dual-core boards | Exact board revision and pin labels unverified; never apply 5 V to GPIO or `3V3` |
+| 0.96-inch 128×64 I²C OLED | 4 | Probably SSD1306; user reports 2 blue, 1 yellow, 1 white | Controller and board implementation unverified. Seller's 3.3–5 V claim is not wiring approval; use **3V3** until regulator and I²C pull-ups are checked |
+| Loose narrow 128×32 OLED | 1 | Additional loose display; not the fitted Grove OLED | Controller, color, interface, supply, and pins unverified |
+| Encapsulated DS18B20 temperature probe | 2 | Each has a 2.5 m cable; “waterproof” is a product claim | Cable colors and pin order must be verified before use; no ingress rating confirmed |
+| PCB screw terminals | 30 total | 10 × 2-pin, 10 × 3-pin, 10 × 4-pin | Pitch and electrical ratings unverified |
+| BME280 sensor breakout | 5 | Humidity, pressure, and temperature; distinct from the known BMP280 | Exact breakout variant, supply, pull-ups, and pins unverified |
+| ESP32-C3 SuperMini OLED developer board | 5 | ESP32-C3, 0.42-inch OLED, ceramic antenna | Exact board and OLED revisions unverified; chip family is C3, not C9 |
+| 230 V AC to 5 V DC switching supply | 2 | One labelled/described 5 A; one labelled/described 1 A | Unverified inventory only. Check enclosure, isolation, terminals, and nameplate; never energize an open mains PCB. No mains wiring approval |
+| Capacitive soil-moisture module | 5 | Board marking “Soil Sensor v2.0.0” | Supply, output range, pin order, sealing, and calibration unverified; raw output is not a moisture claim without calibration |
+| RTC module | 1 | Exact type unknown | Identity, battery arrangement, supply, interface, and pins unverified |
+| MQ-series gas modules | 1 each | MQ-7 and MQ-3; separate from the ~2 MQ135 modules above | Not CO₂ sensors. Verify exact module, 5 V heater requirements, output range, and signal conditioning before connection |
+| Four-row I²C character LCD | 1 | Four visible rows; “LCM1602” was read from the module/backpack | Exact geometry, controller/backpack type, address, supply, and I²C levels unverified; do not classify it as 1602 from that marking alone |
+| 24 GHz presence-radar module | 1 each | HLK-LD2450 and probably HLK-LD2410S | Exact suffixes, supply, pins, and signal levels unverified; inspect both sides before wiring |
+| Sensirion SPS30 particulate sensor | 1 | SPS30; `DE50F3959A7612A8` is an individual device/batch identifier, not the model | Connector pin order, interface choice, and supply must be verified on the actual unit |
+| JST-PH connector and cable set | 1 set | Receptacles/extensions and pre-crimped 24 AWG silicone wire | Pole counts, quantities, pin order, crimp quality, and current rating unverified |
+| Clip-on ferrite core | 10 | Cable interference suppression | Material, impedance curve, usable frequency range, and fit unverified |
+| CTK-014 universal oscilloscope probe set | 1 | Measurement accessory set | Contents and ratings must be checked before measurement |
+| RXEF PPTC assortment | 50 total | 72 V max; 10 each: RXEF020 0.20 A, RXEF030 0.30 A, RXEF050 0.50 A, RXEF075 0.75 A, RXEF110 1.10 A | Listed currents are **hold currents**, not trip currents. Verify markings and datasheets; not for 230 V mains |
+| G6000 oscilloscope probe | 1 | Switchable 1×/10× probe | Verify switch position, compensation, grounding, and voltage/category rating before measurement |
+| VEML7700 light-sensor breakout | 3 | I²C ambient-light modules; actual stock now present | Exact breakout supply, pull-ups, and pin order unverified; the earlier “not fitted” bench result does not test these spares |
+| BMI160 I²C module | 4 | 6 DoF: 3-axis accelerometer plus 3-axis gyroscope; no magnetometer | Exact breakout variant, address straps, supply, and pins unverified; “Tenstar” is at most a seller label |
+| Sensirion SCD41 module | 1 | True CO₂ sensing by photoacoustic NDIR, plus temperature and relative humidity | Exact breakout, supply, and pin order require inspection before wiring; validate readings for the intended enclosure |
+| INA226 current/voltage measurement module | 1 | Read as CJMCU-226 I²C breakout | Exact breakout variant, shunt value, supply, pins, common-mode range, and current range unverified |
 
 ## AtmosMesh Grove v1.5 — fitted 3.3 V slice (2026-08-24)
 
