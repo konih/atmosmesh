@@ -1,6 +1,6 @@
 # Elektronik-Inventar
 
-> Stand: 25. August 2026, ergänzt am 28. August 2026
+> Stand: 25. August 2026, ergänzt am 28. August 2026 und am 4. September 2026
 > Dieses Inventar basiert auf der gemeinsamen Durchsicht und Identifikation. Unsichere Stückzahlen bzw. Varianten sind entsprechend markiert.
 
 ![[Images/Elektronik-OLED-und-Zweipol-Bauteil-2026-08-17.jpg|480]]
@@ -198,10 +198,15 @@
 - USB-to-TTL-Adapter
 - V-USB-TTL USB-to-TTL-Stick
 - USB2TT004 USB-Adapter/Kabel beim SDS011
-- Dupont-Steckverbinder-Sortiment, männlich und weiblich (Ergänzung 28. August 2026)
-  - Stiftleisten männlich, 2,54 mm, umbrechbar
+- Dupont-Steckverbinder-Sortiment, männlich und weiblich (Ergänzung 28. August 2026, präzisiert
+  am 4. September 2026)
+  - Stiftleisten männlich, 2,54 mm, umbrechbar; darunter 40-polige Stiftleisten
   - Buchsenleisten weiblich, 2,54 mm, umbrechbar
-  - größere Stückzahlen; genaue Reihenlängen später zählen
+  - Crimpkontakte männlich und weiblich sowie einreihige Gehäuse mit etwa 1 bis 10 Positionen
+  - Bestand als ausreichend bestätigt; genaue Stückzahlen und Reihenlängen nicht gezählt
+  - vor Einsatz je Verbindung prüfen: Sitz der Crimpung, Strombedarf und Pinzuordnung. Ein
+    Dupont-Kontakt ist für Signale und kleine Ströme gedacht, nicht für die 5-V-Versorgung eines
+    Lüfters oder Servos ohne Nachrechnen
   - für den Room-Aufbau relevant: U1 braucht zwei 1×15-Buchsenleisten im Rastermaß 2,54 mm
 
 ## Eingabe / Bedienelemente
@@ -303,13 +308,25 @@
 
 ### Elektrolytkondensatoren
 
-- 24-Werte-Sortiment
-- Bereich: 0,1 µF bis 1000 µF
-- unterschiedliche Spannungsfestigkeiten gemäß Sortimentsbeschriftung
+- Sortiment radialer Aluminium-Elektrolytkondensatoren — **Etikett per Foto bestätigt am
+  4. September 2026**
+  - 925 Stück in 36 Werten
+  - Bereich: 1 µF bis 1500 µF
+  - Spannungsfestigkeiten 10 V bis 63 V
+  - gepolt: Polarität und Nennspannung an jedem Exemplar ablesen; nie verpolen, nie über der
+    Nennspannung betreiben
+  - Qualität, ESR und Ripplestrom-Belastbarkeit sind dem Etikett nicht zu entnehmen; für die
+    SDS011-Welligkeitsgrenze (< 20 mV) zählt das Messergebnis am Oszilloskop, nicht der Sortimentsname
+- frühere Erfassung (25. August 2026): „24-Werte-Sortiment, 0,1 µF bis 1000 µF“. Ob das dieselbe
+  Box mit damals ungenau erinnertem Etikett oder ein zweites Sortiment ist, ist offen; bis zur
+  Klärung gilt die per Foto bestätigte Angabe
 
 ### Dioden
 
-10-Werte-Sortiment, auf der Verpackung erkennbar:
+Zwei Erfassungen mit unterschiedlicher Zusammensetzung liegen vor. Ob es sich um zwei Sortimente
+oder um zwei Lesungen desselben handelt, ist offen (siehe „Noch offen“).
+
+**Erfassung 1** — 10-Werte-Sortiment, auf der Verpackung erkennbar (25. August 2026):
 
 - 1N4001
 - 1N4002
@@ -321,6 +338,28 @@
 - „1N58…“ – vollständige Nummer auf Foto nicht sicher lesbar
 - 1N5818
 - 1N5819
+
+**Erfassung 2** — 100 Stück in 8 Typen, vom Operator abgelesen am 4. September 2026, nicht per
+Foto bestätigt:
+
+| Typ | Stück | Familie |
+| --- | ---: | --- |
+| 1N4148 | 25 | Kleinsignal-Schaltdiode |
+| 1N4007 | 25 | Gleichrichter 1 A / 1000 V |
+| 1N5819 | 10 | Schottky 1 A / 40 V |
+| 1N5408 | 5 | Gleichrichter 3 A / 1000 V |
+| 1N5399 | 10 | Gleichrichter 1,5 A / 1000 V |
+| FR107 | 10 | schneller Gleichrichter 1 A |
+| FR207 | 10 | schneller Gleichrichter 2 A |
+| 1N5822 | 5 | Schottky 3 A / 40 V |
+
+Die Typen sind nicht untereinander austauschbar: vor Einsatz Typ, Kathodenring und die zulässigen
+Werte für Spannung, Strom und Schaltverhalten am Bauteil und im passenden Datenblatt prüfen.
+Die Familienangaben in der Tabelle sind Typenwissen, keine Messung am vorhandenen Exemplar.
+
+**Konstruktive Folge:** Mit 1N5819 und 1N5822 sind Schottky-Dioden für Verpolschutz oder
+Freilauf an 5 V vorhanden; die 1N4148 deckt Kleinsignal- und Logikaufgaben ab. Ein Zener-Clamp für
+3,3-V-GPIOs bleibt weiterhin ausgeschlossen, siehe Zenerdioden.
 
 ### Zenerdioden
 
@@ -488,6 +527,10 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
 
 ## Noch offen / später prüfen
 
+- Elektrolytkondensatoren: klären, ob das per Foto bestätigte 36-Werte-Sortiment (925 Stück,
+  1–1500 µF) dieselbe Box wie die frühere „24 Werte, 0,1–1000 µF“ ist oder ein zweites Sortiment
+- Dioden: klären, ob Erfassung 1 (1N4001–1N4007, 1N5818/1N5819) und Erfassung 2 (8 Typen,
+  100 Stück) zwei Sortimente sind; Erfassung 2 per Foto des Etiketts bestätigen
 - Fotos und Pinzahl/Gehäuseform der neu erfassten ICs aufnehmen; insbesondere `MB9124B`, `CA G046`, `RCA 906`, `LCA314`, `MCP29315B7 SP`, den vermutlich als `MC14086B` gelesenen Chip und `CA304A` eindeutig identifizieren
 - Stückzahlen von CD4556BE und CA3086 physisch bestätigen
 - genaue Anzahl und Varianten der ESP8266-Boards
