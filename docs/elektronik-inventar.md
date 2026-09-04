@@ -738,14 +738,16 @@ Anspruch auf die Stückzahl, keine Verdrahtungsfreigabe.
   E24-Widerstände laut Stückliste, 1× JST-ZH-Kabel (zu beschaffen)
 - **AtmosMesh Spot, erste Einheit** (`agent-context/stories/SP-01.md`): 1× ESP32-C3 SuperMini
   OLED, 1× SHT41, 1× VEML7700, HLK-LD2410S (der 3,3-V-Radar; ein reines 3,3-V-Board kann den
-  LD2450 nicht betreiben), 1× BME280 am Außenkabel, 1× DS18B20-Fühler, 4× 1N5819, 2 Schraubklemmen,
-  Buchsenleisten (erste Einheit = In/Out mit Fühler; Stückliste
-  `hardware/kicad/atmosmesh-spot/BOM.csv`)
+  LD2450 nicht betreiben), 1× DS18B20-Fühler, 1 Schraubklemme, Buchsenleisten. **Kein BME280**
+  (Entscheidung des Operators am 5. September 2026; die Außenkabel-Variante vom 4. September ist
+  zurückgezogen, damit auch die 4× 1N5819 und die zweite Schraubklemme wieder frei). Stückliste
+  `hardware/kicad/atmosmesh-spot/BOM.csv`
 - danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 1× VEML7700, 1× SHT41 (von 4: Room,
   Room v2, Spot), 3× AMS1117-3.3, 8× IRLB8721, 0× LD2410S, 0× LD2450, 0× Lüfter
-- ohne Projekt: 4× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 5× BME280, 4× BMI160, 1× DS18B20,
+- ohne Projekt: 4× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 6× BME280, 4× BMI160, 1× DS18B20,
   5× Bodenfeuchtemodule, SGP40 und SGP41, 2× ADS1115, die 433-MHz-Paare, RFM12S, 4× OLED.
-  Weitere Spot-Einheiten bekommen statt des SHT41 einen BME280 auf denselben Header
+  Eine zweite Spot-Einheit braucht einen weiteren SHT41 und einen weiteren LD2410S; die BME280
+  gehören nicht zum Spot-Konzept
 
 ## Noch offen / später prüfen
 
