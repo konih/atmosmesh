@@ -121,6 +121,78 @@ void test_ld2410s_command_ack_frames_are_not_reports() {
     TEST_ASSERT_FALSE(r.occupied);
 }
 
+void test_ld2410s_enable_config_ack_is_parsed_with_status_and_value() {
+    // Captured on the first unit on 2026-09-05 right after every C3 reset.
+    atmosmesh::Ld2410sStream stream;
+    const std::uint8_t ack[18] = {0xFD, 0xFC, 0xFB, 0xFA, 0x08, 0x00, 0xFF, 0x01, 0x00,
+                                  0x00, 0x03, 0x00, 0x80, 0x00, 0x04, 0x03, 0x02, 0x01};
+    atmosmesh::Ld2410sReport last{};
+    for (std::size_t i = 0; i < 17; ++i) {
+        const auto r = stream.feed(ack[i]);
+        TEST_ASSERT_FALSE(r.ok);
+        TEST_ASSERT_FALSE(r.ack.ok);
+    }
+    last = stream.feed(ack[17]);
+    TEST_ASSERT_FALSE(last.ok);   // an ACK is not a presence report
+    TEST_ASSERT_TRUE(last.ack.ok);
+    TEST_ASSERT_EQUAL_HEX16(atmosmesh::kLd2410sCmdEnableConfig, last.ack.command);
+    TEST_ASSERT_EQUAL_UINT32(6, last.ack.value_len);
+    TEST_ASSERT_EQUAL_UINT16(0, atmosmesh::ld2410s_ack_status(last.ack));
+    TEST_ASSERT_EQUAL_HEX8(0x03, last.ack.value[2]);   // protocol version 3
+    TEST_ASSERT_EQUAL_HEX8(0x80, last.ack.value[4]);   // buffer size 0x80
+    // Reporting resumes right after: the next minimal frame still decodes.
+    const std::uint8_t frame[5] = {0x6E, 0x02, 0x4B, 0x00, 0x62};
+    const auto r = feed_all(stream, frame, 5);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_UINT16(75, r.distance_cm);
+}
+
+void test_ld2410s_read_version_ack_carries_three_version_words() {
+    atmosmesh::Ld2410sStream stream;
+    const std::uint8_t ack[18] = {0xFD, 0xFC, 0xFB, 0xFA, 0x08, 0x00, 0x00, 0x01, 0x01,
+                                  0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x03, 0x02, 0x01};
+    atmosmesh::Ld2410sReport last{};
+    for (std::uint8_t b : ack) {
+        last = stream.feed(b);
+    }
+    TEST_ASSERT_TRUE(last.ack.ok);
+    TEST_ASSERT_EQUAL_HEX16(atmosmesh::kLd2410sCmdReadVersion, last.ack.command);
+    TEST_ASSERT_EQUAL_UINT32(6, last.ack.value_len);
+    TEST_ASSERT_EQUAL_UINT8(1, last.ack.value[0]);
+    TEST_ASSERT_EQUAL_UINT8(2, last.ack.value[2]);
+    TEST_ASSERT_EQUAL_UINT8(3, last.ack.value[4]);
+}
+
+void test_ld2410s_build_command_matches_the_protocol_examples() {
+    std::uint8_t out[atmosmesh::kLd2410sCommandMaxBytes];
+    const std::uint8_t enable_value[2] = {0x01, 0x00};
+    std::size_t n = atmosmesh::ld2410s_build_command(out, sizeof(out),
+                                                     atmosmesh::kLd2410sCmdEnableConfig,
+                                                     enable_value, 2);
+    const std::uint8_t expect_enable[14] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF,
+                                            0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(14, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_enable, out, 14);
+
+    n = atmosmesh::ld2410s_build_command(out, sizeof(out), atmosmesh::kLd2410sCmdEndConfig,
+                                         nullptr, 0);
+    const std::uint8_t expect_end[12] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00,
+                                         0xFE, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(12, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_end, out, 12);
+
+    n = atmosmesh::ld2410s_build_command(out, sizeof(out), atmosmesh::kLd2410sCmdOutputMode,
+                                         atmosmesh::kLd2410sOutputStandard, 6);
+    const std::uint8_t expect_mode[18] = {0xFD, 0xFC, 0xFB, 0xFA, 0x08, 0x00, 0x7A, 0x00, 0x00,
+                                          0x00, 0x01, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(18, n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_mode, out, 18);
+
+    TEST_ASSERT_EQUAL_UINT32(0, atmosmesh::ld2410s_build_command(out, 10,
+                                                                 atmosmesh::kLd2410sCmdEndConfig,
+                                                                 nullptr, 0));
+}
+
 void test_presence_hold_debounces_then_holds_after_the_pin_drops() {
     atmosmesh::PresenceHold hold{};
     TEST_ASSERT_FALSE(atmosmesh::presence_hold_update(hold, false, 0, 50, 5000));
@@ -162,6 +234,9 @@ void register_ld2410s_frame_tests() {
     RUN_TEST(test_ld2410s_rejects_bad_state_or_absurd_distance);
     RUN_TEST(test_ld2410s_standard_frame_decodes_state_and_distance);
     RUN_TEST(test_ld2410s_command_ack_frames_are_not_reports);
+    RUN_TEST(test_ld2410s_enable_config_ack_is_parsed_with_status_and_value);
+    RUN_TEST(test_ld2410s_read_version_ack_carries_three_version_words);
+    RUN_TEST(test_ld2410s_build_command_matches_the_protocol_examples);
     RUN_TEST(test_presence_hold_debounces_then_holds_after_the_pin_drops);
     RUN_TEST(test_presence_hold_first_sample_high_is_occupied_without_waiting);
 }

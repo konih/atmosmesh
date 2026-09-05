@@ -329,11 +329,30 @@ yourself. Given pins, U8g2's GPIO init calls `pinMode()` on SDA and SCL, the cor
 manager hands the pins back from the I²C driver, and `oled.begin()` never returns — observed on
 the first unit on 2026-09-05 (sensors answered before the OLED init, nothing after).
 
-**Boot log as a wiring test.** Before the UART driver takes the radar pins the firmware reads
-both against a pull-down: a UART transmitter idles HIGH, so `OT1 line (gpio20) idles LOW` means
-the `OT1` path is open, and RX LOW with TX HIGH means `OT1` landed on the TX pin (the UART is
-then run crossed for that boot and the log says so). Every 5 s line ends with the slowest loop
-stage; in the dark that is the VEML7700 auto-ranging read at ~700 ms.
+**The radar's UART, four things learned the hard way (2026-09-05):**
+
+1. **Never leave a pull-down on the RX pin.** The C3 attaches UART0 RX to GPIO20 through its
+   direct mux and does not touch the pull resistors, so a `pinMode(20, INPUT_PULLDOWN)` from a
+   wiring check stays on the line. The LD2410S's `OT1` is a weak driver: it reads LOW against
+   that pull-down and HIGH against a pull-up, and its frames only decode with the pull-up. The
+   firmware reads the line against both pulls at boot (`pull-down->LOW pull-up->HIGH` is the
+   healthy reading on this module; LOW under the pull-up means a joint), then leaves
+   `GPIO_PULLUP_ONLY` on RX after `Serial0.begin()`.
+2. **The module needs a break to start streaming.** After a reset it sends two or three frames
+   and waits; a 200 ms low on its RX (our TX) starts the continuous report. The boot kick is
+   break plus end-configuration, and the same nudge repeats if the stream stops; a full
+   enable/read-version/output-mode/end sequence follows if that fails. Every ACK is logged.
+3. **IDF logging is silenced** (`esp_log_level_set("*", ESP_LOG_NONE)`): the IDF console is
+   UART0, i.e. the radar's RX, and the module answers log lines with an enable-config ACK every
+   time esp-mqtt retried. The ROM and bootloader lines at reset still reach it; they are what
+   produced the "ACK at every reset" that first proved the transmitter alive.
+4. **The VEML7700 is read at a fixed gain (1/4, 100 ms) without waiting.** `VEML_LUX_AUTO`
+   took 5.1 s per sample in a dark room and stalled the radar drain, the presence poll and the
+   button. Every 5 s line ends with the slowest loop stage; it is now the 43 ms OLED redraw.
+
+`radar: OT1 line … pull-down->LOW pull-up->LOW - HELD LOW` is the one boot line that means a
+wiring fault; RX LOW with TX HIGH under the pull-down means `OT1` landed on the TX pin (the UART
+is then run crossed for that boot and the log says so).
 
 ### Spot MQTT contract
 
@@ -361,10 +380,13 @@ scratchpads and the probe is searched for again every 10 s. Wi-Fi TX power is li
 
 Soldered carrier: bus scan `0x10 0x3C 0x44`. Product image: SHT41 27.7 °C / 61 %RH, VEML7700
 9–68 lx, DS18B20 probe 24.9 °C, presence occupied from `OT2`, Wi-Fi −72 dBm channel 11 with the
-limit applied, `mqtt: connected` as `atmosmesh-spot-0001`; RAM 12.6 %, flash 72.5 %. Open: no
-byte reaches GPIO20 from the radar's `OT1` (the pin floats; a pin-edge probe over every free
-GPIO saw nothing, and no ACK to a version command) — the `OT1` path is open and waits for a
-meter. The SHT41 sits about 3 K above the probe and climbs as the board warms.
+limit applied, `mqtt: connected` as `atmosmesh-spot-0001`; RAM 12.6 %, flash 72.7 %. The radar's
+`OT1` was genuinely open at first (the pin floated, no edge on any free GPIO, no ACK to a version
+command); the operator reflowed the module's chip, after which the four points above were found
+one by one. End state: `<- ack end-config status=0` at boot and a continuous minimal-frame stream
+(about 3–4 frames/s, distance and state on the display and in MQTT). The SHT41 sits about 3 K
+above the probe and climbs as the board warms. The radar kept reporting a target at ~71 cm after
+the operator said they had left the room — the empty-room test in SP-01 is next.
 
 ## AtmosMesh v1 bench OLED wiring (D-001)
 
