@@ -20,6 +20,22 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 | Open AC/DC `5V07 / 12V04` | Candidate station 5 V rail | 230 V AC primary | DC output unverified | **Must measure** before use. Family is 5 V/700 mA *or* 12 V/~400 mA. Open mains PCB — enclose first. See [power.md](power.md) |
 | SANMIM SM-PLG06A / SM-104-3.3V-02 | Spare 3.3 V AC/DC | 230 V AC primary | 3.3 V | Not required for MVP; do not parallel with ESP32 `3V3`. Open mains PCB |
 
+## Heltec WiFi LoRa 32 V2 — USB probe (2026-09-05)
+
+Read-only `esptool` probe on `/dev/ttyUSB0` after the board arrived; nothing was flashed by the agent.
+Board plan and idea list: [lora-remote-node.md](lora-remote-node.md).
+
+| Fact | Value |
+| --- | --- |
+| USB-UART | Silicon Labs CP2102 (`10c4:ea60`) |
+| Chip | ESP32-D0WDQ6 revision v1.0, 40 MHz crystal — a **V2** board (the V3 is an ESP32-S3) |
+| Flash | 8 MB, 3.3 V (manufacturer `ef`, device `4017`) |
+| MAC | `3c:61:05:0e:04:ec` |
+| Auto-reset | RTS works |
+| Stock firmware | Heltec factory test; boot prints `LoRa Initial success!` and `ESP32ChipID=EC040E05613C`, then nothing more on serial |
+| Backup | `PlatformRelay/.tooling/firmware-backups/heltec-wifi-lora32-v2_3c61050e04ec_stock-factory_2026-09-05.bin` (full 8 MB) |
+| Radio, antenna, battery connector polarity, OLED | **Not verified** — need front/back photos and a meter before any wiring |
+
 ## User-confirmed component stock (2026-09-04)
 
 These are rough stock counts, not wiring approval. Unless a row says otherwise, the identity was
