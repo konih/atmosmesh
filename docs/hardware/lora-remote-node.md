@@ -39,9 +39,13 @@ broadcast prove TX at the SX1276 level. The steps are in the 2026-09-05 handoff.
 the operator's to run: it replaces the factory image (backed up above). Restore is one command:
 
 ```bash
-./scripts/esp-tool --port /dev/ttyUSB0 --baud 921600 write-flash 0x0 \
+./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 write-flash 0x0 \
   ../.tooling/firmware-backups/heltec-wifi-lora32-v2_3c61050e04ec_stock-factory_2026-09-05.bin
 ```
+
+Stay at 115200 baud on this board: every attempt to switch the CP2102 link to 460800 or 921600
+after the stub loads ended in "Unable to verify flash chip connection" or a truncated read (the
+8 MB backup itself had to be read in two 4 MB halves at 115200, ~6.5 minutes each).
 
 For **LoRaWAN** coverage (The Things Network), check `ttnmapper.org` for the address and, if a gateway
 is within a few km, register a device on TTN and run an OTAA join; a join accept is the coverage

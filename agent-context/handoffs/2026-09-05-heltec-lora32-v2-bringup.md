@@ -18,8 +18,10 @@
   The serial port needs the `dialout` group; the current login session predates the membership,
   so run through `sudo -g dialout` or log in again.
 - Next (operator, ~15 min):
-  1. `cd atmosmesh && sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 921600 erase-flash`
-  2. `sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 921600 write-flash 0x0 <firmware-meshtastic-diy-v1-2.7.26.54e0d8d.bin> 0x300000 <littlefs-meshtastic-diy-v1-2.7.26.54e0d8d.bin>`
+  1. `cd atmosmesh && sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 erase-flash`
+  2. `sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 write-flash 0x0 <firmware-meshtastic-diy-v1-2.7.26.54e0d8d.bin> 0x300000 <littlefs-meshtastic-diy-v1-2.7.26.54e0d8d.bin>`
+     (keep 115200: baud changes to 460800/921600 break this CP2102 link after the stub loads; the
+     ~2 MB write takes about 3 minutes)
      (both files come from `gh release download v2.7.26.54e0d8d --repo meshtastic/firmware --pattern firmware-esp32-2.7.26.54e0d8d.zip`)
   3. Wait 30 s, then `sudo -u koni -g dialout ../.tooling/python/atmosmesh/bin/meshtastic --port /dev/ttyUSB0 --set lora.region EU_868`
   4. After 10–15 min: `… meshtastic --port /dev/ttyUSB0 --nodes`. Any node besides the local one =
