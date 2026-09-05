@@ -25,6 +25,7 @@ Start with [spec-comparison.md](../spec-comparison.md).
 | [sino-wealth-sh1106.pdf](sino-wealth-sh1106.pdf) | SH1106 OLED controller | Sino Wealth | Candidate for the 4-pin OLED |
 | [hi-link-hlk-ld2410s-user-manual.pdf](hi-link-hlk-ld2410s-user-manual.pdf) | HLK-LD2410S 24 GHz low-power presence radar | Shenzhen Hi-Link | User manual V1.3 (retrieved 2026-09-04) |
 | [hi-link-hlk-ld2410s-serial-protocol.pdf](hi-link-hlk-ld2410s-serial-protocol.pdf) | HLK-LD2410S | Shenzhen Hi-Link | Serial communication protocol V1.00, 2024-08-23 (retrieved 2026-09-04) |
+| [hi-link-hlk-ld2410s-operation-guide.pdf](hi-link-hlk-ld2410s-operation-guide.pdf) | HLK-LD2410S | Shenzhen Hi-Link | Operation Guide 1.0: wiring to a CH340 board, default report, health check by command, tool FAQ (retrieved 2026-09-05) |
 
 ### HLK-LD2410S — what the manual settles (read 2026-09-04)
 
@@ -49,6 +50,23 @@ document:
 The presence pin is `OT2`, not `OT1` — `OT1` is the UART transmit line. Header pitch is not stated;
 the photographs show a standard five-pin header, to be measured on the part.
 
+### HLK-LD2410S — what the Operation Guide adds (read 2026-09-05)
+
+- **Reports continuously by default**, not on change: the guide's serial-tool capture shows
+  `6E 02 23 00 62` repeating at the report rate, with `6E 00 00 00 62` once the target leaves.
+- **Health check:** send enable-configuration `FD FC FB FA 04 00 FF 00 01 00 04 03 02 01`;
+  a working module replies and stops reporting for its 3 s configuration window. No reply on a
+  correctly wired module is a hardware fault, not a mode.
+- **No low-power switch, no jumper setting.** Every parameter (distances, report rates, response
+  speed, no-one delay, thresholds) is written over UART. Nothing is selected by a pad.
+- **The pads on the module** (wiring photo, page 1): three small footprints in a column between
+  the chip and the header at the `RX`/`OT1` height, under the `HLK-LD2410S` silkscreen. On
+  Hi-Link's reference unit the top and bottom carry a resistor and the middle one is empty, and
+  that unit works — so those are the series links of the UART lines (and one option left open),
+  and a missing or open link in the `OT1` position leaves the header pin floating. That is the
+  first thing to meter on a module whose `OT2` works and whose `OT1` is silent (SP-01, first
+  unit, 5 September 2026).
+
 ## Provenance
 
 | File | Retrieved from | SHA-256 |
@@ -65,6 +83,7 @@ the photographs show a standard five-pin header, to be measured on the part.
 | sino-wealth-sh1106.pdf | https://www.displayfuture.com/Display/datasheet/controller/SH1106.pdf | `d872cf078afa1b3df7412bbd6f7aac3aa3db3236f747096d898df28c0b8af2cc` |
 | hi-link-hlk-ld2410s-user-manual.pdf | Hi-Link's official Drive folder for the LD2410S (linked from https://www.hlktech.net/index.php?id=1176), file id `1eX8C0SujX_pARyRFToD1Ohh2PwLNKFlS`, fetched via https://drive.usercontent.google.com/download?id=1eX8C0SujX_pARyRFToD1Ohh2PwLNKFlS&export=download. The tinytronics mirror was behind a bot check | `6c4c2fd31c9c53fbc2d8d2552614cd997a559079ab38896080780d50603369a6` |
 | hi-link-hlk-ld2410s-serial-protocol.pdf | Same folder, file id `1LFyf6w9nOxW7b5z0rg5I3mPkk2KjQviE`, fetched via https://drive.usercontent.google.com/download?id=1LFyf6w9nOxW7b5z0rg5I3mPkk2KjQviE&export=download | `8d120eccdb3b0a03ca3eaaa92c95d4f01623ee429d038ea1eeb2880908238e98` |
+| hi-link-hlk-ld2410s-operation-guide.pdf | Same folder ("HLK-LD2410S Operation Guide1.0 .pdf"), downloaded by the operator on 2026-09-05 | `1839747e9098ed91d1f12f5aa77db2daa5fba598561d96ca9b75a3ad5275159a` |
 
 The SDS011 URL is labelled V1.4; the PDF itself is **Version V1.3** (2015-10-09). Treat it as V1.3.
 

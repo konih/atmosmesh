@@ -83,6 +83,29 @@ constexpr DiscoverySpec kRoomDiscoverySpecs[] = {
      "('OFF' if value_json.pm_alarm.valid else none) }}"},
 };
 
+// Spot: the Room shape again. The probe is a second temperature entity with its own name so it
+// never gets averaged into, or mistaken for, the room reading; distance carries the `distance`
+// device class so Home Assistant can show it in metres if the user prefers.
+constexpr DiscoverySpec kSpotDiscoverySpecs[] = {
+    {"sensor", "temperature_c", "Temperature", "temperature", "°C",
+     "{{ value_json.temperature_c.value if value_json.temperature_c.valid else none }}"},
+    {"sensor", "humidity_pct", "Humidity", "humidity", "%",
+     "{{ value_json.humidity_pct.value if value_json.humidity_pct.valid else none }}"},
+    {"sensor", "illuminance_lx", "Illuminance", "illuminance", "lx",
+     "{{ value_json.illuminance_lx.value if value_json.illuminance_lx.valid else none }}"},
+    {"sensor", "probe_temperature_c", "Probe Temperature", "temperature", "°C",
+     "{{ value_json.probe_temperature_c.value if value_json.probe_temperature_c.valid else none }}"},
+    {"sensor", "presence_distance_cm", "Presence Distance", "distance", "cm",
+     "{{ value_json.presence_distance_cm.value if value_json.presence_distance_cm.valid else none }}"},
+    {"sensor", "presence_state", "Presence Target State", nullptr, nullptr,
+     "{{ value_json.presence_state.value | int if value_json.presence_state.valid else none }}"},
+    {"sensor", "wifi_rssi_dbm", "Wi-Fi RSSI", "signal_strength", "dBm",
+     "{{ value_json.wifi_rssi_dbm.value if value_json.wifi_rssi_dbm.valid else none }}"},
+    {"binary_sensor", "presence", "Presence", "occupancy", nullptr,
+     "{{ 'ON' if value_json.presence.valid and value_json.presence.value else "
+     "('OFF' if value_json.presence.valid else none) }}"},
+};
+
 constexpr MqttProductContract kV1Contract{
     MqttProductKind::AtmosMeshV1,
     kMqttDeviceId,
@@ -123,6 +146,16 @@ constexpr MqttProductContract kRoomContract{
     "home/air/atmosmesh-room-0001/availability",
 };
 
+constexpr MqttProductContract kSpotContract{
+    MqttProductKind::AtmosMeshSpotV1,
+    "atmosmesh-spot-v1",
+    "atmosmesh-spot-0001",
+    "atmosmesh_spot_0001",
+    "AtmosMesh Spot 0001",
+    "home/air/atmosmesh-spot-0001/state",
+    "home/air/atmosmesh-spot-0001/availability",
+};
+
 struct DiscoverySpecRange {
     const DiscoverySpec* specs;
     std::size_t count;
@@ -143,6 +176,9 @@ DiscoverySpecRange discovery_specs(const MqttProductContract& contract) {
         case MqttProductKind::AtmosMeshRoomV1:
             return {kRoomDiscoverySpecs,
                     sizeof(kRoomDiscoverySpecs) / sizeof(kRoomDiscoverySpecs[0])};
+        case MqttProductKind::AtmosMeshSpotV1:
+            return {kSpotDiscoverySpecs,
+                    sizeof(kSpotDiscoverySpecs) / sizeof(kSpotDiscoverySpecs[0])};
         case MqttProductKind::AtmosMeshV1:
             break;
     }
@@ -279,6 +315,21 @@ std::string room_mqtt_state_json(const RoomMqttState& state) {
     return out;
 }
 
+std::string spot_mqtt_state_json(const SpotMqttState& state) {
+    std::string out = "{\"station_id\":\"atmosmesh-spot-0001\",";
+    out += "\"product_id\":\"atmosmesh-spot-v1\"";
+    append_reading(out, "temperature_c", state.temperature_c, "C", true);
+    append_reading(out, "humidity_pct", state.humidity_pct, "%", true);
+    append_reading(out, "illuminance_lx", state.illuminance_lx, "lx", true);
+    append_reading(out, "probe_temperature_c", state.probe_temperature_c, "C", true);
+    append_reading(out, "presence_distance_cm", state.presence_distance_cm, "cm", true);
+    append_reading(out, "presence_state", state.presence_state, "state", true);
+    append_reading(out, "wifi_rssi_dbm", state.wifi_rssi_dbm, "dBm", true);
+    append_bool_reading(out, "presence", state.presence, true);
+    out += '}';
+    return out;
+}
+
 const MqttProductContract& mqtt_v1_contract() {
     return kV1Contract;
 }
@@ -293,6 +344,10 @@ const MqttProductContract& mqtt_aqua_contract() {
 
 const MqttProductContract& mqtt_room_contract() {
     return kRoomContract;
+}
+
+const MqttProductContract& mqtt_spot_contract() {
+    return kSpotContract;
 }
 
 MqttWillConfig mqtt_will_config(const MqttProductContract& contract) {
