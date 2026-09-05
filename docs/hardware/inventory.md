@@ -22,7 +22,8 @@ in [datasheets/](datasheets/README.md) and [spec-comparison.md](spec-comparison.
 
 ## Heltec WiFi LoRa 32 V2 — USB probe (2026-09-05)
 
-Read-only `esptool` probe on `/dev/ttyUSB0` after the board arrived; nothing was flashed by the agent.
+`esptool` probe on `/dev/ttyUSB0` after the board arrived, full flash backup, then (operator go-ahead the same
+day) a Meshtastic listener image for the coverage test.
 Board plan and idea list: [lora-remote-node.md](lora-remote-node.md).
 
 | Fact | Value |
@@ -34,6 +35,9 @@ Board plan and idea list: [lora-remote-node.md](lora-remote-node.md).
 | Auto-reset | RTS works |
 | Stock firmware | Heltec factory test; boot prints `LoRa Initial success!` and `ESP32ChipID=EC040E05613C`, then nothing more on serial |
 | Backup | `PlatformRelay/.tooling/firmware-backups/heltec-wifi-lora32-v2_3c61050e04ec_stock-factory_2026-09-05.bin` (full 8 MB) |
+| Current firmware | Meshtastic 2.7.26 `meshtastic-diy-v1` (written 2026-09-05: `*.factory.bin` at `0x0`, `mt-esp32-ota.bin` at `0x260000`, `littlefs-*.bin` at `0x300000`, all hash-verified). Region `EU_868`, LongFast, node `!050e04ec` |
+| Radio init | `RF95 init success` on the diy-v1 pin map (cs 18, irq 26) — so the radio is SX127x class and the V2's LoRa SPI/DIO0 wiring matches diy-v1 |
+| LoRa listen 2026-09-05 | ~10 min on 869.525 MHz LongFast across two windows: `num_packets_rx=0`, `num_packets_tx=0`, no other node in `--nodes`, noise floor −107 to −110 dBm. TX not yet seen on the serial log (see the bring-up handoff) |
 | Radio, antenna, battery connector polarity, OLED | **Not verified** — need front/back photos and a meter before any wiring |
 
 ## User-confirmed component stock (2026-09-04)

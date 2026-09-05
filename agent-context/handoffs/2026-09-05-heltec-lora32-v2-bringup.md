@@ -1,33 +1,37 @@
 # Heltec WiFi LoRa 32 V2 bring-up handoff — 2026-09-05
 
-- Status: Blocked (operator action)
+- Status: Done for the listen test; TX proof open (needs a second radio or a longer capture)
 - Done:
   - Board identified over USB: ESP32-D0WDQ6 rev 1.0, 8 MB flash, MAC `3c:61:05:0e:04:ec` → Heltec V2
-    (classic ESP32, SX1276 class radio). Facts in `docs/hardware/inventory.md`.
-  - Stock factory firmware captured for 30 s: `LoRa Initial success!` at boot, no packet log.
-  - Full 8 MB flash backed up to
+    (classic ESP32, SX127x class radio). Facts in `docs/hardware/inventory.md`.
+  - Full 8 MB stock flash backed up to
     `PlatformRelay/.tooling/firmware-backups/heltec-wifi-lora32-v2_3c61050e04ec_stock-factory_2026-09-05.bin`.
-  - Host tooling repaired: the shared venv `PlatformRelay/.tooling/python/atmosmesh` was a dead
-    symlink set from the old Mac; rebuilt with `uv` (Python 3.12, esptool 5.3.1, pyserial,
-    meshtastic CLI 2.7.11).
-  - Plan and idea list written: `docs/hardware/lora-remote-node.md`.
-- Evidence: esptool output and serial capture quoted in the inventory row.
-- Blocked by: the coverage/link test needs a listener firmware on the board. Meshtastic no longer
-  ships a Heltec V2 image; the generic `meshtastic-diy-v1` 2.7.26 image (radio SPI + DIO0 pins
-  match the V2) is downloaded but writing it is the operator's decision.
-  The serial port needs the `dialout` group; the current login session predates the membership,
-  so run through `sudo -g dialout` or log in again.
-- Next (operator, ~15 min):
-  1. `cd atmosmesh && sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 erase-flash`
-  2. `sudo -u koni -g dialout ./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 write-flash 0x0 <firmware-meshtastic-diy-v1-2.7.26.54e0d8d.bin> 0x300000 <littlefs-meshtastic-diy-v1-2.7.26.54e0d8d.bin>`
-     (keep 115200: baud changes to 460800/921600 break this CP2102 link after the stub loads; the
-     ~2 MB write takes about 3 minutes)
-     (both files come from `gh release download v2.7.26.54e0d8d --repo meshtastic/firmware --pattern firmware-esp32-2.7.26.54e0d8d.zip`)
-  3. Wait 30 s, then `sudo -u koni -g dialout ../.tooling/python/atmosmesh/bin/meshtastic --port /dev/ttyUSB0 --set lora.region EU_868`
-  4. After 10–15 min: `… meshtastic --port /dev/ttyUSB0 --nodes`. Any node besides the local one =
-     RX works and there is Meshtastic traffic in range. `… --info` shows the radio init state.
-  5. If the radio fails to init on the diy-v1 pin map, restore the backup (command in
-     `docs/hardware/lora-remote-node.md` §2) and go straight to the RadioLib P2P route (LORA-02).
+  - Host tooling repaired: shared venv `PlatformRelay/.tooling/python/atmosmesh` rebuilt with `uv`
+    (Python 3.12, esptool 5.3.1, pyserial, meshtastic CLI 2.7.11).
+  - Operator gave the go-ahead; Meshtastic 2.7.26 `meshtastic-diy-v1` written at 115200 baud:
+    `firmware-…factory.bin` @ `0x0`, `mt-esp32-ota.bin` @ `0x260000`, `littlefs-…bin` @ `0x300000`
+    (hash-verified). Region set to `EU_868`. Node id `!050e04ec`.
+  - Listen result: `RF95 init success`, 869.525 MHz LongFast, 20 dBm, noise floor −107…−110 dBm;
+    ~10 min across two windows: `num_packets_rx=0`, `num_packets_tx=0`, `--nodes` lists only self.
+  - Plan and idea list: `docs/hardware/lora-remote-node.md` (§2 has the coverage verdict).
+- Evidence: serial captures in the job's tmp dir (not kept); the key lines are quoted in the
+  inventory row and plan §2.
+- Gotchas learned:
+  - Writing the app-only `firmware-*.bin` at `0x0` boot-loops (`flash read err, 1000`); use the
+    `*.factory.bin` merged image.
+  - Every serial port open resets the board (CP2102 DTR/RTS), so a CLI command and a log capture
+    cannot overlap; the node's first NodeInfo broadcast is skipped as "sent <600 s ago".
+  - Stay at 115200 baud; 460800/921600 fail after the esptool stub loads.
+  - Run serial tools via `sudo -n -u koni -g dialout …` until the login picks up the group.
+- Next:
+  1. TX proof: keep one capture open for >10 min without any CLI access
+     (`meshtastic --port /dev/ttyUSB0 --noproto` works as the terminal) and wait for the node's own
+     NodeInfo/telemetry broadcast (`Starting low level send` … `completeSending`), or shorten
+     `telemetry.device_update_interval` first. Alternative: any second LoRa radio (LORA-02).
+  2. Coverage: repeat the listen for a few hours and once outdoors/at a window with the real
+     antenna screwed on; any node in `--nodes` besides `!050e04ec` = RX + neighbours.
+  3. Restore the stock image when done testing Meshtastic (plan §2), or keep diy-v1 as the
+     home-end listener once a second radio arrives.
 - Do not:
   - Power the board with the antenna disconnected.
   - Connect an 18650 before the connector polarity is verified on the board (§4 of the plan).

@@ -11,32 +11,43 @@ approval; every module still goes through the front/back photo rule in `AGENTS.m
 | --- | --- | --- |
 | MCU | ESP32-D0WDQ6 rev 1.0, 8 MB flash, 40 MHz crystal, MAC `3c:61:05:0e:04:ec` | esptool probe 2026-09-05 |
 | Board generation | **V2** (classic ESP32). The V3 is an ESP32-S3 with an SX1262; this is not that | chip identity |
-| Radio | SX1276/SX1278 family, 868/915 MHz build (seller listing) | not yet read from the chip |
+| Radio | SX127x family (Meshtastic's RF95 driver initialises it), 868/915 MHz build | `RF95 init success` 2026-09-05 |
 | USB-UART | CP2102 (`10c4:ea60`) | lsusb |
 | Display | 0.96" 128×64 SSD1306, I²C on the board's own pins (V2: SDA GPIO4, SCL GPIO15, RST GPIO16) | Arduino core `heltec_wifi_lora_32_V2` variant; confirm on silkscreen |
 | LoRa SPI | SCK 5, MISO 19, MOSI 27, NSS 18, RST 14, DIO0 26, DIO1 35, DIO2 34 | same variant file |
 | Li-ion path | 2-pin 1.25 mm battery connector, onboard 500 mA-class linear charger, `Vext` 3.3 V switched rail (GPIO21, active low), battery sense on an ADC pin through the board's divider | Heltec docs; **verify polarity and divider on the board before connecting a cell** |
 | Stock firmware | Heltec factory test: prints `LoRa Initial success!` and `ESP32ChipID` at boot, then reports nothing further on serial | 30 s capture 2026-09-05 |
+| Current firmware | Meshtastic 2.7.26 `meshtastic-diy-v1`, region EU_868, node `!050e04ec` | flashed 2026-09-05, see inventory |
 | Backup | Full 8 MB image at `PlatformRelay/.tooling/firmware-backups/heltec-wifi-lora32-v2_3c61050e04ec_stock-factory_2026-09-05.bin` | read-flash 2026-09-05 |
 
 Two consequences of "V2, not V3":
 
-1. **Meshtastic dropped this board.** No 2.5/2.6/2.7 release ships a `heltec-v2.1` image, so the
-   zero-firmware Meshtastic telemetry route is closed unless the generic `meshtastic-diy-v1` image
-   proves to work (it shares SCK/MISO/MOSI/NSS/DIO0 with the V2 and differs only in RST/DIO1/DIO2,
-   which the SX1276 receive path does not need). The firmware routes that definitely work are
-   RadioLib point-to-point and LoRaWAN (MCCI LMIC / RadioLib LoRaWAN).
+1. **Meshtastic dropped this board, but the generic image works.** No 2.5/2.6/2.7 release ships a
+   `heltec-v2.1` image. The generic `meshtastic-diy-v1` image shares SCK/MISO/MOSI/NSS/DIO0 with the
+   V2 and, flashed on 2026-09-05, reports `RF95 init success` and runs on EU_868. Its RST/DIO1 pins
+   (23/33) are not the V2's (14/35), so treat the diy-v1 build as a listener and test tool; a proper
+   V2 build (custom `variant.h` or the RadioLib routes below) is still the base for the node firmware.
+   Flash layout matters: writing the app-only `firmware-*.bin` at `0x0` boot-loops (`flash read err,
+   1000`); the merged `firmware-*.factory.bin` at `0x0` plus `mt-esp32-ota.bin` at `0x260000` and the
+   `littlefs-*.bin` at `0x300000` is the working set.
 2. **Sleep current is the weak spot.** The V2 keeps its CP2102 and LDO powered in deep sleep; the
    community reports roughly the 1 mA class (the V3 is tens of µA). Treat this as a number to
    **measure with the INA226 in stock** before sizing the battery, not a datasheet value.
 
-## 2. Coverage and link test (blocked on the operator)
+## 2. Coverage and link test (result 2026-09-05)
 
 With a single LoRa node there is nothing to talk to, so "coverage" can only mean hearing other
-people's traffic. The candidate test is a Meshtastic listen on EU_868 for 10–15 minutes: any node in
-the `--nodes` table proves both RX and a live neighbourhood; the log lines around the boot
-broadcast prove TX at the SX1276 level. The steps are in the 2026-09-05 handoff. The write itself is
-the operator's to run: it replaces the factory image (backed up above). Restore is one command:
+people's traffic. The test was a Meshtastic listen on EU_868 (869.525 MHz, LongFast preset):
+
+| Check | Result |
+| --- | --- |
+| Radio init | `RF95 init success`, TX power 20 dBm, noise floor −107 to −110 dBm |
+| Receive | ~10 min across two windows: `num_packets_rx=0`, no other node in `--nodes`. **No Meshtastic traffic audible here.** Either nobody runs a node in range or the bare antenna/indoor position is not enough; a longer (hours) listen and an outdoor spot are the next data points |
+| Transmit | A text broadcast was sent from the CLI, but the CLI held the serial port at that moment and every port open resets the board, so the radio-level `Starting low level send` line was never captured; `num_packets_tx` stayed 0 in the windows seen. TX is *plausible* (init and config succeed) but **not yet proven**. Proof needs a second radio, or a capture spanning the node's own periodic broadcast |
+
+So today's answer to "do we have LoRa coverage" is: the board receives at the radio level, nothing
+Meshtastic is heard, and point-to-point coverage cannot be judged until a second radio exists
+(story LORA-02). The stock image is backed up; restore is one command:
 
 ```bash
 ./scripts/esp-tool --port /dev/ttyUSB0 --baud 115200 write-flash 0x0 \
@@ -123,7 +134,7 @@ If 30 days is not enough and the sleep floor really is 1 mA, the cheaper fix is 
 | --- | --- | --- |
 | **A. Second LoRa board as a bridge** (recommended) | Firmware for two boards | ESP32 + LoRa RX → Wi-Fi → MQTT using the existing `esp32_mqtt_runtime` and Home Assistant discovery. Same protocol both ends, no cloud |
 | B. LoRaWAN via TTN | Account + gateway in range | Free if a public gateway is within reach; otherwise a TTN indoor gateway (~€90). Data arrives at TTN's MQTT broker |
-| C. Meshtastic mesh | Only if `diy-v1` works on the V2 | Environment telemetry module reads BME280 etc. natively; Home Assistant has a Meshtastic integration. Elegant, but the V2 is outside support |
+| C. Meshtastic mesh | `diy-v1` runs on the V2 (2026-09-05), but a second Meshtastic radio at home is still needed | Environment telemetry module reads BME280 etc. natively; Home Assistant has a Meshtastic integration. Elegant, but the V2 is outside support and nobody else's mesh was heard here |
 
 ## 6. Brainstorm — other nodes the inventory already covers
 
