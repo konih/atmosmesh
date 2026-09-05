@@ -685,6 +685,8 @@ Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führ
   - vom Operator als `DS02D15` genannt; die Hantek-Typbezeichnung lautet DSO2D15
   - Serie DSO2000, zwei Kanäle, `D`-Variante mit integriertem Funktionsgenerator
   - konkrete Bandbreite, Abtastrate und Generatorumfang am Gerät ablesen und hier nachtragen
+  - Bedienanleitung und die Messrezepte des Projekts (Welligkeit, I²C-Flanke, UART-Pegel,
+    Schienen-Check): `docs/hardware/oscilloscope-hantek-dso2d15.md`
 
   **Konstruktive Folge: zwei offene Punkte des Room-Designs sind damit tatsächlich messbar.**
 

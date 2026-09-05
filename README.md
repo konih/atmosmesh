@@ -95,6 +95,7 @@ Firmware details, OLED constructor, and the live pin map:
 | --- | --- |
 | [`docs/hardware/inventory.md`](docs/hardware/inventory.md) | Confirmed parts and open questions |
 | [`docs/hardware/power.md`](docs/hardware/power.md) | 5 V / 3.3 V domains |
+| [`docs/hardware/oscilloscope-hantek-dso2d15.md`](docs/hardware/oscilloscope-hantek-dso2d15.md) | Bench scope: panel, probe setup, and the ripple / I²C / UART / rail recipes |
 | [`hardware/kicad/`](hardware/kicad/README.md) | Bench carrier (KiCad 10): OLED, sensors, extras strip, fully routed. **Do not fabricate** until DevKit pin order is photographed |
 
 The carrier board uses a **10 k / 15 k** MQ135 divider (3.0 V max on GPIO34).
