@@ -17,6 +17,8 @@
 #include <OneWire.h>
 #include <U8g2lib.h>
 #include <Wire.h>
+#include <driver/gpio.h>
+#include <esp_log.h>
 
 #include <cmath>
 #include <cstdio>
@@ -192,8 +194,14 @@ void sample_sht41(unsigned long now) {
     }
 }
 
+// Fixed gain and integration time, read without waiting. The driver's auto-ranging read walks
+// every gain and integration time and waits two integrations per step; in a dark room that was
+// 5.1 s per sample on this board, during which no radar byte, OT2 edge or button press was
+// seen. Gain 1/4 at 100 ms gives 0.23 lx per count up to about 15 000 lx, which covers a room
+// from night to a sunny windowsill, and the sensor integrates continuously so a no-wait read
+// returns the last completed 100 ms measurement.
 void configure_veml() {
-    veml.setGain(VEML7700_GAIN_1);
+    veml.setGain(VEML7700_GAIN_1_4);
     veml.setIntegrationTime(VEML7700_IT_100MS);
 }
 
@@ -210,7 +218,7 @@ void sample_veml(unsigned long now) {
         veml_present = false;
     }
     if (veml_present) {
-        const float lux = veml.readLux(VEML_LUX_AUTO);
+        const float lux = veml.readLux(VEML_LUX_CORRECTED_NOWAIT);
         if (!std::isnan(lux) && lux >= 0.0F && lux < 200000.0F) {
             veml_lux = lux;
             veml_last_ok_ms = now;
@@ -290,7 +298,181 @@ void service_probe(unsigned long now) {
     }
 }
 
-void drain_radar_uart(unsigned long now) {
+// ---------------------------------------------------------------- radar handshake
+//
+// Observed on the first unit (2026-09-05, after the module's chip was reflowed): at every C3
+// reset the radar sends the ACK to an enable-configuration command -- something on the C3's TX
+// line during reset reads as that command to it -- and a module in configuration mode stops
+// reporting. Left alone it stayed silent for minutes. So the firmware talks back: end the
+// configuration once the UART is up, and if reports still do not flow, run the full sequence
+// (enable, read version, minimal output mode, end) and log every ACK. That also turns "no
+// frames" into a verdict: a module that ACKs has a working UART both ways.
+unsigned long radar_acks = 0;
+unsigned long radar_last_ack_ms = 0;
+int radar_step = 0;
+int radar_attempts = 0;
+int radar_kicks = 0;
+unsigned long radar_next_ms = 0;
+unsigned long radar_last_kick_ms = 0;
+bool radar_version_known = false;
+char radar_version[16] = "";
+int radar_uart_rx = spot::kRadarRxGpio;
+int radar_uart_tx = spot::kRadarTxGpio;
+
+// Observed after the reflow: the module reports for about two seconds after every C3 reset and
+// then falls silent, with or without Wi-Fi, and ignores commands while silent. During a C3
+// reset its RX line (our TX) sits low, i.e. a UART break. A low-power UART that wakes on a break
+// and dozes off again fits every capture, so the nudge starts with one: TX held low for 150 ms,
+// then end-configuration. The log says whether that brings the reports back.
+void radar_wake_break(unsigned long low_ms) {
+    Serial0.flush();
+    Serial0.end();
+    pinMode(radar_uart_tx, OUTPUT);
+    digitalWrite(radar_uart_tx, LOW);
+    delay(low_ms);
+    digitalWrite(radar_uart_tx, HIGH);
+    delay(5);
+    Serial0.setRxBufferSize(512);
+    Serial0.begin(spot::kRadarBaud, SERIAL_8N1, radar_uart_rx, radar_uart_tx);
+    gpio_set_pull_mode(static_cast<gpio_num_t>(radar_uart_rx), GPIO_PULLUP_ONLY);
+    Serial.printf("radar: -> break (TX low %lu ms)\n", low_ms);
+}
+
+void radar_send(std::uint16_t command, const std::uint8_t* value, std::size_t value_len,
+                const char* label) {
+    std::uint8_t frame[atmosmesh::kLd2410sCommandMaxBytes];
+    const std::size_t n = atmosmesh::ld2410s_build_command(frame, sizeof(frame), command, value,
+                                                           value_len);
+    if (n == 0) {
+        return;
+    }
+    Serial0.write(frame, n);
+    Serial.printf("radar: -> %s\n", label);
+}
+
+void note_radar_ack(const atmosmesh::Ld2410sAck& ack, unsigned long now) {
+    ++radar_acks;
+    radar_last_ack_ms = now;
+    if (ack.command == atmosmesh::kLd2410sCmdReadVersion && ack.value_len >= 6U) {
+        std::snprintf(radar_version, sizeof(radar_version), "%u.%u.%u",
+                      static_cast<unsigned>(ack.value[0] | (ack.value[1] << 8)),
+                      static_cast<unsigned>(ack.value[2] | (ack.value[3] << 8)),
+                      static_cast<unsigned>(ack.value[4] | (ack.value[5] << 8)));
+        radar_version_known = true;
+        Serial.printf("radar: <- ack read-version: firmware %s (UART works both ways)\n",
+                      radar_version);
+        return;
+    }
+    const char* name = ack.command == atmosmesh::kLd2410sCmdEnableConfig ? "enable-config"
+                       : ack.command == atmosmesh::kLd2410sCmdEndConfig  ? "end-config"
+                       : ack.command == atmosmesh::kLd2410sCmdOutputMode ? "output-mode"
+                                                                          : "command";
+    Serial.printf("radar: <- ack %s (0x%02X) status=%u", name,
+                  static_cast<unsigned>(ack.command),
+                  static_cast<unsigned>(atmosmesh::ld2410s_ack_status(ack)));
+    if (ack.command == atmosmesh::kLd2410sCmdEnableConfig && ack.value_len >= 6U) {
+        Serial.printf(" protocol=%u buffer=%u", static_cast<unsigned>(ack.value[2]),
+                      static_cast<unsigned>(ack.value[4] | (ack.value[5] << 8)));
+    }
+    Serial.printf(" uptime=%lus\n", now / 1000UL);
+}
+
+void service_radar_handshake(unsigned long now) {
+    const std::uint8_t enable_value[2] = {0x01, 0x00};
+    switch (radar_step) {
+        case 0:   // the UART has been up for a moment: break, then leave any configuration mode
+            // The break is what starts the stream on the first unit: after a reset the module
+            // sends a burst of two or three frames and then waits; a 200 ms low on its RX and
+            // it reports continuously. End-configuration on top covers the other silent state.
+            if (now < 3500UL) return;
+            radar_wake_break(200UL);
+            radar_send(atmosmesh::kLd2410sCmdEndConfig, nullptr, 0, "end-config (boot kick)");
+            radar_last_kick_ms = now;
+            radar_step = 1;
+            radar_next_ms = now + 5000UL;
+            return;
+        case 1:   // did reports start, and are they still coming?
+            if (now < radar_next_ms) return;
+            if (radar_frame_seen && now - radar_last_frame_ms < 4000UL) {
+                Serial.printf("radar: reporting (%lu frame(s)); handshake done\n", radar_frames);
+                radar_step = 9;
+                radar_kicks = 0;
+                return;
+            }
+            if (radar_attempts >= 5) {
+                radar_step = 8;
+                radar_next_ms = now + 300000UL;
+                Serial.println("radar: no reports after 5 handshakes; retrying every 5 min");
+                return;
+            }
+            ++radar_attempts;
+            Serial.printf("radar: no reports yet, handshake attempt %d (frames so far %lu)\n",
+                          radar_attempts, radar_frames);
+            // Attempt 1: a short break alone. Attempt 2: a long one alone. From 3: break plus
+            // the command sequence. Which of these brings the reports back is the finding.
+            if (radar_attempts == 1) {
+                radar_wake_break(200UL);
+                radar_next_ms = now + 5000UL;
+                return;
+            }
+            if (radar_attempts == 2) {
+                radar_wake_break(1500UL);
+                radar_next_ms = now + 5000UL;
+                return;
+            }
+            radar_wake_break(200UL);
+            radar_send(atmosmesh::kLd2410sCmdEnableConfig, enable_value, 2, "enable-config");
+            radar_step = 2;
+            radar_next_ms = now + 250UL;
+            return;
+        case 2:
+            if (now < radar_next_ms) return;
+            radar_send(atmosmesh::kLd2410sCmdReadVersion, nullptr, 0, "read-version");
+            radar_step = 3;
+            radar_next_ms = now + 250UL;
+            return;
+        case 3:
+            if (now < radar_next_ms) return;
+            radar_send(atmosmesh::kLd2410sCmdOutputMode, atmosmesh::kLd2410sOutputMinimal, 6,
+                       "output-mode minimal");
+            radar_step = 4;
+            radar_next_ms = now + 250UL;
+            return;
+        case 4:
+            if (now < radar_next_ms) return;
+            radar_send(atmosmesh::kLd2410sCmdEndConfig, nullptr, 0, "end-config");
+            radar_last_kick_ms = now;
+            radar_step = 1;
+            radar_next_ms = now + 10000UL;
+            return;
+        case 8:   // gave up for now
+            if (now < radar_next_ms) return;
+            radar_attempts = 0;
+            radar_step = 1;
+            return;
+        default:  // reporting. If it goes quiet: break + end-config, twice, then the full sequence.
+            if (radar_frame_seen && now - radar_last_frame_ms > 6000UL &&
+                now - radar_last_kick_ms > 8000UL) {
+                Serial.printf("radar: reports stopped %lus ago (%lu total); nudge %d\n",
+                              (now - radar_last_frame_ms) / 1000UL, radar_frames, radar_kicks + 1);
+                radar_wake_break(200UL);
+                radar_send(atmosmesh::kLd2410sCmdEndConfig, nullptr, 0,
+                           "end-config (after break)");
+                radar_last_kick_ms = now;
+                if (++radar_kicks >= 2) {
+                    radar_kicks = 0;
+                    radar_step = 1;
+                    radar_next_ms = now + 4000UL;
+                }
+            }
+            return;
+    }
+}
+
+void drain_radar_uart(unsigned long /*loop_now*/) {
+    // Stamp with the clock, not the caller's time: this runs after slow stages too, and a stamp
+    // seconds old made the handshake believe the stream had stopped while it was flowing.
+    const unsigned long now = millis();
     while (Serial0.available() > 0) {
         const int byte = Serial0.read();
         if (byte < 0) {
@@ -308,6 +490,10 @@ void drain_radar_uart(unsigned long now) {
             Serial.println();
         }
         const auto report = radar_stream.feed(static_cast<std::uint8_t>(byte));
+        if (report.ack.ok) {
+            note_radar_ack(report.ack, now);
+            continue;
+        }
         if (!report.ok) {
             continue;
         }
@@ -598,6 +784,7 @@ void wait_servicing(unsigned long duration_ms) {
     while (millis() - started < duration_ms) {
         const unsigned long now = millis();
         drain_radar_uart(now);
+        service_radar_handshake(now);
         poll_presence(now);
         poll_button(now);
         service_heartbeat(now);
@@ -624,6 +811,11 @@ BusIdle probe_bus_idle() {
 }  // namespace
 
 void setup() {
+    // The IDF's own log output (Wi-Fi driver, esp-mqtt errors) goes to UART0, i.e. out of the
+    // pin that feeds the radar's RX. The module answers such garbage with an enable-config ACK
+    // (seen every ~34 s during MQTT retries). The ROM and bootloader lines at reset cannot be
+    // silenced from here; everything after this line can.
+    esp_log_level_set("*", ESP_LOG_NONE);
     Serial.begin(115200);
     delay(1500);   // native USB: give the host a moment to attach before the hello
     Serial.println();
@@ -647,15 +839,28 @@ void setup() {
     // pin: the UART is then run crossed for this boot so the radar still reports, and the pin
     // that carries the radar's push-pull output is never driven as an output against it.
     // First unit, 2026-09-05: RX idled LOW with OT2 working, which is how this got written.
+    // Pull-downs here only for the reading; they are not left on. The C3 attaches UART0 RX to
+    // GPIO20 through its direct mux and never touches the pull resistors, so a pull-down left
+    // enabled here stays on the radar's TX line for good -- and a weak transmitter loses to it.
     pinMode(spot::kRadarRxGpio, INPUT_PULLDOWN);
     pinMode(spot::kRadarTxGpio, INPUT_PULLDOWN);
     delay(2);
     const bool rx_idle_high = digitalRead(spot::kRadarRxGpio) == HIGH;
     const bool tx_idle_high = digitalRead(spot::kRadarTxGpio) == HIGH;
+    pinMode(spot::kRadarRxGpio, INPUT_PULLUP);
+    pinMode(spot::kRadarTxGpio, INPUT_PULLUP);
+    delay(2);
+    const bool rx_up_high = digitalRead(spot::kRadarRxGpio) == HIGH;
     int uart_rx = spot::kRadarRxGpio;
     int uart_tx = spot::kRadarTxGpio;
-    Serial.printf("radar: OT1 line (gpio%d) idles %s; gpio%d idles %s\n", spot::kRadarRxGpio,
-                  rx_idle_high ? "HIGH - a transmitter is attached" : "LOW - nothing driving it",
+    // The LD2410S's OT1 is a weak driver: on the first unit it reads LOW against the C3's
+    // pull-down and HIGH against its pull-up, and the stream only decodes with the pull-up.
+    // So "follows the pull" is the healthy reading here; LOW under the pull-up is the fault.
+    Serial.printf("radar: OT1 line (gpio%d): pull-down->%s pull-up->%s%s; gpio%d pull-down->%s\n",
+                  spot::kRadarRxGpio, rx_idle_high ? "HIGH" : "LOW", rx_up_high ? "HIGH" : "LOW",
+                  rx_idle_high ? " (driven high)"
+                               : (rx_up_high ? " (weak driver or open, as on the first unit)"
+                                             : " - HELD LOW, check the joint"),
                   spot::kRadarTxGpio, tx_idle_high ? "HIGH" : "LOW");
     if (!rx_idle_high && tx_idle_high) {
         uart_rx = spot::kRadarTxGpio;
@@ -664,8 +869,12 @@ void setup() {
                       "crossed for this boot; move OT1 to the RX pin and the radar RX to TX\n",
                       spot::kRadarTxGpio);
     }
+    radar_uart_rx = uart_rx;
+    radar_uart_tx = uart_tx;
     Serial0.setRxBufferSize(512);
     Serial0.begin(spot::kRadarBaud, SERIAL_8N1, uart_rx, uart_tx);
+    // Leave the RX line with the idle-high pull a UART expects, whatever the driver did.
+    gpio_set_pull_mode(static_cast<gpio_num_t>(uart_rx), GPIO_PULLUP_ONLY);
     Serial.printf("radar: uart0 rx=gpio%d(<-OT1) tx=gpio%d(->RX) %lu 8N1, listening for 6E..62\n",
                   spot::kRadarRxGpio, spot::kRadarTxGpio, spot::kRadarBaud);
 
@@ -738,6 +947,7 @@ void loop() {
     const unsigned long now = millis();
 
     drain_radar_uart(now);
+    service_radar_handshake(now);
     poll_presence(now);
     poll_button(now);
     service_heartbeat(now);

@@ -65,7 +65,15 @@ the photographs show a standard five-pin header, to be measured on the part.
   that unit works — so those are the series links of the UART lines (and one option left open),
   and a missing or open link in the `OT1` position leaves the header pin floating. That is the
   first thing to meter on a module whose `OT2` works and whose `OT1` is silent (SP-01, first
-  unit, 5 September 2026).
+  unit, 5 September 2026 — an open joint, fixed by reflowing the chip).
+- **`OT1` is a weak driver** (first unit, measured): it reads LOW against the ESP32-C3's internal
+  pull-down (~45 kΩ) and HIGH against its pull-up, and frames only decode with a pull-up on the
+  line. Give it a pull-up (the host's internal one, or 10 kΩ to 3V3 on the carrier), never a
+  pull-down.
+- **A break on `RX` starts the stream.** After the host resets, the module sends two or three
+  frames and then waits; holding its `RX` low for 200 ms makes it report continuously. It also
+  answers any unparseable bytes on `RX` (boot-loader text, IDF logs) with the enable-config ACK,
+  so keep the host's console off that pin.
 
 ## Provenance
 

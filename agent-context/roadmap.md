@@ -70,6 +70,17 @@ MVP order.
 | Room-4 | [ROOM-04](stories/ROOM-04.md) | Proposed | P2 | ROOM-02, ROOM-03 | Firmware duty-cycling via the SDS011's own hibernation command; the MOSFET switch was rejected on topology (D-030) |
 | Room-5 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT occupancy inverted | Flip PIR polarity so MQTT matches presence |
 
+## AtmosMesh Spot variant
+
+A 3.3 V presence-and-climate node on the ESP32-C3 SuperMini OLED (SHT41, VEML7700, HLK-LD2410S
+radar, DS18B20 probe). First unit soldered and running since 2026-09-05. Does not change the
+order above.
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| Spot-1 | [SP-01](stories/SP-01.md) | In flight | P3 | — | Carrier built; acceptance tests left: empty-room presence, Room comparison, 24 h Wi-Fi, probe unplug |
+| Spot-2 | [SP-02](stories/SP-02.md) | In flight | P3 | SP-01 | C3 product image on the unit: all sensors, radar distance/state, OLED, MQTT; HA and OLED-orientation checks left |
+
 ## Milestones
 
 ### M1 — Hardware approved
