@@ -578,6 +578,135 @@ void test_room_session_replays_retained_discovery_and_availability_on_reconnect(
     TEST_ASSERT_FALSE(actions[8].retained);
 }
 
+void test_spot_contract_uses_stable_ids_and_separate_topics() {
+    const auto& contract = atmosmesh::mqtt_spot_contract();
+    TEST_ASSERT_EQUAL(atmosmesh::MqttProductKind::AtmosMeshSpotV1, contract.kind);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-spot-v1", contract.product_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh-spot-0001", contract.station_id);
+    TEST_ASSERT_EQUAL_STRING("atmosmesh_spot_0001", contract.discovery_node);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-spot-0001/state", contract.state_topic);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-spot-0001/availability",
+                             contract.availability_topic);
+    TEST_ASSERT_NOT_EQUAL(0, std::string(contract.state_topic)
+                                 .compare(atmosmesh::mqtt_room_contract().state_topic));
+    TEST_ASSERT_NOT_EQUAL(0, std::string(contract.state_topic)
+                                 .compare(atmosmesh::mqtt_v1_contract().state_topic));
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_room(contract.state_topic));
+    const auto will = atmosmesh::mqtt_will_config(contract);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-spot-0001/availability", will.topic);
+    TEST_ASSERT_EQUAL_STRING("offline", will.payload);
+    TEST_ASSERT_TRUE(will.retained);
+}
+
+void test_spot_state_marks_missing_probe_and_radar_invalid_rather_than_zero() {
+    atmosmesh::SpotMqttState state{};
+    state.temperature_c = {21.5F, true, 100};
+    state.humidity_pct = {44.0F, true, 100};
+    state.illuminance_lx = {318.0F, true, 100};
+    state.probe_temperature_c.valid = false;   // probe unplugged
+    state.probe_temperature_c.age_ms = 12000;
+    state.presence_distance_cm.valid = false;  // no UART frame lately
+    state.presence_state.valid = false;
+    state.wifi_rssi_dbm = {-61.0F, true, 0};
+    state.presence = {true, true, 3000};
+
+    const std::string json = atmosmesh::spot_mqtt_state_json(state);
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                          json.find("\"station_id\":\"atmosmesh-spot-0001\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"product_id\":\"atmosmesh-spot-v1\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"temperature_c\":{\"value\":21.5"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"unit\":\"lx\""));
+    // An unplugged probe carries no value: 0.0 C would read as a frozen radiator.
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"probe_temperature_c\":{\"value\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                          json.find("\"probe_temperature_c\":{\"unit\":\"C\",\"valid\":false"));
+    // A silent UART is no distance, not a target at 0 cm.
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"presence_distance_cm\":{\"value\""));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("\"presence_state\":{\"value\""));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"wifi_rssi_dbm\":{\"value\":-61.0"));
+    TEST_ASSERT_NOT_EQUAL(std::string::npos, json.find("\"presence\":{\"value\":true"));
+    // No particulates, no pressure, no gas: the Spot has none of those sensors.
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("pm25"));
+    TEST_ASSERT_EQUAL(std::string::npos, json.find("hPa"));
+    assert_no_room_or_forbidden_gas(json);
+}
+
+void test_spot_discovery_is_the_spot_entity_set() {
+    const auto& contract = atmosmesh::mqtt_spot_contract();
+    const std::size_t count = atmosmesh::mqtt_discovery_config_count(contract);
+    TEST_ASSERT_EQUAL_INT(8, static_cast<int>(count));
+
+    bool saw_probe = false;
+    bool saw_distance = false;
+    bool saw_state = false;
+    bool saw_presence = false;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto cfg = atmosmesh::mqtt_discovery_config_at(contract, i);
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.topic.find("atmosmesh_spot_0001"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                              cfg.payload.find("home/air/atmosmesh-spot-0001/state"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                              cfg.payload.find("\"unique_id\":\"atmosmesh-spot-0001_"));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("pm25"));
+        TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("\"hPa\""));
+        if (std::string(cfg.object_id) == "probe_temperature_c") {
+            saw_probe = true;
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"temperature\""));
+            TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("Probe Temperature"));
+        }
+        if (std::string(cfg.object_id) == "presence_distance_cm") {
+            saw_distance = true;
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"distance\""));
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"unit_of_measurement\":\"cm\""));
+        }
+        if (std::string(cfg.object_id) == "presence_state") {
+            saw_state = true;
+            TEST_ASSERT_EQUAL_STRING("sensor", cfg.component);
+            // Raw 0..3 from the radar: no device class, no unit, no invented semantics.
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("device_class"));
+            TEST_ASSERT_EQUAL(std::string::npos, cfg.payload.find("unit_of_measurement"));
+        }
+        if (std::string(cfg.object_id) == "presence") {
+            saw_presence = true;
+            TEST_ASSERT_EQUAL_STRING("binary_sensor", cfg.component);
+            TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                                  cfg.payload.find("\"device_class\":\"occupancy\""));
+        }
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("valid"));
+        TEST_ASSERT_NOT_EQUAL(std::string::npos, cfg.payload.find("none"));
+        assert_no_room_or_forbidden_gas(cfg.payload);
+    }
+    TEST_ASSERT_TRUE(saw_probe);
+    TEST_ASSERT_TRUE(saw_distance);
+    TEST_ASSERT_TRUE(saw_state);
+    TEST_ASSERT_TRUE(saw_presence);
+}
+
+void test_spot_session_replays_retained_discovery_and_availability_on_reconnect() {
+    atmosmesh::MqttSession session{};
+    atmosmesh::mqtt_session_use_contract(session, atmosmesh::mqtt_spot_contract());
+    atmosmesh::mqtt_session_note_connect(session);
+    atmosmesh::SpotMqttState state{};
+    state.temperature_c = {21.0F, true, 0};
+    atmosmesh::mqtt_session_queue_payload(session, atmosmesh::spot_mqtt_state_json(state));
+
+    auto actions = atmosmesh::mqtt_session_tick(session, 0);
+    TEST_ASSERT_EQUAL_INT(10, static_cast<int>(actions.size()));
+    for (std::size_t i = 0; i < 8; ++i) {
+        TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishDiscovery, actions[i].kind);
+        TEST_ASSERT_TRUE(actions[i].retained);
+    }
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishAvailabilityOnline,
+                      actions[8].kind);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-spot-0001/availability", actions[8].topic.c_str());
+    TEST_ASSERT_EQUAL(atmosmesh::MqttSessionActionKind::PublishState, actions[9].kind);
+    TEST_ASSERT_EQUAL_STRING("home/air/atmosmesh-spot-0001/state", actions[9].topic.c_str());
+    TEST_ASSERT_FALSE(actions[9].retained);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_mqtt_ids_and_topics_are_station_not_room);
@@ -604,5 +733,9 @@ int main() {
     RUN_TEST(test_room_state_marks_missing_particulates_invalid_rather_than_clean_air);
     RUN_TEST(test_room_discovery_is_the_room_entity_set_not_the_v1_fallthrough);
     RUN_TEST(test_room_session_replays_retained_discovery_and_availability_on_reconnect);
+    RUN_TEST(test_spot_contract_uses_stable_ids_and_separate_topics);
+    RUN_TEST(test_spot_state_marks_missing_probe_and_radar_invalid_rather_than_zero);
+    RUN_TEST(test_spot_discovery_is_the_spot_entity_set);
+    RUN_TEST(test_spot_session_replays_retained_discovery_and_availability_on_reconnect);
     return UNITY_END();
 }

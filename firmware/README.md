@@ -6,6 +6,7 @@ PlatformIO + Arduino builds two independent, first-class products from one proje
 | --- | --- | --- | --- | --- |
 | **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `esp32-full-station` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
 | **AtmosMesh Grove v1.5** — compact ESP8266 node | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
+| **AtmosMesh Spot** — ESP32-C3 SuperMini OLED presence node | `atmosmesh-spot-v1` | `atmosmesh-spot-v1` | `src/products/atmosmesh_spot_v1.cpp` | `atmosmesh-spot-v1` |
 
 Neither product replaces the other. The composition model and version semantics are defined by the
 accepted [ADR-0001](../docs/adr/0001-multi-product-firmware-composition.md).
@@ -295,6 +296,75 @@ indefinitely on this board.
 - The first captured banner from reviewed head `a681990` contained product name, variant and station
   ID but no separate `product_id`. A second reviewed flash of final head `50ca2f3` captured the exact
   four-field banner documented above.
+
+## AtmosMesh Spot (SP-01 / SP-02)
+
+ESP32-C3 SuperMini with the 0.42 inch OLED on the 14 × 20 carrier
+([wiring](../hardware/kicad/atmosmesh-spot/wiring.md)). One 3.3 V domain, USB powered. Needs
+`espressif32` 7.x (Arduino core 3.x, RISC-V toolchain); the shared agent venv does not carry
+PlatformIO on Linux, see `tools/c3scan/README.md` for the venv recipe and two gotchas.
+
+```bash
+pio run -e atmosmesh-spot-v1                                   # build
+pio run -e atmosmesh-spot-v1 -t upload --upload-port /dev/ttyACM0   # flash over native USB
+pio device monitor --port /dev/ttyACM0 --baud 115200
+```
+
+or `task build-spot` / `ESP_PORT=/dev/ttyACM0 task flash-spot` / `task monitor-spot`. The board
+enumerates as `Espressif USB JTAG/serial debug unit` (303a:1001); the user needs `dialout`.
+
+| Device | SuperMini pin | GPIO | Notes |
+| --- | --- | --- | --- |
+| OLED SSD1306 72×40 | on board | SDA 5 / SCL 6 | `0x3C`, U8g2 `72X40_ER`, 100 kHz |
+| SHT41 (`SHT4X` board) | `5` / `6` | same bus | `0x44`, raw I²C, host-tested CRC |
+| VEML7700 (`HW-900`) | `5` / `6` | same bus | `0x10`, Adafruit driver, auto-ranging lux |
+| HLK-LD2410S `OT2` | `3` | GPIO3 | presence, HIGH = somebody, `INPUT_PULLDOWN` |
+| HLK-LD2410S `OT1` (its TX) | `RX` | GPIO20 | UART0 RX, 115200 8N1, minimal + standard frames |
+| HLK-LD2410S `RX` | `TX` | GPIO21 | UART0 TX |
+| DS18B20 probe | `4` | GPIO4 | 1-Wire, powered mode, 4.7 kΩ on the carrier |
+| BOOT button / IO8 LED | on board | GPIO9 / GPIO8 | next display page / heartbeat toggle |
+
+**U8g2 on Arduino core 3.x:** construct the display **without** pin numbers and start `Wire`
+yourself. Given pins, U8g2's GPIO init calls `pinMode()` on SDA and SCL, the core's peripheral
+manager hands the pins back from the I²C driver, and `oled.begin()` never returns — observed on
+the first unit on 2026-09-05 (sensors answered before the OLED init, nothing after).
+
+**Boot log as a wiring test.** Before the UART driver takes the radar pins the firmware reads
+both against a pull-down: a UART transmitter idles HIGH, so `OT1 line (gpio20) idles LOW` means
+the `OT1` path is open, and RX LOW with TX HIGH means `OT1` landed on the TX pin (the UART is
+then run crossed for that boot and the log says so). Every 5 s line ends with the slowest loop
+stage; in the dark that is the VEML7700 auto-ranging read at ~700 ms.
+
+### Spot MQTT contract
+
+Same `esp-mqtt` transport as Room, through `esp32_mqtt_runtime.cpp`, which takes the product
+contract as a parameter (Room still runs its own file). Without credentials the sensors and OLED
+continue and networking stays off.
+
+| Piece | Spot value |
+| --- | --- |
+| State | `home/air/atmosmesh-spot-0001/state` (not retained, every 5 s, immediately on a presence flip) |
+| Availability/LWT | `home/air/atmosmesh-spot-0001/availability` (`online`/`offline`, retained) |
+| Discovery | `homeassistant/{sensor,binary_sensor}/atmosmesh_spot_0001/<object_id>/config` (retained) |
+| Entities | `temperature_c`, `humidity_pct`, `illuminance_lx`, `probe_temperature_c`, `presence_distance_cm`, `presence_state`, `wifi_rssi_dbm`, `presence` |
+
+Nested `{value, unit, valid, age_ms}` payloads as on Room. `presence` is a `binary_sensor` with
+device class `occupancy` from `OT2` through a 50 ms debounce and a 5 s hold, valid once a radar
+is known to be attached (frames seen, or `OT2` ever high) and the 10 s warm-up is over.
+`presence_distance_cm` (device class `distance`) and `presence_state` (the radar's raw byte:
+0/1 nobody, 2/3 somebody; the manual defines nothing finer) come from the UART report and are
+valid only while frames keep arriving. `probe_temperature_c` goes unavailable after three bad
+scratchpads and the probe is searched for again every 10 s. Wi-Fi TX power is limited to
+8.5 dBm at start-up (the SuperMini's ceramic antenna drops off the network at full power).
+
+### First unit (2026-09-05)
+
+Soldered carrier: bus scan `0x10 0x3C 0x44`. Product image: SHT41 27.7 °C / 61 %RH, VEML7700
+9–68 lx, DS18B20 probe 24.9 °C, presence occupied from `OT2`, Wi-Fi −72 dBm channel 11 with the
+limit applied, `mqtt: connected` as `atmosmesh-spot-0001`; RAM 12.6 %, flash 72.5 %. Open: no
+byte reaches GPIO20 from the radar's `OT1` (the pin floats; a pin-edge probe over every free
+GPIO saw nothing, and no ACK to a version command) — the `OT1` path is open and waits for a
+meter. The SHT41 sits about 3 K above the probe and climbs as the board warms.
 
 ## AtmosMesh v1 bench OLED wiring (D-001)
 

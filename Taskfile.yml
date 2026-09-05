@@ -80,6 +80,14 @@ tasks:
       - task: build-v1-5
       - task: build-aqua
       - task: build-room
+      - task: build-spot
+
+  build-spot:
+    desc: Build AtmosMesh Spot (`pio run -e atmosmesh-spot-v1`, ESP32-C3 SuperMini OLED)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-spot-v1"
 
   build:
     desc: Compatibility alias for build-v1 (AtmosMesh v1 / ESP32)
@@ -180,6 +188,25 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-room-v1 -t clean"
+
+  flash-spot:
+    desc: Upload AtmosMesh Spot to ESP_PORT (the SuperMini's native USB, /dev/ttyACM0 on Linux)
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-spot-v1 -t upload --upload-port {{.ESP_PORT}}"
+
+  monitor-spot:
+    desc: Serial monitor for AtmosMesh Spot at 115200 on ESP_PORT
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio device monitor --port {{.ESP_PORT}} --baud 115200"
+
+  clean-spot:
+    desc: Clean AtmosMesh Spot build artifacts
+    dir: firmware
+    cmds:
+      - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-spot-v1 -t clean"
 
   run:
     desc: Flash then open the serial monitor

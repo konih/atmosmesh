@@ -19,6 +19,7 @@ void register_sht41_frame_tests();
 void register_sds011_frame_tests();
 void register_pm_alarm_tests();
 void register_aqua_status_tests();
+void register_ld2410s_frame_tests();
 
 void test_clip_truncates_to_oled_width() {
     const std::string clipped = atmosmesh::clip_oled_line("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -623,6 +624,7 @@ int main() {
     register_sds011_frame_tests();
     register_pm_alarm_tests();
     register_aqua_status_tests();
+    register_ld2410s_frame_tests();
     RUN_TEST(test_clip_truncates_to_oled_width);
     RUN_TEST(test_clip_keeps_short_text);
     RUN_TEST(test_oled_page_counts_for_64_48_and_32);
