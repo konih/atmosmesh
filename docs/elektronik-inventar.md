@@ -3,7 +3,8 @@
 > Stand: 25. August 2026, ergänzt am 28. August 2026 und am 4. September 2026
 > Dieses Inventar basiert auf der gemeinsamen Durchsicht und Identifikation. Unsichere Stückzahlen bzw. Varianten sind entsprechend markiert.
 
-![[Images/Elektronik-OLED-und-Zweipol-Bauteil-2026-08-17.jpg|480]]
+The original vault note embedded an overview photo that is no longer available. Surviving evidence
+photos are linked at the relevant items below.
 
 ## Computer & Mikrocontroller
 
@@ -187,7 +188,7 @@
   - kleines orangefarbenes Scheibenbauteil, ungefähr 5-mm-Bauform, mit zwei langen Anschlussdrähten
   - Widerstand sinkt typischerweise bei zunehmender Beleuchtung
   - vermutlich GL55xx-Familie; genaue Variante, beispielsweise GL5528, und Kennwerte noch bestimmen
-  - Foto: ![[Images/Elektronik-Fotowiderstand-LDR-2026-08-17.jpg|240]]
+  - Foto: [LDR close-up](assets/inventory/electronics-ldr-2026-08-17.jpg)
 - 1× Thermoelement / Thermocouple – genauer Typ noch unbekannt
 - 1× ZS-100 – vermutlich optischer/Lichtsensor; genaue Identifikation noch offen
 - diverse IR-/Infrarot-Sensormodule
@@ -638,6 +639,8 @@ Am 25. August 2026 anhand der abgelesenen Gehäusebeschriftungen aufgenommen. Ge
 
 > [!warning] Unklare Module vor Einsatz prüfen
 > Bei funktional erfassten oder noch nicht eindeutig identifizierten Modulen müssen Pinbelegung, Versorgungsspannung und genaue Bauteilvariante vor einem tatsächlichen Einsatz erneut anhand der Platinenbeschriftung, eines Fotos oder des zugehörigen Datenblatts geprüft werden.
+
+Archivierte Dokumentation: [4duino SensorKit 40-in-1 manual](hardware/datasheets/4duino-sensorkit-40-in-1-manual.pdf).
 
 Vorhandenes Sensor-Kit laut hochgeladener Dokumentation. Die Dokumentation führt folgende Module bzw. Modultypen auf:
 

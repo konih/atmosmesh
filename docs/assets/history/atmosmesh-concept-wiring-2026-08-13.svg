@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+  <defs>
+    <style>
+      .title { font: 700 34px system-ui, sans-serif; fill: #172033; }
+      .subtitle { font: 500 18px system-ui, sans-serif; fill: #526078; }
+      .box { fill: #f8fafc; stroke: #334155; stroke-width: 3; rx: 16; }
+      .sensor { fill: #ffffff; stroke: #64748b; stroke-width: 2.5; rx: 12; }
+      .head { font: 700 23px system-ui, sans-serif; fill: #172033; }
+      .label { font: 500 18px system-ui, sans-serif; fill: #172033; }
+      .small { font: 500 15px system-ui, sans-serif; fill: #526078; }
+      .pin { font: 700 17px ui-monospace, monospace; fill: #172033; }
+      .wire5 { fill: none; stroke: #dc2626; stroke-width: 5; }
+      .wire33 { fill: none; stroke: #f59e0b; stroke-width: 5; }
+      .gnd { fill: none; stroke: #111827; stroke-width: 5; }
+      .sda { fill: none; stroke: #2563eb; stroke-width: 4; }
+      .scl { fill: none; stroke: #16a34a; stroke-width: 4; }
+      .data { fill: none; stroke: #7c3aed; stroke-width: 4; }
+      .uarttx { fill: none; stroke: #0891b2; stroke-width: 4; }
+      .uartrx { fill: none; stroke: #db2777; stroke-width: 4; }
+      .analog { fill: none; stroke: #0f766e; stroke-width: 4; }
+      .node { stroke: none; }
+      .warning { fill: #fff7ed; stroke: #ea580c; stroke-width: 3; rx: 12; }
+      .warntext { font: 700 19px system-ui, sans-serif; fill: #9a3412; }
+      .note { fill: #eff6ff; stroke: #2563eb; stroke-width: 2.5; rx: 12; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1120" fill="#ffffff"/>
+  <text x="800" y="54" text-anchor="middle" class="title">HISTORISCH – AtmosMesh Konzeptverdrahtung</text>
+  <text x="800" y="84" text-anchor="middle" class="subtitle">Stand 13.08.2026 · superseded · nicht als Bauanleitung verwenden</text>
+
+  <!-- Power supply -->
+  <rect x="55" y="140" width="300" height="180" class="box"/>
+  <text x="205" y="180" text-anchor="middle" class="head">Stabile 5-V-Versorgung</text>
+  <text x="205" y="213" text-anchor="middle" class="small">empfohlen: mindestens 1 A</text>
+  <text x="92" y="263" class="pin" fill="#dc2626">+5 V</text>
+  <circle cx="335" cy="257" r="7" fill="#dc2626"/>
+  <text x="92" y="300" class="pin">GND</text>
+  <circle cx="335" cy="294" r="7" fill="#111827"/>
+
+  <!-- ESP32 -->
+  <rect x="545" y="165" width="420" height="620" class="box"/>
+  <text x="755" y="210" text-anchor="middle" class="head">ESP32-WROOM-32 Devboard</text>
+  <text x="755" y="240" text-anchor="middle" class="small">Versorgung ausschließlich über USB</text>
+  <rect x="680" y="260" width="150" height="52" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="8"/>
+  <text x="755" y="293" text-anchor="middle" class="pin">USB 5 V</text>
+
+  <text x="575" y="365" class="pin">3V3</text><circle cx="650" cy="359" r="6" fill="#f59e0b"/>
+  <text x="575" y="410" class="pin">GND</text><circle cx="650" cy="404" r="6" fill="#111827"/>
+  <text x="575" y="475" class="pin">GPIO21 SDA</text><circle cx="745" cy="469" r="6" fill="#2563eb"/>
+  <text x="575" y="520" class="pin">GPIO22 SCL</text><circle cx="745" cy="514" r="6" fill="#16a34a"/>
+  <text x="575" y="565" class="pin">GPIO27 DHT</text><circle cx="745" cy="559" r="6" fill="#7c3aed"/>
+  <text x="575" y="630" class="pin">GPIO16 RX2</text><circle cx="745" cy="624" r="6" fill="#0891b2"/>
+  <text x="575" y="675" class="pin">GPIO17 TX2</text><circle cx="745" cy="669" r="6" fill="#db2777"/>
+  <text x="575" y="740" class="pin">GPIO34 ADC1</text><circle cx="745" cy="734" r="6" fill="#0f766e"/>
+
+  <!-- 5 V rail: only sensors -->
+  <path d="M335 257 H470 V125 H1480" class="wire5"/>
+  <text x="1030" y="116" class="pin" fill="#dc2626">+5 V NUR FÜR SDS011 UND MQ135</text>
+
+  <!-- common ground rail -->
+  <path d="M335 294 H415 V1010 H1480" class="gnd"/>
+  <path d="M650 404 H415" class="gnd"/>
+  <text x="1050" y="1044" class="pin">GEMEINSAME MASSE (GND)</text>
+
+  <!-- 3.3 rail -->
+  <path d="M650 359 H980 V850 H1480" class="wire33"/>
+  <text x="1030" y="842" class="pin" fill="#b45309">3,3 V FÜR OLED, BMP280 UND DHT22</text>
+
+  <!-- OLED -->
+  <rect x="1050" y="170" width="420" height="145" class="sensor"/>
+  <text x="1075" y="204" class="head">Mini-OLED (I²C)</text>
+  <text x="1075" y="240" class="label">VCC → 3,3 V · GND → GND</text>
+  <text x="1075" y="274" class="label" fill="#2563eb">SDA → GPIO21</text>
+  <text x="1270" y="274" class="label" fill="#16a34a">SCL → GPIO22</text>
+  <path d="M745 469 H1000 V270 H1050" class="sda"/>
+  <path d="M745 514 H1020 V292 H1050" class="scl"/>
+  <path d="M1220 315 V850" class="wire33"/>
+  <path d="M1270 315 V1010" class="gnd"/>
+
+  <!-- BMP280 -->
+  <rect x="1050" y="350" width="420" height="175" class="sensor"/>
+  <text x="1075" y="384" class="head">BMP280 (I²C)</text>
+  <text x="1075" y="418" class="label">VCC + CSB → 3,3 V</text>
+  <text x="1075" y="450" class="label">GND + SDO → GND (0x76)</text>
+  <text x="1075" y="482" class="label" fill="#2563eb">SDA → GPIO21</text>
+  <text x="1270" y="482" class="label" fill="#16a34a">SCL → GPIO22</text>
+  <path d="M1000 469 V478 H1050" class="sda"/>
+  <path d="M1020 500 H1050" class="scl"/>
+  <path d="M1320 525 V850" class="wire33"/>
+  <path d="M1370 525 V1010" class="gnd"/>
+
+  <!-- DHT22 -->
+  <rect x="1050" y="535" width="420" height="155" class="sensor"/>
+  <text x="1075" y="570" class="head">DHT22</text>
+  <text x="1075" y="606" class="label">VCC → 3,3 V · GND → GND</text>
+  <text x="1075" y="640" class="label" fill="#7c3aed">DATA → GPIO27</text>
+  <text x="1075" y="671" class="small">10-kΩ-Pull-up: DATA ↔ 3,3 V</text>
+  <path d="M745 559 H1000 V635 H1050" class="data"/>
+  <path d="M1155 690 V850" class="wire33"/>
+  <path d="M1415 690 V1010" class="gnd"/>
+  <path d="M1000 635 V755 H1080" class="data"/>
+  <rect x="1080" y="739" width="90" height="32" fill="#fef3c7" stroke="#92400e" stroke-width="2"/>
+  <text x="1125" y="761" text-anchor="middle" class="small">10 kΩ</text>
+  <path d="M1170 755 H1190 V850" class="wire33"/>
+
+  <!-- SDS011 -->
+  <rect x="55" y="385" width="390" height="205" class="sensor"/>
+  <text x="80" y="422" class="head">SDS011 Feinstaub</text>
+  <text x="80" y="458" class="label">VCC → externe 5 V</text>
+  <text x="80" y="492" class="label">GND → gemeinsame Masse</text>
+  <text x="80" y="526" class="label" fill="#0891b2">TX → GPIO16 (RX2)</text>
+  <text x="80" y="560" class="label" fill="#db2777">RX ← GPIO17 (TX2)</text>
+  <path d="M190 385 V125" class="wire5"/>
+  <path d="M230 590 V1010" class="gnd"/>
+  <path d="M445 520 H500 V624 H745" class="uarttx"/>
+  <path d="M445 554 H520 V669 H745" class="uartrx"/>
+  <text x="62" y="615" class="small">UART-Signale: 3,3-V-Logik</text>
+
+  <!-- MQ135 -->
+  <rect x="55" y="665" width="390" height="250" class="sensor"/>
+  <text x="80" y="702" class="head">MQ135-Modul</text>
+  <text x="80" y="738" class="label">VCC → externe 5 V</text>
+  <text x="80" y="772" class="label">GND → gemeinsame Masse</text>
+  <text x="80" y="806" class="label">DO → nicht verbunden</text>
+  <text x="80" y="840" class="label" fill="#0f766e">AO → Spannungsteiler → GPIO34</text>
+  <path d="M150 665 V125" class="wire5"/>
+  <path d="M190 915 V1010" class="gnd"/>
+
+  <!-- Divider -->
+  <path d="M445 835 H485" class="analog"/>
+  <rect x="485" y="817" width="105" height="36" fill="#ccfbf1" stroke="#0f766e" stroke-width="2"/>
+  <text x="537" y="841" text-anchor="middle" class="small">15 kΩ</text>
+  <path d="M590 835 H745 V734" class="analog"/>
+  <circle cx="630" cy="835" r="7" fill="#0f766e"/>
+  <path d="M630 835 V885" class="analog"/>
+  <rect x="612" y="885" width="36" height="90" fill="#ccfbf1" stroke="#0f766e" stroke-width="2"/>
+  <text x="630" y="932" text-anchor="middle" class="small" transform="rotate(-90 630 932)">10 kΩ</text>
+  <path d="M630 975 V1010" class="gnd"/>
+  <text x="690" y="860" class="small">5,0 V am AO → 2,0 V am ADC</text>
+
+  <!-- Warnings -->
+  <rect x="790" y="900" width="760" height="90" class="warning"/>
+  <text x="820" y="934" class="warntext">⚠ Niemals +5 V an einen ESP32-GPIO anschließen.</text>
+  <text x="820" y="966" class="warntext">Die rote 5-V-Schiene berührt ausschließlich SDS011-VCC und MQ135-VCC.</text>
+
+  <rect x="55" y="1045" width="1495" height="55" class="note"/>
+  <text x="800" y="1080" text-anchor="middle" class="label">Vor Aufbau Modul-Pinouts anhand der echten Vorder-/Rückseiten prüfen. USB-5-V und externe +5-V-Schiene nicht verbinden; nur GND gemeinsam.</text>
+</svg>
