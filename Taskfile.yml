@@ -81,6 +81,7 @@ tasks:
       - task: build-aqua
       - task: build-room
       - task: build-spot
+      - task: build-jiggler
 
   build-spot:
     desc: Build AtmosMesh Spot (`pio run -e atmosmesh-spot-v1`, ESP32-C3 SuperMini OLED)
@@ -257,3 +258,26 @@ tasks:
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-aqua-v1 -t clean"
+
+  build-jiggler:
+    desc: Build standalone Bluetooth mouse jiggler for the C3 OLED board
+    dir: firmware
+    cmds:
+      - pio run -e atmosmesh-jiggler
+
+  flash-jiggler:
+    desc: Flash standalone jiggler to ESP_PORT (replaces existing firmware)
+    dir: firmware
+    cmds:
+      - pio run -e atmosmesh-jiggler -t upload --upload-port {{.ESP_PORT}}
+
+  monitor-jiggler:
+    desc: Monitor standalone jiggler on ESP_PORT
+    cmds:
+      - task: monitor-spot
+
+  clean-jiggler:
+    desc: Clean standalone jiggler build artifacts
+    dir: firmware
+    cmds:
+      - pio run -e atmosmesh-jiggler -t clean
