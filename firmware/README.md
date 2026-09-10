@@ -498,3 +498,8 @@ main-checkout `.envrc`).
 Alternative: copy `include/atmosmesh/secrets.hpp.example` → `secrets.hpp` by hand.
 Without Wi-Fi + MQTT credentials, either image still samples sensors and drives the OLED;
 networking is skipped. Topics and HA discovery are in `docs/architecture.md` (D-007/D-013).
+
+## Bluetooth mouse jiggler
+
+The standalone C3 OLED image is documented in [jiggler.md](../docs/jiggler.md).
+Build with `task build-jiggler`; it replaces the sensor-station application on that board.
