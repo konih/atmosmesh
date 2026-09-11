@@ -1,0 +1,95 @@
+# Project ideas — backlog of unbuilt AtmosMesh concepts
+
+Not stories. Nothing here is scoped, scheduled, or approved for wiring — these are candidate
+product concepts, mostly brainstormed with Fable, kept in one place so a good idea doesn't get
+lost between sessions. Promote one to a real story (`stories/<ID>.md`, added to `roadmap.md`) only
+when the operator picks it to build.
+
+Every idea here is expected to follow the project's existing discipline once (if ever) it becomes
+a real story: raw-value-only reporting (no fabricated calibration/derived claims), fail-safe GPIO
+defaults (power switches OFF before `pinMode`), the one shared MQTT contract/discovery pattern, and
+photo-verifying parts before wiring — see [decisions.md](decisions.md) and
+[../docs/hardware/inventory.md](../docs/hardware/inventory.md).
+
+## Idea inventory
+
+| Name | One-line hook | Key unused/spare parts it claims |
+| --- | --- | --- |
+| [Drum](#atmosmesh-drum) | Laundry/utility-room appliance-activity node | ESP32-C6, BMI160, INMP441, ADS1115, capacitive soil probes, BME280 |
+| [Post](#atmosmesh-post) | Mailbox/gate outstation beyond Wi-Fi range | 433 MHz TX/RX pair, ESP32-C3 SuperMini, ESP32 DevKit, HC-SR501 |
+| [Vent](#atmosmesh-vent) | Headless kitchen/bathroom extractor-fan companion | SGP41, BME280, ESP32-C6, second ENS160+AHT20 |
+| [Hall](#atmosmesh-hall) | Stairwell/hallway PIR array for direction-of-travel | 5× HC-SR501, ESP32 DevKit, IRLB8721, BMI160, VEML7700 |
+
+(Batch 3 pending — appended below once it lands.)
+
+---
+
+### AtmosMesh Drum
+
+Laundry/utility-room node. Every existing product answers "what is the air like here?"; nothing
+answers "what are the machines doing, and is the floor wet?" Drum sits on the washer/dryer and
+turns vibration, sound, and floor moisture into raw MQTT features Home Assistant can act on —
+"wash idle 3 min after a spin burst, send the done notification," "dryer still tumbling at
+23:40," "the tray under the machine just went wet." Publishes measurements only; "cycle finished"
+stays a Home Assistant automation on raw numbers, exactly like the MQ135-is-not-CO2 rule.
+
+- **ESP32-C6** — first C6 target in the fleet; its 802.15.4 radio leaves Thread/Zigbee open later.
+- **BMI160** — magnetically mounted on the machine casing; per-axis RMS acceleration + a few
+  band-energy bins (raw g, fixed windows). Spin/tumble/drain/idle each have distinct signatures.
+- **INMP441** — I2S loudness envelope + coarse spectral bands in dBFS (not calibrated dB SPL).
+  Catches the end-of-cycle beep and general utility-room noise level.
+- **ADS1115 + spare capacitive soil probes** — four probes (drip tray, behind the machine, under
+  the sink, floor drain) on one 16-bit ADC, raw counts, duty-cycled like Aqua's water probe.
+- **BME280** — room humidity/pressure/temp; a badly-vented dryer shows as a humidity ramp
+  correlated with the vibration timeline.
+- **Spare 128×32 OLED** — local activity bar, wet/dry counts, MQTT link state.
+
+### AtmosMesh Post
+
+Mailbox and garden gate are out of Wi-Fi range and nothing in the fleet reaches them. A battery
+ESP32-C3 sleeps until a reed switch (mailbox flap) or HC-SR501 (gate) wakes it, fires a short
+433 MHz OOK burst (node id, event type, sequence counter, raw battery ADC) a few times, and sleeps
+again. An indoor ESP32 DevKit with the 433 RX listens and republishes over the normal MQTT
+contract, plus a packets-seen/sequence-gap counter so link health is a fact, not a guess. One-way
+is fine: mail arrived, gate opened, shed door opened — Home Assistant does "mail delivered today."
+
+- **433 MHz TX/RX pair** — first use; outstation sends, indoor bridge receives.
+- **ESP32-C3 SuperMini** (spare) — deep-sleep sender; OLED left unpopulated.
+- **ESP32 DevKit** (spare) — always-on indoor receiver bridge, mains-powered.
+- **HC-SR501** (spare) — wake-on-approach at the gate; reed switch on the mailbox flap.
+- **AMS1117 / resistor divider** — battery voltage as raw ADC only.
+- **Worth ordering:** a reed switch + magnet (~$2) and an RXB6 superheterodyne 433 MHz receiver
+  (~$3) — the regenerative RX in the current pair is noisy enough to flood the bridge with garbage.
+
+### AtmosMesh Vent
+
+A headless companion for the kitchen or bathroom extractor fan. Room and Spot see PM and gas
+trend; nobody sees cooking, frying, cleaning-product, or shower-steam events specifically. Vent
+publishes raw SGP41 VOC/NOx ticks (NOx catches gas-hob combustion, which SGP40 can't) plus BME280
+humidity and its rate of change — never a fabricated "air quality index." Home Assistant switches
+the fan smart plug on a VOC-tick jump or humidity slope and off after recovery. Deliberately no
+OLED — it's a wall wart that disappears. The spare ENS160+AHT20 makes a second unit for the
+bathroom, giving two independently-axised VOC readings to sanity-check against each other.
+
+- **SGP41** — raw VOC + NOx signal ticks (first use in the fleet).
+- **BME280** (spare) — humidity/pressure/temp; humidity compensation input to SGP41.
+- **ESP32-C6** (spare) — headless, mains-powered.
+- **Second ENS160+AHT20** — bathroom sibling unit, a second VOC axis.
+
+### AtmosMesh Hall
+
+Spot's radar knows *if* someone is present; nothing knows *which way they went*. Hall strings four
+or five HC-SR501s along the stairwell and hallway, each on its own GPIO, publishing raw
+per-sensor trigger timestamps only. Home Assistant derives "went down to the cellar," "front door
+to kitchen," "bedroom to bathroom at 03:00." The one local action: a fail-safe stair LED strip
+(IRLB8721, gate pulldown, default OFF before `pinMode`) that lights only at night on the first
+trigger — an actual safety feature, not just a logger. A spare BMI160 on the front door leaf adds
+an honest open/close vibration signature without needing a magnetic reed sensor.
+
+- **5× HC-SR501** (spare) — direction-of-travel array.
+- **ESP32 DevKit** (spare) — plenty of GPIOs for five PIRs plus the strip.
+- **IRLB8721 + resistor stock** — fail-safe LED strip driver.
+- **BMI160** (spare) — door-slam / open signature, raw g values only.
+- **VEML7700** (spare) — ambient lux gate so the strip stays off by day.
+- **Worth ordering:** ~1 m of 12 V warm-white LED strip (~$6) — the one part not in inventory, and
+  what actually makes Hall a household feature rather than a pure logger.

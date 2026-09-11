@@ -67,6 +67,7 @@ valid frames on D5/GPIO14 (communication pass only, not accuracy proof). Details
 | --- | --- |
 | Delivery order | [roadmap.md](roadmap.md) |
 | Decisions and open questions | [decisions.md](decisions.md) |
+| Unbuilt product concepts / idea backlog | [project-ideas.md](project-ideas.md) |
 | Story contracts | [stories/](stories/) |
 | Hardware facts | [../docs/hardware/inventory.md](../docs/hardware/inventory.md) |
 | Power architecture | [../docs/hardware/power.md](../docs/hardware/power.md) |
