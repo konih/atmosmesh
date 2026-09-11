@@ -99,6 +99,24 @@ void hid_requires_encryption_and_subscription() {
     hid.authenticated(false);
     TEST_ASSERT_FALSE(hid.ready());
 }
+void mouse_report_map_is_a_standard_three_button_relative_mouse() {
+    const auto& map = atmosmesh::kMouseReportMap;
+    TEST_ASSERT_GREATER_THAN(20, static_cast<int>(sizeof(map)));
+    bool saw_buttons = false, saw_x = false, saw_y = false, saw_keyboard = false;
+    for (unsigned i = 0; i + 1 < sizeof(map); ++i) {
+        if (map[i] == 0x05 && map[i + 1] == 0x09) saw_buttons = true;
+        if (map[i] == 0x09 && map[i + 1] == 0x30) saw_x = true;
+        if (map[i] == 0x09 && map[i + 1] == 0x31) saw_y = true;
+        if (map[i] == 0x05 && map[i + 1] == 0x01 && i + 3 < sizeof(map) &&
+            map[i + 2] == 0x09 && map[i + 3] == 0x06)
+            saw_keyboard = true;
+    }
+    TEST_ASSERT_TRUE(saw_buttons);
+    TEST_ASSERT_TRUE(saw_x);
+    TEST_ASSERT_TRUE(saw_y);
+    TEST_ASSERT_FALSE(saw_keyboard);
+}
+
 void hid_reports_only_xy_and_disarms_on_send_failure() {
     atmosmesh::JigglerHid hid;
     hid.authenticated(true);
@@ -106,9 +124,10 @@ void hid_reports_only_xy_and_disarms_on_send_failure() {
     int calls = 0;
     auto send = [&](const uint8_t* data, unsigned size) {
         ++calls;
-        TEST_ASSERT_EQUAL_UINT(2, size);
-        TEST_ASSERT_EQUAL_UINT8(1, data[0]);
-        TEST_ASSERT_EQUAL_UINT8(0, data[1]);
+        TEST_ASSERT_EQUAL_UINT(3, size);
+        TEST_ASSERT_EQUAL_UINT8(0, data[0]);
+        TEST_ASSERT_EQUAL_UINT8(1, data[1]);
+        TEST_ASSERT_EQUAL_UINT8(0, data[2]);
         return false;
     };
     hid.update(0, false, send);
@@ -146,9 +165,10 @@ void hid_emits_signed_return_without_extra_reports() {
     hid.authenticated(true); hid.subscribed(true);
     int calls = 0;
     auto send = [&](const uint8_t* data, unsigned size) {
-        TEST_ASSERT_EQUAL_UINT(2, size);
-        TEST_ASSERT_EQUAL_UINT8(calls == 0 ? 1 : 255, data[0]);
-        TEST_ASSERT_EQUAL_UINT8(0, data[1]);
+        TEST_ASSERT_EQUAL_UINT(3, size);
+        TEST_ASSERT_EQUAL_UINT8(0, data[0]);
+        TEST_ASSERT_EQUAL_UINT8(calls == 0 ? 1 : 255, data[1]);
+        TEST_ASSERT_EQUAL_UINT8(0, data[2]);
         ++calls;
         return true;
     };
@@ -190,6 +210,7 @@ int main() {
     RUN_TEST(disable_cancels_pending_return);
     RUN_TEST(timers_survive_millis_wrap_without_catchup_bursts);
     RUN_TEST(hid_requires_encryption_and_subscription);
+    RUN_TEST(mouse_report_map_is_a_standard_three_button_relative_mouse);
     RUN_TEST(hid_reports_only_xy_and_disarms_on_send_failure);
     RUN_TEST(hid_disconnect_latch_survives_fast_reconnect);
     RUN_TEST(hid_emits_signed_return_without_extra_reports);

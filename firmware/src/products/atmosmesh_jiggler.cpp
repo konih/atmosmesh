@@ -18,26 +18,24 @@ atmosmesh::JigglerHid jiggler;
 NimBLECharacteristic* input = nullptr;
 bool display_ok = false;
 
-// Relative X/Y only: no buttons, wheel, keyboard, or consumer-control usages.
-uint8_t report_map[] = {
-    0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x85, 0x01,
-    0x09, 0x01, 0xa1, 0x00, 0x05, 0x01, 0x09, 0x30,
-    0x09, 0x31, 0x15, 0x81, 0x25, 0x7f, 0x75, 0x08,
-    0x95, 0x02, 0x81, 0x06, 0xc0, 0xc0
-};
 class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer*, NimBLEConnInfo& info) override {
-        NimBLEDevice::startSecurity(info.getConnHandle());
+        Serial.printf("jiggler: connect handle=%u\n", info.getConnHandle());
+        if (!info.isEncrypted()) NimBLEDevice::startSecurity(info.getConnHandle());
     }
-    void onDisconnect(NimBLEServer*, NimBLEConnInfo&, int) override {
+    void onDisconnect(NimBLEServer*, NimBLEConnInfo&, int reason) override {
+        Serial.printf("jiggler: disconnect reason=0x%02x\n", reason);
         jiggler.disconnected();
     }
     void onAuthenticationComplete(NimBLEConnInfo& info) override {
+        Serial.printf("jiggler: auth enc=%d bonded=%d\n",
+                      info.isEncrypted(), info.isBonded());
         jiggler.authenticated(info.isEncrypted());
     }
 } server_callbacks;
 class InputCallbacks : public NimBLECharacteristicCallbacks {
     void onSubscribe(NimBLECharacteristic*, NimBLEConnInfo&, uint16_t value) override {
+        Serial.printf("jiggler: subscribe=%u\n", value);
         jiggler.subscribed((value & 1) != 0);
     }
 } input_callbacks;
@@ -71,8 +69,12 @@ void setup() {
         draw(false);
     }
     NimBLEDevice::init("AtmosMesh Jiggler");
-    NimBLEDevice::setSecurityAuth(true, false, true);
+    // Bonding + Just Works. Secure Connections made Linux/macOS request a
+    // passkey confirm the board cannot show, which bounced Mac Bluetooth.
+    NimBLEDevice::setSecurityAuth(true, false, false);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
+    NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
+    NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
     auto* server = NimBLEDevice::createServer();
     server->setCallbacks(&server_callbacks);
     server->advertiseOnDisconnect(true);
@@ -80,8 +82,10 @@ void setup() {
     input = hid->getInputReport(1);
     input->setCallbacks(&input_callbacks);
     hid->setManufacturer("AtmosMesh");
+    hid->setPnp(0x02, 0x303A, 0x6A01, 0x0100);
     hid->setHidInfo(0, 0x02);
-    hid->setReportMap(report_map, sizeof(report_map));
+    hid->setReportMap(const_cast<uint8_t*>(atmosmesh::kMouseReportMap),
+                      sizeof(atmosmesh::kMouseReportMap));
     hid->setBatteryLevel(100);
     hid->startServices();
     auto* adv = NimBLEDevice::getAdvertising();
