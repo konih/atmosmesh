@@ -4,7 +4,7 @@ PlatformIO + Arduino builds two independent, first-class products from one proje
 
 | Product | Stable product ID | Product variant | Composition root | Canonical environment |
 | --- | --- | --- | --- | --- |
-| **AtmosMesh v1** — full ESP32 station | `atmosmesh-v1` | `esp32-full-station` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
+| **AtmosMesh v1** — **ARCHIVED** (D-034; physical station disassembled), full ESP32 station | `atmosmesh-v1` | `esp32-full-station` | `src/products/atmosmesh_v1.cpp` | `atmosmesh-v1` (not in `task build-all`) |
 | **AtmosMesh Grove v1.5** — compact ESP8266 node | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `src/products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 | **AtmosMesh Spot** — ESP32-C3 SuperMini OLED presence node | `atmosmesh-spot-v1` | `atmosmesh-spot-v1` | `src/products/atmosmesh_spot_v1.cpp` | `atmosmesh-spot-v1` |
 

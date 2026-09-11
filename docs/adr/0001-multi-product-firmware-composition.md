@@ -34,7 +34,7 @@ The product contracts are:
 
 | Product | Stable product ID | Product variant | Default station ID | Composition root | Canonical environment |
 | --- | --- | --- | --- | --- | --- |
-| AtmosMesh v1 | `atmosmesh-v1` | `esp32-full-station` | `atmosmesh-0001` | `products/atmosmesh_v1.cpp` | `atmosmesh-v1` |
+| AtmosMesh v1 — **ARCHIVED** (D-034) | `atmosmesh-v1` | `esp32-full-station` | `atmosmesh-0001` | `products/atmosmesh_v1.cpp` | `atmosmesh-v1` (not in `task build-all`) |
 | AtmosMesh Grove v1.5 | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | `atmosmesh-grove-0001` | `products/atmosmesh_grove_v1_5.cpp` | `atmosmesh-grove-v1_5` |
 | AtmosMesh Aqua | `atmosmesh-aqua-v1` | `esp8266-aqua-station` | `atmosmesh-aqua-0001` | `products/atmosmesh_aqua_v1.cpp` | `atmosmesh-aqua-v1` |
 

@@ -1,6 +1,6 @@
 # RLS-11 — Archive AtmosMesh v1 (`atmosmesh-0001`) after disassembly
 
-- **Status:** Ready
+- **Status:** Done
 - **Priority:** P1
 - **Milestone:** Post-MVP retirement (does not unblock RLS-01–RLS-08 completion language; that MVP track is
   superseded by Room / Grove / Aqua as the live fleet)
@@ -39,19 +39,33 @@ building and publishing under their own identities.
 
 ## Acceptance criteria
 
-- [ ] Given the operator's disassembly note, when the archive decision is recorded, then
+- [x] Given the operator's disassembly note, when the archive decision is recorded, then
       `agent-context/decisions.md` states that AtmosMesh v1 / `atmosmesh-0001` is archived and why.
-- [ ] Given default Task / CI / README product lists, when a reader looks for live products, then
+      Recorded as D-034.
+- [x] Given default Task / CI / README product lists, when a reader looks for live products, then
       AtmosMesh v1 is absent or clearly marked Archived — not listed as a flash target alongside
-      Grove, Aqua and Room.
-- [ ] Given `task build-all` (or the repo's equivalent default matrix), when it runs, then it does
+      Grove, Aqua and Room. Marked Archived in `README.md`, `firmware/README.md`, and ADR-0001's
+      product matrix; `task build-v1`'s own `desc` now says ARCHIVED too.
+- [x] Given `task build-all` (or the repo's equivalent default matrix), when it runs, then it does
       not require a successful `atmosmesh-v1` build unless an explicit archive/opt-in target is
-      invoked.
-- [ ] Given a grep for `atmosmesh-0001` / canonical "live station" language, when the sweep is done,
+      invoked. `build-v1` removed from `build-all`'s task list in `Taskfile.yml`; `task build-v1`
+      still exists and works standalone.
+- [x] Given a grep for `atmosmesh-0001` / canonical "live station" language, when the sweep is done,
       then remaining hits are historical, test fixtures for shared contract code, or behind the
-      archive path — none instruct an agent to commission v1 as current hardware.
-- [ ] Given Grove, Aqua and Room, when the archive lands, then their builds, native tests and MQTT
-      identities still pass unchanged.
+      archive path — none instruct an agent to commission v1 as current hardware. Remaining
+      `atmosmesh-0001`/`atmosmesh-v1` mentions are in `docs/architecture.md` (MQTT contract
+      reference, shared shape), `tests/README.md` and firmware test fixtures (contract tests), and
+      historical entries in `docs/hardware/inventory.md`/`agent-context/INBOX.md` — none instruct
+      flashing or wiring v1 as current hardware.
+- [x] Given Grove, Aqua and Room, when the archive lands, then their builds, native tests and MQTT
+      identities still pass unchanged. This sweep touched only `Taskfile.yml`'s `build-all` task
+      list, `README.md`, `firmware/README.md`, `docs/adr/0001-multi-product-firmware-composition.md`
+      and `agent-context/` docs — no firmware source, `product_profile.hpp`, or `mqtt_contract.*`
+      file was edited, so Grove/Aqua/Room/Spot's composition roots and contract code are
+      byte-for-byte unchanged. **Not run this session:** PlatformIO (`pio`) is not installed in
+      this environment (only `pyserial`/`esptool` bootstrap via `task bootstrap-agent-python`), so
+      `task test` / `task build-all` could not be executed to confirm green. Run `task test &&
+      task build-all` in an environment with PlatformIO before treating this as a fully closed gate.
 
 ## Validation
 

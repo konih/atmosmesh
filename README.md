@@ -17,22 +17,24 @@
   <img src="https://img.shields.io/badge/status-bench%20bring--up-yellow" alt="Status: bench bring-up">
 </p>
 
-AtmosMesh is a family of local air-sensing firmware products. The original ESP32 station and the
-compact ESP8266 Grove node are both first-class products; neither supersedes the other.
+AtmosMesh is a family of local air-sensing firmware products, now spanning several product
+variants (v1, Grove v1.5, Aqua, Room, Spot); none supersedes another.
 
 ## Firmware products
 
 | Product | Product ID | Product variant | Controller | Sensor/display scope | Canonical build |
 | --- | --- | --- | --- | --- | --- |
-| **AtmosMesh v1** | `atmosmesh-v1` | `esp32-full-station` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` |
+| **AtmosMesh v1** — **ARCHIVED** (D-034; physical station disassembled 2026-08-31) | `atmosmesh-v1` | `esp32-full-station` | ESP32-WROOM-32 | Full station: SSD1306, BMP280, AM2302, SDS011, MQ135, PIR/beeper, optional VEML7700, MQTT | `task build-v1` (not part of `task build-all`) |
 | **AtmosMesh Grove v1.5** | `atmosmesh-grove-v1.5` | `atmosmesh-v1.5` | ESP8266EX / 4 MB NodeMCU-style board | Compact node: 128×32 SSD1306, BMP180, DHT11, uncalibrated D7 RC light, D0/D6 status LED, duty-cycled raw YL-38 ADC, MQTT | `task build-v1-5` |
 
 The products share one PlatformIO project and host-tested core, with explicit composition roots
 instead of copied firmware trees. See [ADR-0001](docs/adr/0001-multi-product-firmware-composition.md).
 
-AtmosMesh v1 is a **working bench**, not a finished product. Its wiring is not approved for
-unattended or mains-powered use until RLS-01 photos and a measured 5 V rail are
-on record. It is **not** a certified health, fire, gas, or life-safety instrument.
+AtmosMesh v1 is **archived, not deleted** ([D-034](agent-context/decisions.md)): the physical
+station was disassembled and its code/mentions are retired from the live fleet, but the source,
+its tests, and the shared MQTT contract/composition pattern it established remain in the repo.
+It was never a finished product — its wiring was never fully approved for unattended or
+mains-powered use — and it is **not** a certified health, fire, gas, or life-safety instrument.
 
 ## AtmosMesh v1 measurements
 

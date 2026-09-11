@@ -32,7 +32,7 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio test -e native"
 
   build-v1:
-    desc: Build AtmosMesh v1 for ESP32 (`pio run -e atmosmesh-v1`)
+    desc: "Build AtmosMesh v1 for ESP32 (`pio run -e atmosmesh-v1`) — ARCHIVED: station disassembled, not part of build-all (D-034)"
     dir: firmware
     cmds:
       - "{{.ROOT_DIR}}/scripts/gen-secrets-from-env"
@@ -74,9 +74,8 @@ tasks:
       - "{{.ROOT_DIR}}/scripts/with-agent-python pio run -e atmosmesh-room-v1"
 
   build-all:
-    desc: Build every first-class AtmosMesh firmware product
+    desc: Build every first-class, live AtmosMesh firmware product (v1 archived, D-034 — use `task build-v1` directly)
     cmds:
-      - task: build-v1
       - task: build-v1-5
       - task: build-aqua
       - task: build-room

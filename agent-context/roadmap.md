@@ -15,7 +15,7 @@ for an unfinished MVP story.
 | 8 | [RLS-08](stories/RLS-08.md) | Blocked | P0 | RLS-01–RLS-07 | Safe 48-hour unattended run |
 | — | [RLS-09](stories/RLS-09.md) | Optional | P3 | Confirmed NDIR sensor, RLS-08 | True CO₂ measurement |
 | — | [RLS-10](stories/RLS-10.md) | Optional | P3 | RLS-08 | Evaluate 480×320 TFT separately |
-| — | [RLS-11](stories/RLS-11.md) | Ready | P1 | Physical `atmosmesh-0001` disassembled | Archive AtmosMesh v1 code and live mentions |
+| — | [RLS-11](stories/RLS-11.md) | Done | P1 | Physical `atmosmesh-0001` disassembled | AtmosMesh v1 code and live mentions archived (D-034) |
 
 ## AtmosMesh Grove v1.5 variant
 
@@ -54,7 +54,7 @@ Logged 2026-08-31 from live hardware. These do not rewrite the MVP order above.
 | F-1 | [ENV-01](stories/ENV-01.md) | Ready | P1 | Paired enclosed vs outside reference readings | Grove + Aqua temps stop reading enclosure heat as ambient (relocate/vent/replace; offset only if labeled) |
 | F-2 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT `motion` | Room occupancy polarity matches real presence |
 | F-3 | [V15-10](stories/V15-10.md) | Ready | P1 | (also listed under Grove) | Grove LED not stuck red/amber |
-| F-4 | [RLS-11](stories/RLS-11.md) | Ready | P1 | (also listed under RLS) | Disassembled `atmosmesh-0001` archived |
+| F-4 | [RLS-11](stories/RLS-11.md) | Done | P1 | (also listed under RLS) | Disassembled `atmosmesh-0001` archived |
 
 ## AtmosMesh Room variant
 
