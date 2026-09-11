@@ -207,3 +207,12 @@ GPIO2 NC; UART0 NC on U1.18/19; no `+5V` on GPIO pads; R4/R5 already DNP; JP1 do
 ### Answer / instructions
 
 _Operator: assign the KiCad session here, or tick when the sheet’s pin numbers match the PCB pad nets and R3/firmware agree._
+
+
+## PR / hardware acceptance — JIG-01 Bluetooth jiggler (2026-09-11)
+
+[PR #16](https://github.com/konih/atmosmesh/pull/16) **merged** (rebase) at `6ea2387`. Pairing-fix
+image flashed to `/dev/ttyACM0` 2026-09-11: serial `jiggler: ready oled=ok button=GPIO3 boot=GPIO9 mode=off`;
+BLE advertising **AtmosMesh Jiggler**, HID 0x1812, appearance 0x03c2.
+
+**Operator confirmed 2026-09-11:** Mac pairs, OLED shows `BT connected`, jiggler works.

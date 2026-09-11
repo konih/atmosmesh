@@ -535,3 +535,13 @@
 - **Options:** Include as an experimental trend; omit until burn-in and safe ADC measurement are
   proven.
 - **Decision trigger:** RLS-03 bench evidence.
+
+
+## JIG-01 scope — 2026-09-10
+
+User prioritized a standalone mouse jiggler on a second Spot-type C3 OLED board. BLE selected:
+C3 USB is hardware-fixed serial/JTAG, not USB HID. Reuse existing separate product-root build
+pattern; no sensor/MQTT identity for this utility. Minimum is physical toggle, OLED and tiny
+movement. No clicks (unwanted activation), no keyboard (unnecessary input risk), MQTT deferred
+until Mac acceptance rather than adding Wi-Fi/MQTT concurrency to first bring-up. User explicitly
+allowed limiting scope to practical minimum. Boot/reconnect OFF; no attempt to disguise identity.
