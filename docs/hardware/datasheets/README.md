@@ -13,6 +13,7 @@ Start with [spec-comparison.md](../spec-comparison.md).
 
 | File | Part | Issuer | Document |
 | --- | --- | --- | --- |
+| [4duino-sensorkit-40-in-1-manual.pdf](4duino-sensorkit-40-in-1-manual.pdf) | 4duino SensorKit 40 in 1 | 4duino | Retained kit manual; exact edition and publication date are not stated in the vault record |
 | [espressif-esp32-wroom-32.pdf](espressif-esp32-wroom-32.pdf) | ESP32-WROOM-32 module (ESP32-D0WDQ6, 4 MB flash) | Espressif | Datasheet v3.7, NRND |
 | [espressif-esp32-soc.pdf](espressif-esp32-soc.pdf) | ESP32 series SoC | Espressif | Series datasheet v5.3 |
 | [silabs-cp2102.pdf](silabs-cp2102.pdf) | CP2102/9 USB-UART | Silicon Labs | CP2102/9 data sheet |
@@ -79,6 +80,7 @@ the photographs show a standard five-pin header, to be measured on the part.
 
 | File | Retrieved from | SHA-256 |
 | --- | --- | --- |
+| 4duino-sensorkit-40-in-1-manual.pdf | Moved from the personal Obsidian vault on 2026-09-05; original download URL was not recorded | `811c922695b69c23fa92c742d6180df83bea8bc07c8282131a6d96513e2fcb53` |
 | espressif-esp32-wroom-32.pdf | https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf | `a88f0a4376106498732580d8371009b4e6260358db2e9f3ab2deb0ee3e4fa5b6` |
 | espressif-esp32-soc.pdf | https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf | `a7917e6b47528c9dcab06837a49d452e582751335797db879f1cf2d17cd29adf` |
 | silabs-cp2102.pdf | https://www.silabs.com/documents/public/data-sheets/CP2102-9.pdf | `f025d9c738e4906544bbae493d5ff4a8d9746df247c92a329f4ed94799220e59` |

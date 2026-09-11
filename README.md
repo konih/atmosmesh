@@ -96,6 +96,8 @@ Firmware details, OLED constructor, and the live pin map:
 | Path | What |
 | --- | --- |
 | [`docs/hardware/inventory.md`](docs/hardware/inventory.md) | Confirmed parts and open questions |
+| [`docs/elektronik-inventar.md`](docs/elektronik-inventar.md) | Full electronics stock inventory, including parts not currently assigned to a product |
+| [`docs/hardware/datasheets/`](docs/hardware/datasheets/README.md) | Manufacturer datasheets and retained kit manuals |
 | [`docs/hardware/power.md`](docs/hardware/power.md) | 5 V / 3.3 V domains |
 | [`docs/hardware/oscilloscope-hantek-dso2d15.md`](docs/hardware/oscilloscope-hantek-dso2d15.md) | Bench scope: panel, probe setup, and the ripple / I²C / UART / rail recipes |
 | [`hardware/kicad/`](hardware/kicad/README.md) | Bench carrier (KiCad 10): OLED, sensors, extras strip, fully routed. **Do not fabricate** until DevKit pin order is photographed |
@@ -110,6 +112,7 @@ the breadboard.
 | --- | --- |
 | `firmware/` | One PlatformIO project, explicit product roots, shared core and native tests |
 | `docs/adr/` | Architecture decision records |
+| `docs/history/` | Superseded project notes and concept artifacts retained for provenance |
 | `hardware/kicad/` | Bench-station carrier schematic and PCB |
 | `docs/` | Architecture, hardware facts, datasheets |
 | `deploy/` | Kubernetes / home-automation config (not packaged yet) |
