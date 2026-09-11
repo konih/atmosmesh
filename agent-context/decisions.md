@@ -490,6 +490,36 @@
 - **Revisit if:** the carrier ever shows unexplained sensor dropouts that a manual reading cannot
   reproduce, which is the case continuous rail monitoring would actually have solved.
 
+### D-033 — Grafana is out of scope for now
+
+- **Status:** Accepted 2026-09-11, operator instruction.
+- **Rule:** No Grafana deployment, dashboards, or panel work proceeds until this is revisited.
+  RLS-06's "declarative Kubernetes services" no longer includes Grafana as a required workload;
+  RLS-07's Grafana trend panels are cut from that story's scope. Mosquitto and Home Assistant are
+  unaffected.
+- **Why:** operator call, no reason recorded beyond scope reduction.
+- **Consequence:** RLS-06/RLS-07 acceptance criteria referencing Grafana are stale until either
+  story is rewritten or this decision is reversed. Treat "Grafana" mentions in those stories as
+  optional/parked, not required for those stories to close.
+- **Revisit if:** the operator asks for dashboards/trend history again.
+
+### D-034 — AtmosMesh v1 (`atmosmesh-0001`) is archived, not deleted
+
+- **Status:** Accepted 2026-09-11, per [RLS-11](stories/RLS-11.md). Physical `atmosmesh-0001`
+  bench station was disassembled (operator, 2026-08-31) and stays disassembled.
+- **Rule:** `atmosmesh-v1` drops out of `task build-all` and every "live fleet" product table
+  (`README.md`, `firmware/README.md`, ADR-0001's product matrix). The composition root
+  (`firmware/src/products/atmosmesh_v1.cpp`), its `task build-v1`/`flash-v1`/`monitor-v1`/
+  `clean-v1` targets, and shared `mqtt_contract`/`product_profile` code it depends on are kept
+  as-is — nothing is deleted, and Grove/Aqua/Room/Spot's shared library code is untouched.
+  `atmosmesh-v1` remains buildable on demand via its own explicit Task target; it is simply no
+  longer part of the default matrix or advertised as a current station.
+- **Why:** the physical station no longer exists. Advertising it as a live, flashable product
+  alongside Grove/Aqua/Room/Spot would mislead a future agent or operator into treating it as
+  current hardware.
+- **What is not archived:** the MQTT contract shape, product-composition pattern (ADR-0001), and
+  any shared/tested code Grove, Aqua, Room, and Spot still depend on.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

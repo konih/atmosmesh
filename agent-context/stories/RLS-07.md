@@ -4,6 +4,9 @@
 - **Priority:** P1
 - **Milestone:** M4 — Platform integration
 - **Depends on:** RLS-05, RLS-06
+- **Note (2026-09-11, D-033):** Grafana is out of scope for now. Every Grafana-specific item below
+  (panels, the 24-hour trend criterion) is parked until this decision is revisited; the Home
+  Assistant, alert, and traceability criteria are unaffected.
 
 ## User story
 

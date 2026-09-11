@@ -4,6 +4,8 @@
 - **Priority:** P1
 - **Milestone:** M4 — Platform integration
 - **Depends on:** RLS-05 and documented cluster context
+- **Note (2026-09-11, D-033):** Grafana is out of scope for now. Mosquitto and Home Assistant
+  remain in scope; do not block this story's closure on a Grafana deployment.
 
 ## User story
 
