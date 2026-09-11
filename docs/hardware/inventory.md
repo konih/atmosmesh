@@ -407,6 +407,15 @@ approval.
 | Small axial fan, marking dictated as "EXAV-XV-B0" | 1 | 2-wire DC load (tacho/PWM lead unknown) | Marking spelling, rated voltage, frame size, current and lead count are all still to be read from the label. Intended as the Room v2 enclosure fan on the `J_AUX` low-side output (IRLB8721 + 1N5819 flyback, [wiring.md §5.11](../../hardware/kicad/atmosmesh-room-v2/wiring.md)), pulsed before each measurement against the ENV-01 still-air problem. A 12 V fan does not start reliably at 5 V and does not belong on the 5 V domain. Its current shares the RXEF050 0.5 A hold budget with the SPS30; above ~150 mA the RXEF075 is the right fuse |
 | Second ideaspark ESP32 board with display on top | 1 (plus the one in the Room build) | ESP-WROOM-32 | Operator describes it as OLED on top. ideaspark sells this board with a 0.96" mono I²C OLED **or** the 1.14" colour SPI TFT the Room carrier is drawn for; only the TFT variant is pin-compatible with the Room carrier. Check the glass and print before assuming a second Room controller |
 
+## Operator-reported stock, continued (2026-09-11)
+
+Read out by the operator from a listing title; not photo-verified. Same rule as every other row:
+stock is not wiring approval.
+
+| Component | Quantity | User-stated identity / role | Verification and safety status |
+| --- | ---: | --- | --- |
+| Omnidirectional MEMS microphone module, listing read as "EsatrDzn Omnidirectional Microphone Module I25 Interface INM P441 MEMS D31-INMO441-Mokuai" | 1 (quantity not confirmed) | Likely an **INMP441** I²S digital MEMS microphone breakout ("I25" almost certainly a garbled "I2S"; "Mokuai" is Chinese for "module") | Not the same part as the earlier HC-20/DC-20 analog/digital-DO sound-detect mic removed from AtmosMesh v1 (see the 2026-08-14 operator note above: v1 is decided **no mic**, GPIO22/GPIO35 free). INMP441 is I²S (SD/WS/SCK + L/R channel-select), not a single DO/AO pin, so it cannot reuse the old GPIO22 mic wiring or any analog ADC pin. Pinout, address/channel-select strap, supply (typically 3.3 V only), and board markings are unverified until photographed. Not reserved for any current story or roadmap item; treat as unreserved stock until a use is proposed |
+
 ## Reservations (2026-09-04)
 
 Parts below are spoken for and are not free stock for other builds. A reservation is a claim on
