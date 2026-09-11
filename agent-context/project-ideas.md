@@ -19,8 +19,9 @@ photo-verifying parts before wiring — see [decisions.md](decisions.md) and
 | [Post](#atmosmesh-post) | Mailbox/gate outstation beyond Wi-Fi range | 433 MHz TX/RX pair, ESP32-C3 SuperMini, ESP32 DevKit, HC-SR501 |
 | [Vent](#atmosmesh-vent) | Headless kitchen/bathroom extractor-fan companion | SGP41, BME280, ESP32-C6, second ENS160+AHT20 |
 | [Hall](#atmosmesh-hall) | Stairwell/hallway PIR array for direction-of-travel | 5× HC-SR501, ESP32 DevKit, IRLB8721, BMI160, VEML7700 |
-
-(Batch 3 pending — appended below once it lands.)
+| [Chill](#atmosmesh-chill) | Second brain for the fridge/freezer compressor | ESP32-C6, ADS1115, DS18B20, BME280, current clamp (buy) |
+| [Sprout](#atmosmesh-sprout) | Seedling-shelf / grow-light companion | ESP32-C3 SuperMini, SGP40, soil probes, DS18B20, VEML7700, IRLZ34 |
+| [Ear](#atmosmesh-ear) | 868 MHz sniffer bridge for store-bought RF sensors | classic ESP32 DevKit, RFM12S, spare OLED |
 
 ---
 
@@ -93,3 +94,53 @@ an honest open/close vibration signature without needing a magnetic reed sensor.
 - **VEML7700** (spare) — ambient lux gate so the strip stays off by day.
 - **Worth ordering:** ~1 m of 12 V warm-white LED strip (~$6) — the one part not in inventory, and
   what actually makes Hall a household feature rather than a pure logger.
+
+### AtmosMesh Chill
+
+A second brain for the fridge/freezer — the one appliance that runs 24/7 and fails silently. A
+split-core current clamp on the compressor feed gives duty-cycle and stall detection; a DS18B20 in
+the cabinet and a BME280 in the freezer drawer catch frost build-up and a door left ajar before
+the food does. Publishes raw clamp millivolts (HA derives on/off and duty %), raw cabinet
+temperature, and door-open seconds — never "energy cost" or "food safety." A compressor that never
+rests, or rests too long, is the earliest warning of a dying fridge, and nothing in the fleet
+watches it.
+
+- **ESP32-C6** (spare) — host, mounted on top of the fridge near mains.
+- **ADS1115** (spare) — reads the clamp's burden resistor at 16-bit, plus a spare channel for a
+  second clamp (e.g. a chest freezer).
+- **Spare DS18B20** — cabinet probe through the door seal.
+- **BME280** (spare) — freezer-drawer humidity/frost proxy.
+- **Reed switch** (from stock) + magnet — door state.
+- **Worth ordering:** an SCT-013-000 100 A split-core current clamp (~$8) — non-invasive, no mains
+  contact, matches the fleet's fail-safe values.
+
+### AtmosMesh Sprout
+
+A seedling-shelf and grow-light companion for an indoor propagator. VEML7700 under the lamp logs
+raw lux every minute so HA can integrate a daily light total; soil probes in two trays report raw
+ADC; a DS18B20 sits in the root zone where a heat mat actually matters. The untouched SGP40 lives
+inside the closed propagator lid: a steady rise in raw VOC ticks in a sealed humid box is an
+early, honest damping-off/mould signal without pretending to be a calibrated "mould ppm." An
+IRLZ34 switches the grow light on an HA schedule, defaulting OFF at boot.
+
+- **ESP32-C3 SuperMini OLED** (spare) — host; the tiny OLED shows lux and tray moisture.
+- **SGP40** (untouched) — raw VOC ticks under the propagator lid.
+- **2× capacitive soil probes** (remaining after Drum) — tray moisture.
+- **Spare DS18B20, spare VEML7700, BME280** (spare) — root-zone temp, light, ambient reference.
+- **IRLZ34 + flyback diode** (from stock) — 12 V LED grow-bar switch.
+- **Worth ordering:** nothing required; a 12 V LED grow bar (~$15) if one isn't already owned.
+
+### AtmosMesh Ear
+
+The RFM12S finally gets a job: a receive-only 868 MHz FSK sniffer that adopts store-bought sensors
+already common in homes (the LaCrosse/TFA IT+ family and many cheap fridge/outdoor thermometers
+use exactly this RFM12-compatible framing). Every decoded frame publishes alongside its raw bytes
+and RSSI, so unknown devices still land in MQTT as raw frames for later decoding. It isn't an
+outstation — it's a bridge that turns other people's hardware into fleet members, the cheapest way
+to add a freezer, greenhouse, or attic reading without building another node from scratch.
+
+- **Classic ESP32 DevKit** (spare) — SPI host with headroom for frame buffers.
+- **RFM12S** (untouched) — 868 MHz FSK receiver.
+- **Spare 128×32 OLED** — last-heard sensor ID and RSSI.
+- **Worth ordering:** a TFA 30.3180 / LaCrosse TX29DTH-IT sensor (~€12) as a known-good reference
+  transmitter — it doubles as the freezer probe Chill would otherwise need to wire.
