@@ -52,6 +52,16 @@ If documents disagree, stop and reconcile them. Electrical safety rules above al
 - `docs/`: product and operator documentation.
 - `agent-context/`: committed planning and handoff material, not user-facing product docs.
 
+## Workspace conventions (apply here too)
+
+- **Worktrees** go in the workspace's single folder, `../worktrees/atmosmesh/<name>`
+  (`/home/koni/Projects/PlatformRelay/worktrees/atmosmesh/<name>`), never under `.claude/worktrees/`
+  or as a sibling directory. `EnterWorktree` is routed there by the operator's hooks; remove the
+  worktree when the branch lands.
+- **The inbox is this repo's** `agent-context/INBOX.md` (reports in `agent-context/inbox/`). The
+  workspace-level inbox is for harness matters only; never park AtmosMesh items there.
+- Full text: `../AGENTS.md` (workspace working contract, 2026-09-05).
+
 ## Workflow
 
 1. Claim a ready story by updating its status in `agent-context/roadmap.md`.
