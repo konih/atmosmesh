@@ -221,10 +221,17 @@ The NPN prevents PIR output voltage from reaching GPIO33 directly and inverts th
 Firmware must therefore treat GPIO33 LOW as motion **once this carrier exists**. Verify the actual
 transistor's C/B/E order with a datasheet or diode-test measurement; do not trust flat-face folklore.
 
-Until then the module's OUT reaches GPIO33 directly on the dev board and motion is HIGH, so
-`atmosmesh-room-v1` defaults to active-high and switches with `-DATMOSMESH_ROOM_PIR_ACTIVE_LOW`.
-Building the carrier means setting that flag; leaving it unset on a built carrier inverts occupancy
-without failing anything, which is why the polarity is a named flag rather than a constant.
+Until the carrier exists, the module's OUT reaches GPIO33 directly on the dev board, and the
+theoretical expectation was motion HIGH. **Field correction (ROOM-05 / D-035, operator
+2026-08-31):** the live `atmosmesh-room-v1` board — still the direct dev-board wiring, no Q_PIR
+built — was observed with MQTT occupancy inverted (motion reported present with an empty room and
+absent with someone in view). The installed PIR module's own OUT idles HIGH and goes LOW on
+motion, matching the carrier's *logical* polarity even though the carrier's inverting transistor
+is not physically present. So the canonical `[env:atmosmesh-room-v1]` in `platformio.ini` now
+defines `-DATMOSMESH_ROOM_PIR_ACTIVE_LOW` to match reality; `room_pins.hpp`'s un-flagged default
+stays active-high only as the theoretical case for a *different* PIR module wired without
+inversion. Building the carrier's Q_PIR later does not change anything here, since the live module
+already reads active-low without it — re-verify polarity on that occasion rather than assuming.
 
 > **The protection is part of the transistor, not just the inversion.** `Q_PIR` is what keeps PIR
 > output voltage off GPIO33, and this module's supply and output swing are still unmeasured. On a

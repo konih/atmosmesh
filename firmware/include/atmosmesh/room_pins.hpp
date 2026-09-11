@@ -46,10 +46,16 @@ inline constexpr std::uint8_t kSht41Address = 0x44;
 // D-SUN PIR occupancy input.
 //
 // The carrier design (wiring.md) routes PIR OUT through Q_PIR, an NPN that both protects the
-// pin and inverts the logic, so GPIO33 LOW means motion *there*. That transistor lives on the
-// perfboard, which is not built. On the bare dev board the module's OUT reaches the pin
-// directly and motion is HIGH, so active-high is the bring-up default and the flag below is
-// what switches to the carrier's polarity once the carrier exists.
+// pin and inverts the logic, so GPIO33 LOW means motion *there*. On a bare dev board with no
+// Q_PIR, the theoretical expectation was the module's OUT reaching the pin directly (motion
+// HIGH), which is why this header's un-flagged default below is active-high.
+//
+// ROOM-05 / D-035: the operator's live `atmosmesh-room-v1` board (2026-08-31) is empirically
+// active-low despite having no built carrier/Q_PIR — the installed PIR module's own OUT idles
+// HIGH and goes LOW on motion. The theoretical bare-board assumption above was wrong for the
+// actual module in hand. The canonical `[env:atmosmesh-room-v1]` in platformio.ini now defines
+// `ATMOSMESH_ROOM_PIR_ACTIVE_LOW` to match live evidence; this header's default stays
+// active-high only for a hypothetical different PIR module wired without inversion.
 #ifndef ATMOSMESH_ROOM_PIR_GPIO
 #define ATMOSMESH_ROOM_PIR_GPIO 33
 #endif

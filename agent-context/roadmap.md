@@ -52,7 +52,7 @@ Logged 2026-08-31 from live hardware. These do not rewrite the MVP order above.
 | Order | Story | Status | Priority | Depends on | Outcome |
 | ---: | --- | --- | --- | --- | --- |
 | F-1 | [ENV-01](stories/ENV-01.md) | Ready | P1 | Paired enclosed vs outside reference readings | Grove + Aqua temps stop reading enclosure heat as ambient (relocate/vent/replace; offset only if labeled) |
-| F-2 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT `motion` | Room occupancy polarity matches real presence |
+| F-2 | [ROOM-05](stories/ROOM-05.md) | Fix applied, unverified | P0 | Live Room MQTT `motion` | Room occupancy polarity matches real presence |
 | F-3 | [V15-10](stories/V15-10.md) | Ready | P1 | (also listed under Grove) | Grove LED not stuck red/amber |
 | F-4 | [RLS-11](stories/RLS-11.md) | Done | P1 | (also listed under RLS) | Disassembled `atmosmesh-0001` archived |
 
@@ -68,7 +68,7 @@ MVP order.
 | Room-2 | [ROOM-02](stories/ROOM-02.md) | Blocked | P1 | ROOM-01 + VIN and 5 V budget measurements | SDS011 with crossed, series-protected UART and a diodeless default-open 5 V rail |
 | Room-3 | [ROOM-03](stories/ROOM-03.md) | Ready to solder | P1 | ROOM-01, ROOM-02 | 31×27 perfboard build plan with its own mutation-proved gate; the KiCad PCB is parked |
 | Room-4 | [ROOM-04](stories/ROOM-04.md) | Proposed | P2 | ROOM-02, ROOM-03 | Firmware duty-cycling via the SDS011's own hibernation command; the MOSFET switch was rejected on topology (D-030) |
-| Room-5 | [ROOM-05](stories/ROOM-05.md) | Ready | P0 | Live Room MQTT occupancy inverted | Flip PIR polarity so MQTT matches presence |
+| Room-5 | [ROOM-05](stories/ROOM-05.md) | Fix applied, unverified | P0 | Live Room MQTT occupancy inverted | Flip PIR polarity so MQTT matches presence |
 
 ## AtmosMesh Spot variant
 

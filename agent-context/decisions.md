@@ -520,6 +520,29 @@
 - **What is not archived:** the MQTT contract shape, product-composition pattern (ADR-0001), and
   any shared/tested code Grove, Aqua, Room, and Spot still depend on.
 
+### D-035 — Room's live PIR is active-low on the bare dev board; flip via the canonical build flag
+
+- **Status:** Accepted 2026-09-11, per [ROOM-05](stories/ROOM-05.md). Operator confirmed
+  2026-08-31 that MQTT occupancy read inverted (present with an empty room, absent with someone
+  there) and confirmed 2026-09-11 the Room board is plugged back in for this fix.
+- **Rule:** `[env:atmosmesh-room-v1]` in `firmware/platformio.ini` now sets
+  `-DATMOSMESH_ROOM_PIR_ACTIVE_LOW`, flipping `atmosmesh::room::kPirActiveLow` to `true` for the
+  canonical Room build. `room_pins.hpp`'s un-flagged default stays active-high — that remains the
+  correct assumption for a bare dev board with *no* inverting transistor and a PIR module whose
+  OUT idles low, it was just wrong for the specific module actually installed.
+- **Why:** the installed PIR module's OUT idles HIGH and drops LOW on motion, even without the
+  carrier's `Q_PIR` inverter physically present. Empirical evidence overrides the original
+  theoretical wiring assumption in `room_pins.hpp`/`wiring.md` (both updated to record this).
+- **Consequence:** `poll_pir()`'s `pir_reading_is_motion()` mapping is unchanged code; only the
+  compile-time polarity constant differs for this environment. No native test currently locks this
+  choice — `pir_reading_is_motion` lives in the ESP32-only composition root
+  (`products/atmosmesh_room_v1.cpp`), not a natively-tested header, so this default is only
+  guarded by the build flag and manual bench verification, not CI. Flagged as a gap, not fixed
+  here.
+- **Revisit if:** the Q_PIR carrier is built — re-verify polarity rather than assuming the flag is
+  still correct, since the physical inverter changes the electrical picture even though it
+  happens to currently match the logical result already in effect.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots
