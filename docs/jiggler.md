@@ -16,9 +16,11 @@ fixed-function USB Serial/JTAG peripheral cannot present a USB mouse.
 
 The device boots OFF. Disconnecting, unsubscribing, or a failed motion notification disables it;
 reconnecting requires another button press. A button held when firmware starts is ignored until
-released and pressed again. Pairing uses BLE bonding with no passkey (Just Works); pair near the
-intended computer. To change hosts, disconnect the old host first. If macOS caches an old HID
-layout, forget the device and pair again.
+released and pressed again. Pairing uses BLE bonding with no passkey (Just Works). The HID
+descriptor includes three unused mouse buttons because hosts such as macOS reject a buttonless
+mouse and can bounce Bluetooth during pairing; firmware never sets those buttons. If a previous
+attempt left a stale entry, forget **AtmosMesh Jiggler** on the Mac before pairing again. Pair
+near the intended computer. To change hosts, disconnect the old host first.
 
 No clicks, scrolling, keypresses, or attempts to conceal the device are implemented. Even tiny
 movement can affect hover or an ongoing drag; toggle OFF while working. Whether mouse reports
