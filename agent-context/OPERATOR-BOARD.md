@@ -1,17 +1,23 @@
 # AtmosMesh operator board
 
+## Inventory maintenance — 2026-09-17
+
+Lane: `docs/supermini-stock`. Scope: record two C3 boards used for the jiggler and
+two remaining free; reconcile stale PR status. Validation: compare both inventories,
+check the 5 = 1 Spot + 2 jiggler + 2 free count, and run `task check`.
+
 ## In flight
 
 | Lane | Owner | Branch | Scope |
 | --- | --- | --- | --- |
 | ROOM-01 protected room carrier | Codex implementer | `codex/atmosmesh-room-carrier` | Provisional 60×80 mm KiCad carrier, validation, and safety documentation; no fabrication approval before exact module photos |
 
-## PR open
+## PR status (verified 2026-09-17)
 
 | Lane | PR | State | Hardware follow-up |
 | --- | --- | --- | --- |
-| Dependency update | #15 | Open, separate existing lane | None |
-| Hantek guide | #14 | Existing draft, separate lane | None |
+| Dependency update | #15 | Merged 2026-09-13; branch removed | None |
+| Hantek guide | #14 | Merged 2026-09-11; branch removed | None |
 
 ## Integrated
 

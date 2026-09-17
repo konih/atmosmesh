@@ -749,7 +749,9 @@ Anspruch auf die Stückzahl, keine Verdrahtungsfreigabe.
   `hardware/kicad/atmosmesh-spot/BOM.csv`
 - danach noch frei: 0× SCD41, 0× SPS30, 1× ENS160+AHT20, 1× VEML7700, 1× SHT41 (von 4: Room,
   Room v2, Spot), 3× AMS1117-3.3, 8× IRLB8721, 0× LD2410S, 0× LD2450, 0× Lüfter
-- ohne Projekt: 4× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 6× BME280, 4× BMI160, 1× DS18B20,
+- **Jiggler (JIG-01)**: 2× ESP32-C3 SuperMini OLED verwendet (Operator, 17. September 2026).
+  Von fünf Boards sind damit eines in Spot, zwei im Jiggler-Einsatz und zwei frei.
+- ohne Projekt: 2× ESP32-C3 SuperMini OLED, 5× ESP32-C6, 6× BME280, 4× BMI160, 1× DS18B20,
   5× Bodenfeuchtemodule, SGP40 und SGP41, 2× ADS1115, die 433-MHz-Paare, RFM12S, 4× OLED.
   Eine zweite Spot-Einheit braucht einen weiteren SHT41 und einen weiteren LD2410S; die BME280
   gehören nicht zum Spot-Konzept
