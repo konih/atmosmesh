@@ -437,6 +437,15 @@ stock is not wiring approval.
 | --- | ---: | --- | --- |
 | Omnidirectional MEMS microphone module, listing read as "EsatrDzn Omnidirectional Microphone Module I25 Interface INM P441 MEMS D31-INMO441-Mokuai" | 1 (quantity not confirmed) | Likely an **INMP441** I²S digital MEMS microphone breakout ("I25" almost certainly a garbled "I2S"; "Mokuai" is Chinese for "module") | Not the same part as the earlier HC-20/DC-20 analog/digital-DO sound-detect mic removed from AtmosMesh v1 (see the 2026-08-14 operator note above: v1 is decided **no mic**, GPIO22/GPIO35 free). INMP441 is I²S (SD/WS/SCK + L/R channel-select), not a single DO/AO pin, so it cannot reuse the old GPIO22 mic wiring or any analog ADC pin. Pinout, address/channel-select strap, supply (typically 3.3 V only), and board markings are unverified until photographed. Not reserved for any current story or roadmap item; treat as unreserved stock until a use is proposed |
 
+## Operator-reported stock, continued (2026-09-17)
+
+Read out by the operator from a listing title; not photo-verified. Same rule as every other row:
+stock is not wiring approval.
+
+| Component | Quantity | User-stated identity / role | Verification and safety status |
+| --- | ---: | --- | --- |
+| WS2812B 5050 8×8 addressable RGB LED matrix, listing read as "WS2812B 5050 Square Only ONP PIN 8x8 LEDs" | 5 | Addressable RGB LED panel, 64 pixels per board, single-wire data-in ("ONP PIN" almost certainly a garbled "ONE PIN") | Distinct from the two non-addressable 8×8 matrices already in the German inventory (`docs/elektronik-inventar.md`) — those are plain multiplexed LED matrices, not WS2812B. Each WS2812B pixel needs its own 5 V (typically up to ~60 mA at full white), so 64 pixels can draw several amps per panel; never power from an ESP32 `3V3`/`VIN` pin or a USB data line without checking the supply budget. Data line normally wants a series resistor (330 Ω typical) and ideally level-shifting from 3.3 V logic, plus a bulk capacitor across the panel's 5 V/GND input. Panel pinout (`5V`/`DIN`/`GND` vs. screen-printed labels), chained data direction (`DIN`→`DOUT`), and exact pixel-order/serpentine layout are unverified until photographed. Not reserved for any current story or roadmap item |
+
 ## Reservations (2026-09-04)
 
 Parts below are spoken for and are not free stock for other builds. A reservation is a claim on
