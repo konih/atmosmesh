@@ -457,6 +457,7 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | 1000 mAh cell, marking read as "EF01WL" | 4 | Rechargeable cell with a 2-pin connector, the same connector style as the `ZJ-CHC-V2` charger boards below | **Chemistry and cell count are unverified, and everything else depends on them.** 1000 mAh with a 2-pin lead is almost certainly a **single-cell LiPo pouch** (3.7 V nominal, 4.2 V full, 3.0 V empty) — which is what the TP4056-class charger below is for — but LiFePO4 (3.2 V/3.6 V) and multi-cell packs exist in the same form factor and a 4.2 V charger **destroys a LiFePO4 cell**. Read the full label before connecting anything. Also unverified: whether the cell carries a **protection PCM** on its tab (most pouch cells with a pigtail do; bare cells do not), the connector family and pitch (JST-PH 2.0 mm vs. ZH 1.5 mm vs. a Molex clone — they mate badly with each other), and **pin order/polarity, which is not standardised on Chinese cells**: red-to-`B+` must be confirmed with a meter per cell, because a reversed cell can destroy both the cell and the charger board. Never charge or store a LiPo unattended, never puncture or deform a pouch, never leave one on a bench supply without current limit. "EF01WL" is a marking read off the label and is not a known model designation — treat it as a lot/label string until a photo settles it |
 | USB-C Li-ion/LiPo charger board, silkscreen read as `ZJ-CHC-V2`, charge IC marked `TC4056A` (below it `2539 C350`) | 5 | USB-C input, one 2-pin output/battery connector; single-cell linear charger | `TC4056A` is a second-source/clone marking of the **TP4056** 1 A linear Li-ion charger (CC/CV to **4.2 V only** — not for LiFePO4, not for NiMH). `2539 C350` reads as a lot/date code (week 39 of 2025), not a model number. **Three things must be read off the actual board before it charges a cell.** (1) **Protection or not:** TP4056 boards ship in a charge-only variant (pads `B+ B- OUT+ OUT-`, four small ICs absent) and a protected variant carrying a **DW01A** plus an **FS8205A/8205A dual MOSFET**. The operator describes only the charge IC and one 2-pin connector, which points at the **unprotected** variant — meaning **no over-discharge, over-current or short-circuit protection**, so the cell must bring its own PCM or one must be added. (2) **The USB-C CC resistors:** a cheap USB-C board that omits the two 5.1 kΩ pull-downs on `CC1`/`CC2` draws nothing from a C-to-C cable or a PD charger, and looks "dead" for a reason that is not the board's fault; check for the two resistors by the connector. (3) **Charge current:** the stock `R_PROG` (1.2 kΩ) sets **1 A**, which is 1C for these 1000 mAh cells — inside spec for most LiPo pouches but at the top of it, and the TP4056 then burns (5 V − 3.7 V) × 1 A ≈ **1.3 W** in an SOP-8 with only the board's copper to spread it, so the board runs hot. Raising `R_PROG` (e.g. 2.4 kΩ ≈ 0.5 A) is the conservative choice once the cell's datasheet is known. Output polarity and `OUT`-vs-`B` pad assignment to be confirmed with a meter. Not reserved for any current story or roadmap item |
 | ESP32 board with 2.8-inch colour touch TFT, silkscreen `ESP32-2432S028` ("Cheap Yellow Display") | 2 | All-in-one ESP-WROOM-32 + 240x320 touch display, microSD, RGB LED, speaker header, sensor/IO pigtail headers | Sunton CYD, the most widely documented cheap ESP32 display board there is; the supplied stylus indicates the **resistive** (`R`, XPT2046) variant rather than the capacitive `C`. Board family identity is settled by the silkscreen, but **nothing electrical is verified on these two units**: exact suffix/revision, which display controller is fitted (ILI9341 and ST7789 both ship under this name), pin map, and the header pinouts. See the subsection below. Not reserved for any story; a candidate second display controller alongside the ideaspark boards, not a drop-in replacement for one |
+| Round 2.1-inch colour TFT panel, silkscreen `VER:TFT 2.10`, `Driver IC:GC9B72`, `Resolution:360*360` | 1 | Bare round display module on a carrier PCB with a 10-pin 2.54 mm header (header strip supplied loose, unsoldered); no controller on board | **Display only** — unlike the CYD row above, this has no MCU and needs a host. Silkscreen settles resolution and driver IC; the seller text does not (it contradicts itself, see below). Supply voltage, logic level, whether a regulator or level shifter is fitted, and the exact interface mode are **unverified**; the `SDA`/`SCL` labels are **not I2C**, see the subsection. Not reserved |
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
@@ -594,6 +595,51 @@ have.
 boards. The CYD is a different board with a different pin map and a different display size, so it is
 **not** pin-compatible with the Room carrier and cannot substitute for the second ideaspark board.
 It is unreserved stock and a candidate controller for anything wanting a larger touch UI.
+
+### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
+
+Two seller images, not the part on the bench, but the back-side photo shows legible silkscreen and a
+labelled header, which is better evidence than the article text — and in this case directly
+contradicts it.
+
+**Silkscreen (back, right edge):** `VER:TFT 2.10 10`, `Driver IC:GC9B72`, `Resolution:360*360`. The
+flex is marked `T21B1D-C12-04`. Visible parts: two FPC connectors, `U2`, `U3`, `Q1`, `C2`-`C5`,
+`R1`-`R4`/`R6`, and one unidentified component at the panel edge.
+
+**Header, 10 pins, 2.54 mm — read consistently from both photos**, which is the useful part: the
+back view reads `TE SDO BL CS DC RST SDA SCL VCC GND` and the front view reads the exact reverse,
+`GND VCC SCL SDA RST DC CS BL SDO TE`. Two views of the same order from opposite sides agree, so the
+pin order is as close to confirmed as a photo can make it. The header strip ships **loose** — the
+module needs soldering before use.
+
+**`SDA` and `SCL` here are not I2C.** This is the common Chinese display-module convention where
+`SDA` is the SPI **MOSI** line and `SCL` is **SCLK**; the seller text confirms SPI. With `SDO`
+(MISO), `CS`, `DC`, `RST`, `BL` and `TE` alongside, the set is a standard 4-wire SPI display
+interface plus backlight and a tearing-effect sync output. Anyone who reads those two labels as an
+I2C bus will wire it to the wrong pins. Note also that GC9B72-class drivers commonly support **QSPI**
+as well; which mode this carrier is strapped for is unverified.
+
+**The frame does not fit in a plain ESP32's RAM.** 360 x 360 at 16 bpp is **253 KiB** per full
+frame, against roughly 160-200 KiB of usable heap on an ESP32 once Wi-Fi is up. A full framebuffer
+is therefore **not** an option without PSRAM; plan on partial/streamed rendering (LVGL partial
+buffers) or a host with PSRAM. This is the single most consequential fact about the module and it
+is a consequence of the resolution, not of any datasheet.
+
+**Driver support is thinner than it looks.** The ubiquitous round module is the 240x240 `GC9A01`,
+which every library supports; `GC9B72` is a different and much less common part. Check that the
+intended graphics stack actually has a driver for it **before** committing this panel to a build.
+
+**Supply and logic level unverified.** No regulator has been identified on the carrier, so treat it
+as **3.3 V only**, for both `VCC` and the logic lines, until the parts are read and measured. `BL`
+current draw and whether it needs a series resistor or a transistor are also unknown.
+
+**The article text is AI-generated and self-contradicting — a worked example.** It claims
+`360x360` in one bullet and "Hohe Auflösung mit 320x240 Pixeln" in the next; the `320x240` figure is
+the *other* board's resolution, copy-pasted. It carries the platform's own disclaimer that it was
+AI-generated and does not represent the seller. Together with the `ZJ-CHC-V2` board, whose listing
+claimed a protection circuit the part does not have, this is the second falsified seller claim in
+one day. **Standing rule for this file: seller text is a hint about what to look for, never
+evidence. Silkscreen, photographs of the actual part, and measurements are evidence.**
 
 ## Reservations (2026-09-04)
 
