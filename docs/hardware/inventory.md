@@ -591,6 +591,23 @@ committing to a pin map. The widely-published CYD pin maps are a **starting hypo
 not a specification — record what the probe actually returns here, the way the Heltec and SuperMini
 rows above do.
 
+### CYD unit 1 — USB probe 2026-09-19
+
+First of the two boards, connected over the **Micro-USB** port. `esptool` on `/dev/ttyUSB0`:
+
+| Fact | Value |
+| --- | --- |
+| USB-UART | `1a86:7523` CH340 (not the CP2102 on the Heltec/older DevKits) |
+| Chip | **ESP32-D0WD-V3 revision v3.1**, dual core, 240 MHz, 40 MHz crystal |
+| Flash | **4 MB**, 3.3 V (manufacturer `c8`, device `4016`) |
+| MAC | `20:50:0d:34:46:3c` — this unit only |
+| Auto-reset | RTS works |
+| Stock firmware backup | `PlatformRelay/.tooling/firmware-backups/esp32-2432s028_20500d34463c_stock-factory_2026-09-19.bin` (full 4 MB, sha256 `28cc552e...`) taken before anything was written |
+
+This confirms the ESP-WROOM-32 class part and the flash size. It does **not** identify the display
+or touch controller, which are still open — those are read from the ICs on the board or inferred
+from a running firmware.
+
 **The seller's article description adds nothing and is not evidence.** The operator supplied it: it
 states 2.8 inch, 320x240, ESP32 with Wi-Fi and BLE, dual core, touch — i.e. exactly what the
 silkscreen and the images already gave, in marketing prose, and it carries a **disclaimer that it
