@@ -459,6 +459,11 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
+> **Superseded the same day.** The operator inspected the delivered boards and reports `OUT+`/`OUT-`
+> pads present, so they are the **protected** variant and the charge-only conclusion below is wrong
+> *about these boards*. The reasoning is kept because it stays correct about the board in the image,
+> which is a different variant — that mismatch is the lesson, not the conclusion.
+
 The operator supplied a product image for the charger board. It is a **seller listing image, not a
 photo of the delivered board**, and it contradicts both the listing text and the dictated
 description — so it verifies nothing; it only tells us which questions to ask the actual part.
@@ -485,6 +490,42 @@ So the protection question is **not settled and must be answered on the actual b
 ICs, look for `OUT+`/`OUT-` pads, and check for the two 5.1 kOhm `CC1`/`CC2` pull-downs that the
 real USB-C board needs. If the delivered board is charge-only, that is acceptable **only if the
 EF01WL cells carry their own PCM on the tab** — which is the next thing to photograph.
+
+### Resolved 2026-09-19 — cell label photo and operator board inspection
+
+Both open questions from the rows above are answered. The cell evidence is again a **listing image**
+rather than the part on the bench, but this one carries a legible label and a visible assembly, so
+it is worth more than the charger listing was; confirm against the delivered cells at first use.
+
+**Charger boards (operator inspection of the parts in hand).** `OUT+`/`OUT-` pads are present, so
+these are the **protected** variant: `DW01A` + `FS8205A`-class MOSFET pair behind the charge IC.
+Consequence for every build that uses one — **the load goes on `OUT+`/`OUT-`, never on `B+`/`B-`**.
+Wiring the load to the battery pads bypasses the protection entirely and leaves the cell with no
+over-discharge cutoff, which is the exact failure the protected variant exists to prevent. The USB-C
+`CC1`/`CC2` 5.1 kOhm question from the row above is still open and is worth one look: without those
+resistors the board takes no power from a C-to-C cable or a PD-only charger.
+
+**Cells (label photo).** Marking on the pouch: `603048 3.7V 1000mAh 3.70Wh`, plus `DG300L` and a
+partly legible `BATT` prefix.
+
+| Fact | Value | Why it matters |
+| --- | --- | --- |
+| Chemistry | **LiPo, single cell**, 3.7 V nominal / 4.2 V full / ~3.0 V empty | Settles the open chemistry question. A TP4056-class 4.2 V charger is the **correct** charger; the LiFePO4 hazard flagged in the row above does not apply |
+| `603048` | Pouch dimension code: **6.0 x 30 x 48 mm** | Enclosure and carrier planning; it is not a model number |
+| Capacity | 1000 mAh, 3.70 Wh | 3.7 V x 1000 mAh = 3.7 Wh, so the label is internally consistent — a weak but real check on the capacity claim |
+| Protection | **PCM fitted**, visible as a small PCB under the yellow Kapton at the tab end | The cell brings its own over-discharge / over-current cutoff, independent of the charger board's |
+| Leads | Red and black flying leads into a 2-pin white housing | **Pitch still unverified** (JST-PH 2.0 mm vs. ZH 1.5 mm) and **polarity still unverified** — meter each cell before mating. Red-to-`B+` is convention, not a guarantee |
+| `EF01WL` | **Not on the cell label** | The label reads `603048` / `DG300L`. `EF01WL` came from the listing, so treat it as a listing/lot string and do not expect to find it on a part |
+
+**Cell and board are now both protected.** That is redundant, not a conflict: whichever cutoff trips
+first wins, and the board's `DW01A` threshold (~2.4 V) sits below a typical PCM's (~2.5-3.0 V), so
+in normal use the cell's own PCM acts first. No change needed.
+
+**Charge current recommendation stands.** The stock 1.2 kOhm `R_PROG` sets 1 A = **1C** for these
+cells. Pouch cells of this class are usually specified at 0.5C standard / 1C maximum charge, so the
+board ships at the cell's limit, and the charge IC dissipates about 1.3 W getting there. Fitting a
+2.4 kOhm `R_PROG` (~0.5 A) trades charge time for cell life and a cooler board; do that before these
+cells go into anything that charges unattended.
 
 ## Reservations (2026-09-04)
 
