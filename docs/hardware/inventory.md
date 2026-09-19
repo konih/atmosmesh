@@ -456,6 +456,7 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | --- | ---: | --- | --- |
 | 1000 mAh cell, marking read as "EF01WL" | 4 | Rechargeable cell with a 2-pin connector, the same connector style as the `ZJ-CHC-V2` charger boards below | **Chemistry and cell count are unverified, and everything else depends on them.** 1000 mAh with a 2-pin lead is almost certainly a **single-cell LiPo pouch** (3.7 V nominal, 4.2 V full, 3.0 V empty) — which is what the TP4056-class charger below is for — but LiFePO4 (3.2 V/3.6 V) and multi-cell packs exist in the same form factor and a 4.2 V charger **destroys a LiFePO4 cell**. Read the full label before connecting anything. Also unverified: whether the cell carries a **protection PCM** on its tab (most pouch cells with a pigtail do; bare cells do not), the connector family and pitch (JST-PH 2.0 mm vs. ZH 1.5 mm vs. a Molex clone — they mate badly with each other), and **pin order/polarity, which is not standardised on Chinese cells**: red-to-`B+` must be confirmed with a meter per cell, because a reversed cell can destroy both the cell and the charger board. Never charge or store a LiPo unattended, never puncture or deform a pouch, never leave one on a bench supply without current limit. "EF01WL" is a marking read off the label and is not a known model designation — treat it as a lot/label string until a photo settles it |
 | USB-C Li-ion/LiPo charger board, silkscreen read as `ZJ-CHC-V2`, charge IC marked `TC4056A` (below it `2539 C350`) | 5 | USB-C input, one 2-pin output/battery connector; single-cell linear charger | `TC4056A` is a second-source/clone marking of the **TP4056** 1 A linear Li-ion charger (CC/CV to **4.2 V only** — not for LiFePO4, not for NiMH). `2539 C350` reads as a lot/date code (week 39 of 2025), not a model number. **Three things must be read off the actual board before it charges a cell.** (1) **Protection or not:** TP4056 boards ship in a charge-only variant (pads `B+ B- OUT+ OUT-`, four small ICs absent) and a protected variant carrying a **DW01A** plus an **FS8205A/8205A dual MOSFET**. The operator describes only the charge IC and one 2-pin connector, which points at the **unprotected** variant — meaning **no over-discharge, over-current or short-circuit protection**, so the cell must bring its own PCM or one must be added. (2) **The USB-C CC resistors:** a cheap USB-C board that omits the two 5.1 kΩ pull-downs on `CC1`/`CC2` draws nothing from a C-to-C cable or a PD charger, and looks "dead" for a reason that is not the board's fault; check for the two resistors by the connector. (3) **Charge current:** the stock `R_PROG` (1.2 kΩ) sets **1 A**, which is 1C for these 1000 mAh cells — inside spec for most LiPo pouches but at the top of it, and the TP4056 then burns (5 V − 3.7 V) × 1 A ≈ **1.3 W** in an SOP-8 with only the board's copper to spread it, so the board runs hot. Raising `R_PROG` (e.g. 2.4 kΩ ≈ 0.5 A) is the conservative choice once the cell's datasheet is known. Output polarity and `OUT`-vs-`B` pad assignment to be confirmed with a meter. Not reserved for any current story or roadmap item |
+| ESP32 board with 2.8-inch colour touch TFT, silkscreen `ESP32-2432S028` ("Cheap Yellow Display") | 2 | All-in-one ESP-WROOM-32 + 240x320 touch display, microSD, RGB LED, speaker header, sensor/IO pigtail headers | Sunton CYD, the most widely documented cheap ESP32 display board there is; the supplied stylus indicates the **resistive** (`R`, XPT2046) variant rather than the capacitive `C`. Board family identity is settled by the silkscreen, but **nothing electrical is verified on these two units**: exact suffix/revision, which display controller is fitted (ILI9341 and ST7789 both ship under this name), pin map, and the header pinouts. See the subsection below. Not reserved for any story; a candidate second display controller alongside the ideaspark boards, not a drop-in replacement for one |
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
@@ -541,6 +542,58 @@ cells. Pouch cells of this class are usually specified at 0.5C standard / 1C max
 board ships at the cell's limit, and the charge IC dissipates about 1.3 W getting there. Fitting a
 2.4 kOhm `R_PROG` (~0.5 A) trades charge time for cell life and a cooler board; do that before these
 cells go into anything that charges unattended.
+
+### ESP32-2432S028 "Cheap Yellow Display" — listing images reviewed 2026-09-19
+
+Two seller images, not the parts on the bench. The silkscreen `ESP32-2432S028` is legible and that
+is enough to name the board family; everything below it is **family knowledge, not measurement on
+these two units**, and is recorded so a bring-up has somewhere to start, not so it can be trusted.
+
+**The annotated image is mirrored.** The Sunton vendor logo renders reversed in it, so the callout
+positions are laterally flipped against the real board. Do not use it to locate a connector; use it
+only for what is present.
+
+What the images show: ESP-WROOM-32 module, 2.8-inch colour TFT with touch and a supplied **stylus**
+(so resistive `XPT2046`, the `R` variant — the capacitive `C` variant uses a GT911 and no stylus),
+microSD ("TF") slot, RGB LED, `RESET` and `BOOT` buttons, a speaker header, a 4-pin 1.25 mm power
+header, a "temperature and humidity" header, an "extended IO" header, and **both a Micro-USB and a
+Type-C connector**. Supplied in the kit: a USB-A-to-Micro-B cable, the stylus, and a 4-pin pigtail
+to loose Dupont sockets.
+
+Four things about this board that are known to bite, listed because they shape any design using it:
+
+- **Two USB connectors, one USB-UART.** On the dual-connector revisions both ports land on the same
+  bridge. **Never connect both at once**; pick one and keep to it.
+- **The display controller is not guaranteed.** Boards sold as `2432S028` ship with ILI9341 *or*
+  ST7789, and units differ in colour inversion and RGB/BGR order. This is a probe-at-bring-up
+  question, not a datasheet question.
+- **Almost every GPIO is already spoken for** by the TFT, touch, SD and LED. The free pins are
+  essentially what the "extended IO" and sensor headers expose, and at least one commonly broken out
+  (`GPIO35`) is **input-only**. Count the actually-free pins before promising this board a sensor
+  set — this is the board's real limitation, not its flash or its speed.
+- **The onboard 3.3 V LDO has little headroom** once the TFT and backlight are lit. Treat it as a
+  display controller that can carry a couple of I2C sensors, not as a supply for anything with a
+  heater, a fan or a radio of its own.
+
+Bring-up order when one is opened: read the exact suffix off the silkscreen, probe the flash/chip
+with `esptool`, then identify the display controller and touch chip from a running sketch before
+committing to a pin map. The widely-published CYD pin maps are a **starting hypothesis to verify**,
+not a specification — record what the probe actually returns here, the way the Heltec and SuperMini
+rows above do.
+
+**The seller's article description adds nothing and is not evidence.** The operator supplied it: it
+states 2.8 inch, 320x240, ESP32 with Wi-Fi and BLE, dual core, touch — i.e. exactly what the
+silkscreen and the images already gave, in marketing prose, and it carries a **disclaimer that it
+was AI-generated and does not represent the seller**. Nothing in it is independent confirmation of
+anything. Note in particular that it does not name the display controller, the touch controller or
+the board suffix, which are the three facts that actually matter. The same day's `ZJ-CHC-V2` entry
+is the standing reminder of what listing text is worth: it claimed protection the board does not
+have.
+
+**Relationship to the existing display boards.** The Room build and Room v2 use ideaspark ESP32 TFT
+boards. The CYD is a different board with a different pin map and a different display size, so it is
+**not** pin-compatible with the Room carrier and cannot substitute for the second ideaspark board.
+It is unreserved stock and a candidate controller for anything wanting a larger touch UI.
 
 ## Reservations (2026-09-04)
 
