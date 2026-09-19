@@ -457,6 +457,35 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | 1000 mAh cell, marking read as "EF01WL" | 4 | Rechargeable cell with a 2-pin connector, the same connector style as the `ZJ-CHC-V2` charger boards below | **Chemistry and cell count are unverified, and everything else depends on them.** 1000 mAh with a 2-pin lead is almost certainly a **single-cell LiPo pouch** (3.7 V nominal, 4.2 V full, 3.0 V empty) — which is what the TP4056-class charger below is for — but LiFePO4 (3.2 V/3.6 V) and multi-cell packs exist in the same form factor and a 4.2 V charger **destroys a LiFePO4 cell**. Read the full label before connecting anything. Also unverified: whether the cell carries a **protection PCM** on its tab (most pouch cells with a pigtail do; bare cells do not), the connector family and pitch (JST-PH 2.0 mm vs. ZH 1.5 mm vs. a Molex clone — they mate badly with each other), and **pin order/polarity, which is not standardised on Chinese cells**: red-to-`B+` must be confirmed with a meter per cell, because a reversed cell can destroy both the cell and the charger board. Never charge or store a LiPo unattended, never puncture or deform a pouch, never leave one on a bench supply without current limit. "EF01WL" is a marking read off the label and is not a known model designation — treat it as a lot/label string until a photo settles it |
 | USB-C Li-ion/LiPo charger board, silkscreen read as `ZJ-CHC-V2`, charge IC marked `TC4056A` (below it `2539 C350`) | 5 | USB-C input, one 2-pin output/battery connector; single-cell linear charger | `TC4056A` is a second-source/clone marking of the **TP4056** 1 A linear Li-ion charger (CC/CV to **4.2 V only** — not for LiFePO4, not for NiMH). `2539 C350` reads as a lot/date code (week 39 of 2025), not a model number. **Three things must be read off the actual board before it charges a cell.** (1) **Protection or not:** TP4056 boards ship in a charge-only variant (pads `B+ B- OUT+ OUT-`, four small ICs absent) and a protected variant carrying a **DW01A** plus an **FS8205A/8205A dual MOSFET**. The operator describes only the charge IC and one 2-pin connector, which points at the **unprotected** variant — meaning **no over-discharge, over-current or short-circuit protection**, so the cell must bring its own PCM or one must be added. (2) **The USB-C CC resistors:** a cheap USB-C board that omits the two 5.1 kΩ pull-downs on `CC1`/`CC2` draws nothing from a C-to-C cable or a PD charger, and looks "dead" for a reason that is not the board's fault; check for the two resistors by the connector. (3) **Charge current:** the stock `R_PROG` (1.2 kΩ) sets **1 A**, which is 1C for these 1000 mAh cells — inside spec for most LiPo pouches but at the top of it, and the TP4056 then burns (5 V − 3.7 V) × 1 A ≈ **1.3 W** in an SOP-8 with only the board's copper to spread it, so the board runs hot. Raising `R_PROG` (e.g. 2.4 kΩ ≈ 0.5 A) is the conservative choice once the cell's datasheet is known. Output polarity and `OUT`-vs-`B` pad assignment to be confirmed with a meter. Not reserved for any current story or roadmap item |
 
+### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
+
+The operator supplied a product image for the charger board. It is a **seller listing image, not a
+photo of the delivered board**, and it contradicts both the listing text and the dictated
+description — so it verifies nothing; it only tells us which questions to ask the actual part.
+
+What the image shows: a **micro-USB** input (not the USB-C the operator read off the part), pads
+`IN+ IN- B+ B-`, a single SOP-8 charge IC, two status LEDs, and otherwise only two-terminal parts.
+Component markings partly legible: `122` (1.2 kOhm — the stock `R_PROG`, so **1 A** charge current)
+and one part read as `R300`, unidentified.
+
+Two conclusions, with the reasoning, because they override the seller's "protected" claim:
+
+- **No protection circuit is visible.** A protected TP4056 board carries a `DW01A` (SOT-23-6) and an
+  `FS8205A`/`8205A` dual MOSFET (SOT-23-8) alongside the charge IC. The image shows one IC.
+- **The pad set proves the topology regardless of what the ICs are.** Protection must interrupt the
+  **load** path, so a protected board exposes a separate `OUT+`/`OUT-` pair behind the MOSFETs. This
+  board has only `B+`/`B-`, which is the same net as the JST connector: the load would sit directly
+  on the cell. That is the **charge-only** variant. A seller description saying "protected" does not
+  survive a four-pad layout.
+- **The image is probably not this board at all.** The operator read a **USB-C** connector off the
+  part; the image is micro-USB. Listing copy and listing photos for TP4056 boards are routinely
+  shared across variants, which is the most likely source of the "protected" claim too.
+
+So the protection question is **not settled and must be answered on the actual board**: count the
+ICs, look for `OUT+`/`OUT-` pads, and check for the two 5.1 kOhm `CC1`/`CC2` pull-downs that the
+real USB-C board needs. If the delivered board is charge-only, that is acceptable **only if the
+EF01WL cells carry their own PCM on the tab** — which is the next thing to photograph.
+
 ## Reservations (2026-09-04)
 
 Parts below are spoken for and are not free stock for other builds. A reservation is a claim on
