@@ -459,10 +459,10 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
-> **Superseded the same day.** The operator inspected the delivered boards and reports `OUT+`/`OUT-`
-> pads present, so they are the **protected** variant and the charge-only conclusion below is wrong
-> *about these boards*. The reasoning is kept because it stays correct about the board in the image,
-> which is a different variant — that mismatch is the lesson, not the conclusion.
+> **Contested, then reopened, the same day.** The operator first reported `OUT+`/`OUT-` pads present
+> on the delivered boards, then reported the pad set as `IN+ IN- B+ B-` matching this image. Those
+> are opposite answers and the question is **open**; see the reopened note below the resolution
+> table. The analysis in this subsection is retained unchanged.
 
 The operator supplied a product image for the charger board. It is a **seller listing image, not a
 photo of the delivered board**, and it contradicts both the listing text and the dictated
@@ -497,13 +497,31 @@ Both open questions from the rows above are answered. The cell evidence is again
 rather than the part on the bench, but this one carries a legible label and a visible assembly, so
 it is worth more than the charger listing was; confirm against the delivered cells at first use.
 
-**Charger boards (operator inspection of the parts in hand).** `OUT+`/`OUT-` pads are present, so
-these are the **protected** variant: `DW01A` + `FS8205A`-class MOSFET pair behind the charge IC.
-Consequence for every build that uses one — **the load goes on `OUT+`/`OUT-`, never on `B+`/`B-`**.
-Wiring the load to the battery pads bypasses the protection entirely and leaves the cell with no
-over-discharge cutoff, which is the exact failure the protected variant exists to prevent. The USB-C
-`CC1`/`CC2` 5.1 kOhm question from the row above is still open and is worth one look: without those
+**Charger boards — REOPENED, do not treat as settled.** The operator reported `OUT+`/`OUT-` pads
+present, and then reported the pad set as `IN+ IN- B+ B-` with the boards otherwise matching the
+listing image apart from a **USB-C** connector in place of its micro-USB. Both cannot hold, and they
+imply opposite wiring rules, so **count the pads on one board before wiring any of them**:
+
+- **Four pads (`IN+ IN- B+ B-`)** — charge-only. No protection in the load path. The load goes on
+  `B+`/`B-` and the **cell's own PCM is the only cutoff**.
+- **Six pads (`IN+ IN- B+ B- OUT+ OUT-`)** — protected. The load goes on `OUT+`/`OUT-` and **never**
+  on `B+`/`B-`; wiring it to the battery pads bypasses the protection completely.
+
+Pad count is the reliable test because it follows from what protection must do — interrupt the load
+path, which requires its own terminals — rather than from reading package outlines. On the listing
+image itself, **no `DW01A` (SOT-23-6) and no `FS8205A`/`8205A` (SOT-23-8) is visible**: one SOP-8,
+two LEDs, a 2-pin JST paralleling `B+`/`B-`, and otherwise two-terminal passives including a `122`
+(1.2 kOhm `R_PROG` = 1 A). That reading is from a low-resolution screenshot at an oblique angle, so
+it is evidence and not proof — but it agrees with the four-pad report, not the six-pad one.
+
+Note that the connector difference is itself a reason not to generalise from the image: a USB-C
+board is a different layout at least around the connector, so "identical otherwise" is an assumption.
+The `CC1`/`CC2` 5.1 kOhm question from the row above is open for the same reason — without those
 resistors the board takes no power from a C-to-C cable or a PD-only charger.
+
+**Either way the cell is protected.** The PCM on the pouch (below) provides over-discharge and
+over-current cutoff independently of the board, so a charge-only board is not a hazard here; it just
+means there is one layer of protection rather than two.
 
 **Cells (label photo).** Marking on the pouch: `603048 3.7V 1000mAh 3.70Wh`, plus `DG300L` and a
 partly legible `BATT` prefix.
@@ -517,9 +535,9 @@ partly legible `BATT` prefix.
 | Leads | Red and black flying leads into a 2-pin white housing | **Pitch still unverified** (JST-PH 2.0 mm vs. ZH 1.5 mm) and **polarity still unverified** — meter each cell before mating. Red-to-`B+` is convention, not a guarantee |
 | `EF01WL` | **Not on the cell label** | The label reads `603048` / `DG300L`. `EF01WL` came from the listing, so treat it as a listing/lot string and do not expect to find it on a part |
 
-**Cell and board are now both protected.** That is redundant, not a conflict: whichever cutoff trips
-first wins, and the board's `DW01A` threshold (~2.4 V) sits below a typical PCM's (~2.5-3.0 V), so
-in normal use the cell's own PCM acts first. No change needed.
+**If the board does turn out to be protected, the doubled protection is harmless.** Whichever cutoff
+trips first wins, and a `DW01A` threshold (~2.4 V) sits below a typical PCM's (~2.5-3.0 V), so in
+normal use the cell's own PCM acts first either way. Nothing to design around.
 
 **Charge current recommendation stands.** The stock 1.2 kOhm `R_PROG` sets 1 A = **1C** for these
 cells. Pouch cells of this class are usually specified at 0.5C standard / 1C maximum charge, so the
