@@ -459,10 +459,9 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
-> **Contested, then reopened, the same day.** The operator first reported `OUT+`/`OUT-` pads present
-> on the delivered boards, then reported the pad set as `IN+ IN- B+ B-` matching this image. Those
-> are opposite answers and the question is **open**; see the reopened note below the resolution
-> table. The analysis in this subsection is retained unchanged.
+> **Confirmed on the parts in hand.** The operator counted the pads: **four**, `IN+ IN- B+ B-`. The
+> charge-only conclusion below is correct for the delivered boards, which match this image except
+> for a USB-C connector in place of its micro-USB. The seller's "protected" claim is false.
 
 The operator supplied a product image for the charger board. It is a **seller listing image, not a
 photo of the delivered board**, and it contradicts both the listing text and the dictated
@@ -497,31 +496,29 @@ Both open questions from the rows above are answered. The cell evidence is again
 rather than the part on the bench, but this one carries a legible label and a visible assembly, so
 it is worth more than the charger listing was; confirm against the delivered cells at first use.
 
-**Charger boards — REOPENED, do not treat as settled.** The operator reported `OUT+`/`OUT-` pads
-present, and then reported the pad set as `IN+ IN- B+ B-` with the boards otherwise matching the
-listing image apart from a **USB-C** connector in place of its micro-USB. Both cannot hold, and they
-imply opposite wiring rules, so **count the pads on one board before wiring any of them**:
+**Charger boards — settled: charge-only, NOT protected.** Operator pad count on the delivered
+boards: **four**, `IN+ IN- B+ B-`. There is no `OUT+`/`OUT-` pair, therefore no protected output,
+therefore no `DW01A` + `FS8205A`/`8205A` pair — protection has to interrupt the load path and a
+board with no load terminals of its own cannot do that. This agrees with the listing image, on which
+**no `DW01A` (SOT-23-6) and no `FS8205A` (SOT-23-8) is visible**: one SOP-8, two LEDs, a 2-pin JST
+paralleling `B+`/`B-`, and otherwise two-terminal passives including a `122` (1.2 kOhm `R_PROG`,
+= 1 A). An earlier operator report of `OUT+`/`OUT-` pads was withdrawn by the count and is void.
+**The seller description claiming protection is false** — a reminder that for TP4056 boards the
+listing text is worth nothing and the pad count is worth everything.
 
-- **Four pads (`IN+ IN- B+ B-`)** — charge-only. No protection in the load path. The load goes on
-  `B+`/`B-` and the **cell's own PCM is the only cutoff**.
-- **Six pads (`IN+ IN- B+ B- OUT+ OUT-`)** — protected. The load goes on `OUT+`/`OUT-` and **never**
-  on `B+`/`B-`; wiring it to the battery pads bypasses the protection completely.
+Consequences, all of which follow from there being no protection on the board:
 
-Pad count is the reliable test because it follows from what protection must do — interrupt the load
-path, which requires its own terminals — rather than from reading package outlines. On the listing
-image itself, **no `DW01A` (SOT-23-6) and no `FS8205A`/`8205A` (SOT-23-8) is visible**: one SOP-8,
-two LEDs, a 2-pin JST paralleling `B+`/`B-`, and otherwise two-terminal passives including a `122`
-(1.2 kOhm `R_PROG` = 1 A). That reading is from a low-resolution screenshot at an oblique angle, so
-it is evidence and not proof — but it agrees with the four-pad report, not the six-pad one.
-
-Note that the connector difference is itself a reason not to generalise from the image: a USB-C
-board is a different layout at least around the connector, so "identical otherwise" is an assumption.
-The `CC1`/`CC2` 5.1 kOhm question from the row above is open for the same reason — without those
-resistors the board takes no power from a C-to-C cable or a PD-only charger.
-
-**Either way the cell is protected.** The PCM on the pouch (below) provides over-discharge and
-over-current cutoff independently of the board, so a charge-only board is not a hazard here; it just
-means there is one layer of protection rather than two.
+- **The load goes on `B+`/`B-`, in parallel with the cell.** There is nowhere else for it to go.
+- **The cell's own PCM is the only cutoff in the system** — over-discharge, over-current and short.
+  That is acceptable here because these cells have one (below), but it means **a bare or
+  PCM-stripped cell must never go on one of these boards**, and any future cell purchase has to be
+  checked for a PCM rather than assumed.
+- **The board contributes no low-voltage disconnect**, so firmware on a battery build cannot lean on
+  one: measure the cell and stop the load in software before the PCM has to act. A PCM cutoff is a
+  protection event, not a normal discharge endpoint, and repeatedly driving a cell into it ages it.
+- The `CC1`/`CC2` 5.1 kOhm question is still open, and now matters more than the rest: these are the
+  **USB-C** variant, and without those two resistors the board takes no power from a C-to-C cable or
+  a PD-only charger. One look at the parts beside the connector answers it.
 
 **Cells (label photo).** Marking on the pouch: `603048 3.7V 1000mAh 3.70Wh`, plus `DG300L` and a
 partly legible `BATT` prefix.
@@ -531,13 +528,13 @@ partly legible `BATT` prefix.
 | Chemistry | **LiPo, single cell**, 3.7 V nominal / 4.2 V full / ~3.0 V empty | Settles the open chemistry question. A TP4056-class 4.2 V charger is the **correct** charger; the LiFePO4 hazard flagged in the row above does not apply |
 | `603048` | Pouch dimension code: **6.0 x 30 x 48 mm** | Enclosure and carrier planning; it is not a model number |
 | Capacity | 1000 mAh, 3.70 Wh | 3.7 V x 1000 mAh = 3.7 Wh, so the label is internally consistent — a weak but real check on the capacity claim |
-| Protection | **PCM fitted**, visible as a small PCB under the yellow Kapton at the tab end | The cell brings its own over-discharge / over-current cutoff, independent of the charger board's |
+| Protection | **PCM fitted**, visible as a small PCB under the yellow Kapton at the tab end | **Load-bearing:** the charger boards are charge-only, so this PCM is the only protection in the system. Verify it is present on every cell before use, and on any replacement cell bought later |
 | Leads | Red and black flying leads into a 2-pin white housing | **Pitch still unverified** (JST-PH 2.0 mm vs. ZH 1.5 mm) and **polarity still unverified** — meter each cell before mating. Red-to-`B+` is convention, not a guarantee |
 | `EF01WL` | **Not on the cell label** | The label reads `603048` / `DG300L`. `EF01WL` came from the listing, so treat it as a listing/lot string and do not expect to find it on a part |
 
-**If the board does turn out to be protected, the doubled protection is harmless.** Whichever cutoff
-trips first wins, and a `DW01A` threshold (~2.4 V) sits below a typical PCM's (~2.5-3.0 V), so in
-normal use the cell's own PCM acts first either way. Nothing to design around.
+**One layer of protection, not two — and it lives on the cell.** The pouch PCM is the whole of the
+protection in any build using these parts. Pair these boards only with PCM-equipped cells, and keep
+the software cutoff above the PCM threshold so the PCM stays a backstop rather than a daily event.
 
 **Charge current recommendation stands.** The stock 1.2 kOhm `R_PROG` sets 1 A = **1C** for these
 cells. Pouch cells of this class are usually specified at 0.5C standard / 1C maximum charge, so the
