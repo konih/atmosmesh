@@ -460,7 +460,7 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | Round 2.1-inch colour TFT panel, silkscreen `VER:TFT 2.10`, `Driver IC:GC9B72`, `Resolution:360*360` | 1 | Bare round display module on a carrier PCB with a 10-pin 2.54 mm header (header strip supplied loose, unsoldered); no controller on board | **Display only** — unlike the CYD row above, this has no MCU and needs a host. Silkscreen settles resolution and driver IC; the seller text does not (it contradicts itself, see below). Supply voltage, logic level, whether a regulator or level shifter is fitted, and the exact interface mode are **unverified**; the `SDA`/`SCL` labels are **not I2C**, see the subsection. Not reserved |
 | 16 mm round panel-mount push button, described as momentary, marking read as `R13-507`, pre-wired | 6 | Panel-mount user input — a physical button for a station or enclosure | **`R13-507` does not settle momentary vs. latching.** The designation is a body/mounting family that vendors sell in both **momentary** and **self-locking (maintained)** contact actions, so the seller's "momentary" is a claim, not a spec. Also unverified: contact configuration (SPST vs. SPDT, 2/3/4 conductors), whether an illuminated ring is fitted, the printed current/voltage rating, panel thickness range, and the pigtail's gauge and length. 16 mm is the **panel cutout** diameter; the bezel is larger. See the subsection below. Not reserved |
 | DC-DC automatic buck-boost module, listing read as "S09", input 3-15 V, output stated `3.3V/9V` | **10** (5 + a second lot of 5) | Regulated rail that holds its output above **and** below the input voltage | **The interesting part of today's intake** — buck-boost is the one topology that spans a single LiPo cell's whole 4.2-3.0 V curve down to a steady 3.3 V, so these pair directly with the cells and chargers added the same day. **`3.3V/9V` is ambiguous**: it may mean each board is selectable, or that the listing covers two fixed variants and these five are one of them. Settle that before planning a rail. Regulator IC, output current, efficiency, **quiescent current**, ripple, and reverse-polarity protection are all unverified; "S09" is a seller string, not a chip. See the subsection below |
-| Li-ion/LiPo charger board **with protection**, 6 pads, charge IC marking dictated as `TP4605A`, protection parts marked `B2050` and `2P2TP` | 10 | USB charger **plus** battery protection: over-discharge, over-current and short-circuit cutoff in the load path | **The protected variant** — six pads means `IN+ IN- B+ B- OUT+ OUT-`, and the two extra parts are a `DW01A`-class protection controller with an `8205A`-class dual N-MOSFET. **Load goes on `OUT+`/`OUT-`, never `B+`/`B-`.** Distinct from the 5 charge-only `ZJ-CHC-V2` boards in the row above and visually similar to them — **mark the two types physically.** Marking readings to confirm on the part: `B2050` is very likely `8205A` (the FS8205A dual MOSFET); `2P2TP` is unidentified and may be a lot code; `TP4605A` matches no known charge IC and reads as a transposition of **`TP4056`**. None of that changes the board's function, which the pad count already settles |
+| Li-ion/LiPo charger board **with protection**, 6 pads, charge IC marked `4065` / `A6300X`, protection parts marked `B2050` and `2P2TP` | 10 | USB charger **plus** battery protection: over-discharge, over-current and short-circuit cutoff in the load path | **The protected variant** — six pads means `IN+ IN- B+ B- OUT+ OUT-`, and the two extra parts are a `DW01A`-class protection controller with an `8205A`-class dual N-MOSFET. **Load goes on `OUT+`/`OUT-`, never `B+`/`B-`.** Distinct from the 5 charge-only `ZJ-CHC-V2` boards in the row above and visually similar to them — **mark the two types physically.** Marking readings to confirm on the part: `B2050` is very likely `8205A` (the FS8205A dual MOSFET); `2P2TP` is unidentified and may be a lot code; the charge IC's `4065` matches no charge IC known to this file and is **not** established as a `TP4056` misprint. None of that changes the board's function, which the `OUT+`/`OUT-` pads already settle — but it does mean the charge termination voltage must be **measured** (4.2 V required) rather than assumed from a datasheet |
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
@@ -726,7 +726,7 @@ before the IC is identified.
 ### Protected charger boards, 6 pads — operator-dictated 2026-09-19, no photo
 
 Ten pieces. The operator reports **six pads** and **two components beyond the charge IC**, one
-marked `B2050`, the other read as `2P2TP`, with the charge IC dictated as `TP4605A`. On a follow-up
+marked `B2050`, the other read as `2P2TP`, with the charge IC first dictated as `TP4605A` and then re-read as `4065` / `A6300X`. On a follow-up
 question the operator confirmed the pads **by name**: `OUT+` and `OUT-` are present. That is a
 stronger statement than a count, and it matters here because the equivalent `OUT+`/`OUT-` report on
 the `ZJ-CHC-V2` boards was later withdrawn — this one is explicit and stands.
@@ -751,8 +751,20 @@ count already establishes, but the file should not carry a wrong part number:
   in reading. It fits "dual protection" exactly.
 - `2P2TP` is **unidentified**. On this board class the remaining part is the protection controller,
   typically marked `DW01A`, so this may be a lot code, a second-source marking, or a misread.
-- `TP4605A` **matches no charge IC known to this file.** The ubiquitous part is **`TP4056`**, and
-  the `ZJ-CHC-V2` boards here carry the `TC4056A` clone of it. `4605` reads as `4056` transposed.
+- The charge IC marking, **re-read off the part, is `4065` over `A6300X`** (first dictated as
+  `TP4605A`). `A6300X` is a lot/date code. `4065` is the type field and it **does not match the
+  ubiquitous `TP4056`**, nor its `TC4056A` clone on the `ZJ-CHC-V2` boards. It is one digit-swap
+  from `4056`, but clone silicon also ships under genuinely different numbers, so **neither "it is a
+  TP4056" nor "it is a misprint" is established** and this file will not claim either.
+
+**Because the part number is unresolved, verify the charger empirically — it is the check that
+matters anyway.** With a cell connected, measure the charge voltage as the cycle completes: the CV
+plateau **must be 4.2 V** for the 603048 LiPo cells in stock. A charger that terminates higher
+overcharges the cell; one that terminates lower merely undercharges it. Measure the charge current
+in the CC phase at the same time, and read the `R_PROG` resistor (`122` = 1.2 kOhm = 1 A = 1C for
+these cells; `242` = 2.4 kOhm = 0.5 A, the gentler choice). Those three numbers describe the board's
+actual behaviour regardless of what is printed on the die, and no datasheet lookup can substitute
+for them on an unidentified part.
 
 **Stock now holds two visually similar, functionally different charger types — label them.** Five
 `ZJ-CHC-V2` (4 pads, USB-C, **charge-only**) and ten of these (6 pads, **protected**). They will end
