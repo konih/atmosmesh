@@ -459,6 +459,7 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | ESP32 board with 2.8-inch colour touch TFT, silkscreen `ESP32-2432S028` ("Cheap Yellow Display") | 2 | All-in-one ESP-WROOM-32 + 240x320 touch display, microSD, RGB LED, speaker header, sensor/IO pigtail headers | Sunton CYD, the most widely documented cheap ESP32 display board there is; the supplied stylus indicates the **resistive** (`R`, XPT2046) variant rather than the capacitive `C`. Board family identity is settled by the silkscreen, but **nothing electrical is verified on these two units**: exact suffix/revision, which display controller is fitted (ILI9341 and ST7789 both ship under this name), pin map, and the header pinouts. See the subsection below. Not reserved for any story; a candidate second display controller alongside the ideaspark boards, not a drop-in replacement for one |
 | Round 2.1-inch colour TFT panel, silkscreen `VER:TFT 2.10`, `Driver IC:GC9B72`, `Resolution:360*360` | 1 | Bare round display module on a carrier PCB with a 10-pin 2.54 mm header (header strip supplied loose, unsoldered); no controller on board | **Display only** — unlike the CYD row above, this has no MCU and needs a host. Silkscreen settles resolution and driver IC; the seller text does not (it contradicts itself, see below). Supply voltage, logic level, whether a regulator or level shifter is fitted, and the exact interface mode are **unverified**; the `SDA`/`SCL` labels are **not I2C**, see the subsection. Not reserved |
 | 16 mm round panel-mount push button, described as momentary, marking read as `R13-507`, pre-wired | 6 | Panel-mount user input — a physical button for a station or enclosure | **`R13-507` does not settle momentary vs. latching.** The designation is a body/mounting family that vendors sell in both **momentary** and **self-locking (maintained)** contact actions, so the seller's "momentary" is a claim, not a spec. Also unverified: contact configuration (SPST vs. SPDT, 2/3/4 conductors), whether an illuminated ring is fitted, the printed current/voltage rating, panel thickness range, and the pigtail's gauge and length. 16 mm is the **panel cutout** diameter; the bezel is larger. See the subsection below. Not reserved |
+| DC-DC automatic buck-boost module, listing read as "S09", input 3-15 V, output stated `3.3V/9V` | 5 | Regulated rail that holds its output above **and** below the input voltage | **The interesting part of today's intake** — buck-boost is the one topology that spans a single LiPo cell's whole 4.2-3.0 V curve down to a steady 3.3 V, so these pair directly with the cells and chargers added the same day. **`3.3V/9V` is ambiguous**: it may mean each board is selectable, or that the listing covers two fixed variants and these five are one of them. Settle that before planning a rail. Regulator IC, output current, efficiency, **quiescent current**, ripple, and reverse-polarity protection are all unverified; "S09" is a seller string, not a chip. See the subsection below |
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
@@ -679,6 +680,45 @@ regardless. Gauge, length, insulation and whether the leads are tinned or bare a
 
 **16 mm is the panel cutout, not the bezel.** Any enclosure work should take the actual bezel
 diameter and the switch's permitted panel thickness off the part before a hole is cut.
+
+### "S09" DC-DC automatic buck-boost modules — operator-dictated 2026-09-19, no photo
+
+Five pieces, dictated from a listing title: automatic buck-boost, input 3-15 V, output given as
+`3.3V/9V`. Nothing photographed or measured. "S09" identifies no silicon — the regulator IC has to
+be read off the part.
+
+**Why these matter more than a generic regulator.** A single LiPo cell of the kind added today runs
+**4.2 V down to ~3.0 V**, which straddles a 3.3 V rail. An LDO or a buck drops out as the cell
+falls past roughly 3.4 V, stranding a third of the usable charge; a boost cannot handle the full
+cell. Only a **buck-boost** holds 3.3 V across the whole curve. So the 2026-09-19 intake now
+contains a complete battery chain — PCM-equipped 603048 cell, TP4056 charge-only board, buck-boost
+rail — and this module is the piece that was missing from [power.md](power.md) for a
+battery-powered node.
+
+**The spec that decides whether they are usable, and it is not on the listing: quiescent current.**
+A sleeping ESP32 node draws on the order of **10-20 microamps**. Cheap buck-boost modules commonly
+idle at **1-10 milliamps** — two to three orders of magnitude more, which means the regulator, not
+the MCU, sets battery life, and a 1000 mAh cell is flattened in weeks by the converter alone. Before
+any of these enters a battery design, **measure the no-load input current** (the INA226 in stock, or
+a meter in series). If it is milliamps, the module is fine for a mains- or USB-fed rail and wrong
+for a sleeping node, and the honest fix is a different part, not firmware.
+
+**Resolve `3.3V/9V` first.** Either each board selects between the two — look for a solder jumper,
+a trimmer or a marked pad — or the five are one fixed variant and the other figure belongs to a
+different SKU. Read the actual output with a meter on each board before it feeds anything; a 9 V
+module mistaken for 3.3 V destroys every 3.3 V part downstream of it. Label each board once measured.
+
+**Switching noise is a project-specific concern here, not a generic caveat.** This workspace's analog
+paths — the MQ135 divider, the YL-38 into `A0`, the LDR timing — read a rail-referenced voltage, so
+converter ripple lands directly in the readings. A linear regulator does not have this problem and
+an LDO is what the existing designs assume. If one of these feeds an analog sensor, put the
+[Hantek DSO2D15](oscilloscope-hantek-dso2d15.md) on the output first and use the ripple recipe there.
+
+**Still unknown, all to be read or measured on the part:** regulator IC and its datasheet, rated and
+actual output current (small modules of this class are typically well under 1 A, and less at a high
+step-up ratio), efficiency, whether there is any reverse-polarity or over-current protection, input
+and output capacitor provision, and the terminal arrangement. Do not exceed the stated 15 V input
+before the IC is identified.
 
 ## Reservations (2026-09-04)
 
