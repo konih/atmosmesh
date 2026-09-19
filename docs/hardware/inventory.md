@@ -458,6 +458,7 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 | USB-C Li-ion/LiPo charger board, silkscreen read as `ZJ-CHC-V2`, charge IC marked `TC4056A` (below it `2539 C350`) | 5 | USB-C input, one 2-pin output/battery connector; single-cell linear charger | `TC4056A` is a second-source/clone marking of the **TP4056** 1 A linear Li-ion charger (CC/CV to **4.2 V only** — not for LiFePO4, not for NiMH). `2539 C350` reads as a lot/date code (week 39 of 2025), not a model number. **Three things must be read off the actual board before it charges a cell.** (1) **Protection or not:** TP4056 boards ship in a charge-only variant (pads `B+ B- OUT+ OUT-`, four small ICs absent) and a protected variant carrying a **DW01A** plus an **FS8205A/8205A dual MOSFET**. The operator describes only the charge IC and one 2-pin connector, which points at the **unprotected** variant — meaning **no over-discharge, over-current or short-circuit protection**, so the cell must bring its own PCM or one must be added. (2) **The USB-C CC resistors:** a cheap USB-C board that omits the two 5.1 kΩ pull-downs on `CC1`/`CC2` draws nothing from a C-to-C cable or a PD charger, and looks "dead" for a reason that is not the board's fault; check for the two resistors by the connector. (3) **Charge current:** the stock `R_PROG` (1.2 kΩ) sets **1 A**, which is 1C for these 1000 mAh cells — inside spec for most LiPo pouches but at the top of it, and the TP4056 then burns (5 V − 3.7 V) × 1 A ≈ **1.3 W** in an SOP-8 with only the board's copper to spread it, so the board runs hot. Raising `R_PROG` (e.g. 2.4 kΩ ≈ 0.5 A) is the conservative choice once the cell's datasheet is known. Output polarity and `OUT`-vs-`B` pad assignment to be confirmed with a meter. Not reserved for any current story or roadmap item |
 | ESP32 board with 2.8-inch colour touch TFT, silkscreen `ESP32-2432S028` ("Cheap Yellow Display") | 2 | All-in-one ESP-WROOM-32 + 240x320 touch display, microSD, RGB LED, speaker header, sensor/IO pigtail headers | Sunton CYD, the most widely documented cheap ESP32 display board there is; the supplied stylus indicates the **resistive** (`R`, XPT2046) variant rather than the capacitive `C`. Board family identity is settled by the silkscreen, but **nothing electrical is verified on these two units**: exact suffix/revision, which display controller is fitted (ILI9341 and ST7789 both ship under this name), pin map, and the header pinouts. See the subsection below. Not reserved for any story; a candidate second display controller alongside the ideaspark boards, not a drop-in replacement for one |
 | Round 2.1-inch colour TFT panel, silkscreen `VER:TFT 2.10`, `Driver IC:GC9B72`, `Resolution:360*360` | 1 | Bare round display module on a carrier PCB with a 10-pin 2.54 mm header (header strip supplied loose, unsoldered); no controller on board | **Display only** — unlike the CYD row above, this has no MCU and needs a host. Silkscreen settles resolution and driver IC; the seller text does not (it contradicts itself, see below). Supply voltage, logic level, whether a regulator or level shifter is fitted, and the exact interface mode are **unverified**; the `SDA`/`SCL` labels are **not I2C**, see the subsection. Not reserved |
+| 16 mm round panel-mount push button, described as momentary, marking read as `R13-507`, pre-wired | 6 | Panel-mount user input — a physical button for a station or enclosure | **`R13-507` does not settle momentary vs. latching.** The designation is a body/mounting family that vendors sell in both **momentary** and **self-locking (maintained)** contact actions, so the seller's "momentary" is a claim, not a spec. Also unverified: contact configuration (SPST vs. SPDT, 2/3/4 conductors), whether an illuminated ring is fitted, the printed current/voltage rating, panel thickness range, and the pigtail's gauge and length. 16 mm is the **panel cutout** diameter; the bezel is larger. See the subsection below. Not reserved |
 
 ### Charger board — listing image reviewed 2026-09-19 (not the part in hand)
 
@@ -640,6 +641,44 @@ AI-generated and does not represent the seller. Together with the `ZJ-CHC-V2` bo
 claimed a protection circuit the part does not have, this is the second falsified seller claim in
 one day. **Standing rule for this file: seller text is a hint about what to look for, never
 evidence. Silkscreen, photographs of the actual part, and measurements are evidence.**
+
+### 16 mm `R13-507` push buttons — operator-dictated 2026-09-19, no photo
+
+Dictated from the parts; nothing photographed or measured. Six pieces, described as **momentary**,
+16 mm, round, supplied with a cable pigtail.
+
+**The one thing to establish first: momentary or latching.** `R13-507` is sold under both contact
+actions, and the difference changes the firmware, not just the feel — a momentary button is read as
+an **edge** with debounce and a latch held in software; a self-locking switch is read as a **level**
+and holds its own state across a reset, which is either exactly what a power switch needs or exactly
+what breaks a reset-to-known-state design. Test with a continuity meter: press and release. Closed
+only while held is momentary; closed until the next press is latching. Do this before any of the six
+is designed into anything, and record the answer here.
+
+**Then count the conductors**, because the pigtail answers several questions at once: two = plain
+SPST; three = SPDT (a common-plus-NO-plus-NC changeover, which is more useful than it sounds — an NC
+contact lets a disconnected cable be distinguished from an unpressed button); four or more = an
+illuminated ring, whose LED needs its own series resistor and whose forward voltage must be read
+before it sees 3.3 V or 5 V.
+
+**Ratings are almost certainly mains-class, and that is not an advantage here.** Switches in this
+family typically carry something like 3 A / 250 V AC printed on the body. Two consequences:
+
+- **Read the printed rating off the part** rather than assuming it, especially before any of these
+  goes anywhere near a mains circuit. Nothing in this workspace's mains policy changes because a
+  switch is rated for it; see the open-supply rules elsewhere in this file.
+- **A high-current contact is a poor logic-level contact.** Contacts sized for amps can develop
+  surface oxide that a GPIO's pull-up current (tens of microamps to a milliamp) will not break
+  through, giving intermittent reads that look like software bugs. If one of these drives a GPIO,
+  expect to need a firm pull-up and proper debounce, and treat a flaky button as a contact-wetting
+  problem before suspecting the firmware.
+
+**The cable is the other half of the part.** A long unshielded pigtail into a high-impedance GPIO is
+an antenna: fit a series resistor and an RC to ground at the MCU end, and debounce in software
+regardless. Gauge, length, insulation and whether the leads are tinned or bare are all unverified.
+
+**16 mm is the panel cutout, not the bezel.** Any enclosure work should take the actual bezel
+diameter and the switch's permitted panel thickness off the part before a hole is cut.
 
 ## Reservations (2026-09-04)
 
