@@ -448,8 +448,11 @@ stock is not wiring approval.
 
 ## Operator-reported stock, continued (2026-09-19)
 
-Dictated by the operator from the parts themselves; not photo-verified. Same rule as every other
-row: stock is not wiring approval. These two rows belong together — the cells and the charger
+Dictated by the operator from the parts themselves. Images linked from the subsections below are
+**seller listing images**, archived in [`docs/assets/inventory/`](../assets/inventory/) so the
+readings here can be re-checked; they are not photographs of the delivered parts and do not make a
+row photo-verified. Same rule as every other row: stock is not wiring approval. The first two rows
+belong together — the cells and the charger
 boards share the same 2-pin connector style, and neither side of that pairing is verified yet.
 
 | Component | Quantity | User-stated identity / role | Verification and safety status |
@@ -468,7 +471,8 @@ boards share the same 2-pin connector style, and neither side of that pairing is
 > charge-only conclusion below is correct for the delivered boards, which match this image except
 > for a USB-C connector in place of its micro-USB. The seller's "protected" claim is false.
 
-The operator supplied a product image for the charger board. It is a **seller listing image, not a
+The operator supplied a product image for the charger board
+([image](../assets/inventory/tp4056-zj-chc-v2-charger-listing-2026-09-19.png)). It is a **seller listing image, not a
 photo of the delivered board**, and it contradicts both the listing text and the dictated
 description — so it verifies nothing; it only tells us which questions to ask the actual part.
 
@@ -525,7 +529,7 @@ Consequences, all of which follow from there being no protection on the board:
   **USB-C** variant, and without those two resistors the board takes no power from a C-to-C cable or
   a PD-only charger. One look at the parts beside the connector answers it.
 
-**Cells (label photo).** Marking on the pouch: `603048 3.7V 1000mAh 3.70Wh`, plus `DG300L` and a
+**Cells** ([label image](../assets/inventory/lipo-603048-1000mah-label-2026-09-19.png)). Marking on the pouch: `603048 3.7V 1000mAh 3.70Wh`, plus `DG300L` and a
 partly legible `BATT` prefix.
 
 | Fact | Value | Why it matters |
@@ -549,7 +553,9 @@ cells go into anything that charges unattended.
 
 ### ESP32-2432S028 "Cheap Yellow Display" — listing images reviewed 2026-09-19
 
-Two seller images, not the parts on the bench. The silkscreen `ESP32-2432S028` is legible and that
+Two seller images ([annotated board](../assets/inventory/esp32-2432s028-cyd-annotated-2026-09-19.png),
+[kit contents](../assets/inventory/esp32-2432s028-cyd-kit-2026-09-19.png)), not the parts on the bench. The silkscreen
+`ESP32-2432S028` is legible and that
 is enough to name the board family; everything below it is **family knowledge, not measurement on
 these two units**, and is recorded so a bring-up has somewhere to start, not so it can be trusted.
 
@@ -601,7 +607,9 @@ It is unreserved stock and a candidate controller for anything wanting a larger 
 
 ### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
 
-Two seller images, not the part on the bench, but the back-side photo shows legible silkscreen and a
+Two seller images ([back](../assets/inventory/gc9b72-round-tft-back-2026-09-19.png),
+[front](../assets/inventory/gc9b72-round-tft-front-2026-09-19.png)), not the part on the bench, but the back-side
+photo shows legible silkscreen and a
 labelled header, which is better evidence than the article text — and in this case directly
 contradicts it.
 
