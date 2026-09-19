@@ -726,9 +726,12 @@ before the IC is identified.
 ### Protected charger boards, 6 pads — operator-dictated 2026-09-19, no photo
 
 Ten pieces. The operator reports **six pads** and **two components beyond the charge IC**, one
-marked `B2050`, the other read as `2P2TP`, with the charge IC dictated as `TP4605A`.
+marked `B2050`, the other read as `2P2TP`, with the charge IC dictated as `TP4605A`. On a follow-up
+question the operator confirmed the pads **by name**: `OUT+` and `OUT-` are present. That is a
+stronger statement than a count, and it matters here because the equivalent `OUT+`/`OUT-` report on
+the `ZJ-CHC-V2` boards was later withdrawn — this one is explicit and stands.
 
-**Six pads settles it: these are protected boards.** The same topological argument that made the
+**The `OUT+`/`OUT-` pair settles it: these are protected boards.** The same topological argument that made the
 `ZJ-CHC-V2` boards charge-only works in reverse here. Protection must interrupt the **load** path,
 so it needs its own terminals; a board carrying `OUT+`/`OUT-` in addition to `IN+ IN- B+ B-` has
 somewhere to put the MOSFET pair, and the two extra parts are that pair plus its controller — a
