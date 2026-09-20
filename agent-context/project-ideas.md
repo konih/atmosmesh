@@ -22,6 +22,7 @@ photo-verifying parts before wiring — see [decisions.md](decisions.md) and
 | [Chill](#atmosmesh-chill) | Second brain for the fridge/freezer compressor | ESP32-C6, ADS1115, DS18B20, BME280, current clamp (buy) |
 | [Sprout](#atmosmesh-sprout) | Seedling-shelf / grow-light companion | ESP32-C3 SuperMini, SGP40, soil probes, DS18B20, VEML7700, IRLZ34 |
 | [Ear](#atmosmesh-ear) | 868 MHz sniffer bridge for store-bought RF sensors | classic ESP32 DevKit, RFM12S, spare OLED |
+| [Gift](#atmosmesh-gift) | Giftable CYD touchscreen air-quality + weather station, self-provisioning | ESP32-2432S028 CYD, SGP41, SHT41 |
 
 ---
 
@@ -144,3 +145,31 @@ to add a freezer, greenhouse, or attic reading without building another node fro
 - **Spare 128×32 OLED** — last-heard sensor ID and RSSI.
 - **Worth ordering:** a TFA 30.3180 / LaCrosse TX29DTH-IT sensor (~€12) as a known-good reference
   transmitter — it doubles as the freezer probe Chill would otherwise need to wire.
+
+
+### AtmosMesh Gift
+
+**This one has a full design doc already: [`../docs/design/atmosmesh-gift.md`](../docs/design/atmosmesh-gift.md),
+and an open decision in [`INBOX.md`](INBOX.md).** It is further along than the rest of this file.
+
+A desk object built on a Sunton `ESP32-2432S028` "Cheap Yellow Display" that shows indoor air
+quality and outdoor weather, and is **set up entirely by the person who receives it** — Wi-Fi typed
+on the touchscreen, location picked on the touchscreen, no serial cable, no repo, no account, no
+API key. Every other AtmosMesh product assumes the operator, a build-time `secrets.hpp` and a Home
+Assistant to talk to; this one assumes none of them, so the genuinely new subsystems are **runtime
+credential storage in NVS** and **a settings UI**.
+
+- **ESP32-2432S028 CYD** (2 unreserved) — 2.8" 240x320 touch TFT, RGB LED, LDR, speaker. Its real
+  limitation is pins, not speed: **three free GPIOs, one input-only**, so every sensor is I²C on
+  the CN1 header.
+- **SGP41** (free) — VOC Index and NOx Index, self-baselining, honest by construction.
+- **SHT41** (free) — accurate temperature and humidity, mounted at the far end of the pigtail so
+  the board's own heat does not corrupt it.
+- **Onboard RGB LED** — a slow ambient glow in the air-quality colour, readable across a room
+  without looking at the screen.
+- **Open-Meteo** (keyless, no signup) — outdoor conditions, forecast, and the outdoor PM2.5 / AQI
+  that stands in for the fan-based particulate sensor a silent gift cannot have.
+
+Deliberately *not* CO₂ in the recommended build: the SCD41 is the expensive part and the one free
+unit is reserved for Room v2. The design records the cost of that honestly — a VOC index is not a
+ventilation prompt — and offers a ~EUR 20 MH-Z19C on the input-only `GPIO35` as the upgrade path.

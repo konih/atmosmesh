@@ -72,3 +72,6 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# Cloned upstream reference projects (read-only study material, never product code)
+references/

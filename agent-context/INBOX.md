@@ -4,6 +4,77 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ---
 
+## DECISION NEEDED — AtmosMesh Gift: a giftable CYD air-quality + weather station (2026-09-20)
+
+**Full proposal:** [`docs/design/atmosmesh-gift.md`](../docs/design/atmosmesh-gift.md). Nine upstream
+reference projects cloned to the gitignored `references/` (index in `references/README.md`).
+
+### Context
+
+A new product concept: a self-contained desk object on the Sunton `ESP32-2432S028` "Cheap Yellow
+Display" that shows indoor air quality and outdoor weather, and is **set up entirely by its
+recipient** — Wi-Fi typed on the touchscreen, location picked on the touchscreen, no serial cable,
+no repo, no account, no API key. That constraint, not the drawer, drives every choice in the design.
+
+Three findings shape it, all recorded with evidence in the design doc:
+
+1. **The board allows exactly three free GPIOs**, one of them input-only (`GPIO22`, `GPIO27` on the
+   CN1 sensor header; `GPIO35` input-only). No free UART, no free DAC. **Every sensor must be I²C.**
+   That alone rejects SDS011 and MQ135 for this product.
+2. **The operator's two units have both a Micro-USB and a Type-C socket**, which in the community's
+   experience means the **ST7789 "CYD2USB" variant with inverted colours**, not the ILI9341 most
+   guides assume. Unverified — but it is why the design asks for a graphics library that detects
+   the panel at runtime rather than at compile time.
+3. **Self-heating is the classic failure of all-in-one CYD air stations.** Expect +2 to +5 °C on a
+   sensor mounted against the board. The sensors must live at the far end of the CN1 pigtail, which
+   makes the enclosure a measurement decision rather than a cosmetic one.
+
+### Options
+
+**O-1 — Sensor set.** The obvious part is the SCD41 (true CO₂), and it is the expensive one
+(~€30–45); the one unit in stock is reserved for Room v2.
+
+- **(A) SGP41 + SHT41 — €0, both free in stock. *Recommended.*** VOC Index + NOx Index from a
+  self-baselining Sensirion algorithm, plus accurate temperature and humidity. Honest by
+  construction: an index, never a fabricated ppm.
+- (B) ENS160 + AHT20 — also €0, one module and one cable, gas and climate together. Weaker climate
+  accuracy, and the ENS160's `eCO₂` register is VOC-derived and must stay unused under D-002.
+- (C) A, plus a **Winsen MH-Z19C** (~€15–25) for real NDIR CO₂ — read as PWM on the otherwise
+  useless input-only `GPIO35`, powered from USB 5 V, leaving CN1 free for the I²C parts.
+- (D) Sensirion SEN55 — particulates included, but it has a fan and costs more than the SCD41.
+
+**The trade-off in (A) must be understood before it is chosen:** a VOC index is *not* a substitute
+for CO₂. CO₂ answers "has the room been breathed out?" and justifies **open a window**; VOC answers
+"has something been released into the air?". A closed bedroom can hit 1500 ppm CO₂ with a contented
+VOC index of 100. Choosing (A) means the gift loses the ventilation prompt and the UI wording must
+stop promising it (G5). (C) buys it back for ~€20.
+
+**O-2 — Which CYD.** The two on hand are the resistive `R` variant (stylus supplied). Resistive
+touch needs deliberate pressure and does not glide; next to any phone it feels dated, which is the
+wrong impression for a gift. *Recommended: buy one capacitive `C` unit for the gift and keep the
+`R` pair for bench work.* If the `R` units are used, the UI must be designed for pressed taps on
+large targets, never swipe gestures.
+
+**O-3 — Graphics stack.** *Recommended: LVGL 9 + LovyanGFX*, because LovyanGFX builds its panel
+object at runtime and so one image handles both display controllers — directly addressing finding
+2. The cost is that the best UI reference (nicholaswilde) is LVGL 8 + TFT_eSPI, so its ideas port
+but its code does not.
+
+**O-4 — Does MQTT ship enabled?** *Recommended: no.* Off by default, enabled from Settings if the
+recipient has Home Assistant. D-007 and D-019 are otherwise untouched.
+
+**O-5 — Product name.** *Recommended: `Gift`* — fits the one-word-noun family (Room, Spot, Aqua,
+Grove) and states the intent. Alternatives: `Glass`, `Desk`, `Cube`.
+
+**O-6 — OTA.** A dual-OTA partition layout on 4 MB flash must be chosen before the first flash, not
+after. Worth it for a device that leaves the house.
+
+### Answer / instructions
+
+<!-- operator: fill in. Nothing is bought, reserved or wired until this is answered. -->
+
+---
+
 ## DECISION — AQ-01 software merged to main after 3 independent-review rounds (2026-08-26)
 
 Landed AtmosMesh Aqua's software (SHT41 + 128×64 OLED + water probe, MQTT-only) at `0e84e35` via
