@@ -122,12 +122,14 @@ datasheet also asks for < 30 mV unloaded supply ripple and recommends the sensor
   (`inventory.md:567`). **Working hypothesis: these are ST7789, colour-inverted.**
   **2026-09-20: a unit running firmware from another project leaves a ~25 % band of the panel
   unwritten** — it shows uninitialised GRAM noise after a reboot while the rest of the image is
-  complete and correctly scaled. Diagnosed in `inventory.md` as a **dimension mismatch**: a
-  240-wide area drawn onto a 320-wide surface, most likely `TFT_HEIGHT` left at 240. **The stock
-  firmware renders the full screen, so the hardware is sound.** Note that this fault is
-  *driver-agnostic* and therefore says nothing about which controller is fitted — AU-01 still has
-  to read the ID register. Fixing it and delivering §8's required portrait orientation are the
-  same change: `TFT_WIDTH 240`, `TFT_HEIGHT 320`, rotation 0.
+  complete and correctly scaled. **The stock firmware renders the full screen, so the hardware is
+  sound.** The firmware responsible is a third-party dashboard (`Matt-Housley/cyd-dashboard`,
+  LovyanGFX) whose panel size is correct at 240 × 320 with zero offsets, but which carries a
+  hand-tuned `offset_rotation = 5` alongside `setRotation(1)` — a board-specific constant, and the
+  prime suspect. Full analysis in `inventory.md`. Two consequences for this design: the symptom
+  **does not** identify the controller, because ST7789 and ILI9341 share most MIPI DCS opcodes and
+  a mostly-correct render proves nothing — AU-01 still reads the ID register; and AU-01 sets its
+  own rotation from scratch for §8's portrait rather than inheriting anyone's constants.
 - **The touch controller is now confirmed**: the operator read `XPT2046` off the PCB on
   2026-09-20, so these are resistive `R` units, and §4.2's objection stands on evidence rather
   than on the supplied stylus. The display controller is **not** readable this way — it is
