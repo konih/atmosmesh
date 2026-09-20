@@ -283,14 +283,22 @@ lvgl:
   # NOTE for the bespoke-vs-ESPHome decision (Q5): rotation, auto_clear and lambdas must all move
   # out of the `display:` block once LVGL is enabled -- ESPHome rejects them there. LVGL owns the
   # display, and the YAML does not let you forget it.
-  # Q1 KNOB 1 OF 2 -- and the one that actually bit.
-  # 2026-09-20 bench: the panel reports 240x320 and `rotation: 90` made LVGL 320x240, i.e.
-  # LANDSCAPE. The product wants portrait, so rotation stays 0 and LVGL matches the panel 1:1.
-  # The "right 25% garbled" seen on the first flash was NOT a controller fault: the widgets were
-  # hard-coded 240 wide on a 320-wide surface, and LVGL owns the framebuffer (auto_clear is
-  # rejected with LVGL), so the unpainted strip showed stale GRAM. Widgets are now 100%-width so
-  # that confound cannot return.
-  rotation: 0
+  # Q1 KNOB 1 OF 2 -- and the one that actually bit. Settled on the bench 2026-09-20.
+  #
+  # The logical/physical mapping on this unit is the opposite of what the driver's numbers
+  # suggest. `rotation: 0` gives LVGL a 240x320 buffer, which the driver reports as portrait --
+  # but on the glass it appears LANDSCAPE, and only 240 of the panel's 320 scanned columns are
+  # ever written, leaving the right ~25% unpainted. `rotation: 90` gives LVGL 320x240, which
+  # addresses all 320 columns AND lands the long axis vertically, which is what the product
+  # wants. So: the number that reads "landscape" is the one that produces portrait here.
+  #
+  # Two lessons worth carrying into the product, whichever firmware route wins:
+  #   1. The unpainted strip is a ROTATION/GEOMETRY mismatch, never a CGRAM offset -- the same
+  #      fault the cyd-dashboard image showed, now reproduced and cured on purpose.
+  #   2. LVGL owns the framebuffer (ESPHome rejects auto_clear with it), so any region the UI
+  #      does not paint shows stale GRAM and reads as a hardware fault. Size widgets in %, never
+  #      in pixels assumed from a resolution.
+  rotation: 90
   displays:
     - tft
   touchscreens:
