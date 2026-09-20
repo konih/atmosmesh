@@ -605,6 +605,70 @@ boards. The CYD is a different board with a different pin map and a different di
 **not** pin-compatible with the Room carrier and cannot substitute for the second ideaspark board.
 It is unreserved stock and a candidate controller for anything wanting a larger touch UI.
 
+### CYD — operator chip reading and a display fault, 2026-09-20
+
+**Which unit is not yet recorded.** The board was described only as "the one currently plugged in".
+Read its MAC with `esptool` and note it here before this entry is trusted to refer to unit 1
+(`20:50:0d:34:46:3c`) rather than the second board.
+
+**Markings read off the PCB by eye, operator, low confidence on the first:**
+
+| As read | Almost certainly | What it settles |
+| --- | --- | --- |
+| `xp n2-46` | **XPT2046** | The **touch controller is confirmed resistive**. This closes the open question from the 2026-09-19 entry, which could only infer it from the supplied stylus. These are `R` variants, not capacitive `C`/GT911 |
+| `ldk 80020` | **LDK8002** class-D audio amplifier | The speaker amplifier. Consistent with the speaker header seen in the listing images. Nothing else depends on it |
+| `CH8400` (barely legible) | **CH340**, the USB-UART | Consistent with the `1a86:7523` already read over USB on unit 1. Not new information, but not contradictory either |
+
+**None of these is the display controller, and this is the point worth keeping.** The ILI9341 /
+ST7789 question stays open after this reading, because that driver is a chip-on-glass die bonded
+under the panel's flex, not a package on the PCB. It cannot be read by eye at all. It is identified
+by reading the controller's ID register from running firmware, which is what story `AU-01` exists
+for.
+
+#### Fault: the left ~25 % of the panel does not display
+
+Observed 2026-09-20 on the plugged-in unit, which is **running firmware flashed from another
+project, not the stock image**. That matters: it moves a configuration cause ahead of a hardware
+one.
+
+**Leading hypothesis — a column-offset mismatch, and the arithmetic is suggestive.** In landscape
+the panel is 320 px across and **25 % of 320 is 80** — which is exactly the `CGRAM_OFFSET` value
+that ST7789 configurations apply for panels smaller than the controller's 240×320 addressable
+area. A driver applying an 80-pixel offset that this panel does not need (or omitting one it does)
+shifts the whole image sideways and leaves a dead band of precisely this width. The `2432S028`
+ships with **either** ILI9341 **or** ST7789 and they need different settings, so a config written
+for the wrong one produces this class of fault.
+
+**This makes the fault diagnostic rather than merely annoying:** whichever driver setting renders
+the full width identifies the controller actually fitted, and answers `AU-01`'s main question.
+
+Test cheapest-first, and record the result here:
+
+1. **Is the dead band lit or dark?** Lit and uniform means the panel and backlight are fine and
+   the controller is being addressed wrongly — a software cause. Dark means look at backlight and
+   panel instead.
+2. **Is the visible 75 % a *complete* image squashed, or a *cropped* one?** Cropped and shifted
+   points at an offset. Complete but squashed points at a wrong width/height pair.
+3. **Reflash the stock backup** — `PlatformRelay/.tooling/firmware-backups/esp32-2432s028_20500d34463c_stock-factory_2026-09-19.bin`
+   exists for exactly this and is why it was taken. **Stock renders full width → the fault is the
+   other project's display config, and the board is fine.** Stock shows the same band → hardware:
+   a partly seated or cracked FPC, or panel damage. This single test splits the diagnosis and
+   should be done before any config is edited. (The backup is for unit 1; confirm the MAC first.)
+4. Only then try the driver permutations: `ILI9341_2_DRIVER` with no offset versus `ST7789_DRIVER`
+   with `CGRAM_OFFSET`, plus `TFT_RGB_ORDER` and inversion, per the two `User_Setup.h` variants in
+   the community reference.
+
+**Note against the earlier inference.** The 2026-09-19 entry reasoned that dual USB sockets
+(Micro-B + Type-C) suggest the ST7789 "CYD2USB" variant. That remains an inference from a
+community heuristic, and this fault is consistent with it — but a fault consistent with a
+hypothesis is not confirmation of it. Only the ID register settles the controller.
+
+**Design consequence, recorded in [the Aura design](../design/atmosmesh-aura.md) §3 and §6.** This
+is the concrete instance of the risk that argued for LovyanGFX with runtime panel construction
+over TFT_eSPI's compile-time panel selection: with two units of possibly differing variants, a
+single image that probes the controller and configures offset, inversion and colour order at run
+time removes this whole failure mode instead of debugging it once per board.
+
 ### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
 
 Two seller images ([back](../assets/inventory/gc9b72-round-tft-back-2026-09-19.png),

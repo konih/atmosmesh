@@ -115,11 +115,21 @@ datasheet also asks for < 30 mV unloaded supply ripple and recommends the sensor
 
 ### Errata to design around
 
-- **Display controller unknown.** `2432S028` ships with ILI9341 *or* ST7789, differing in colour
-  inversion and RGB/BGR order. The community heuristic is that **dual-USB boards (Micro-B + Type-C)
-  are the ST7789 "CYD2USB" variant with inverted colours** — and the inventory records the operator's
-  units as having *both* connectors (`inventory.md:567`). **Working hypothesis: these are ST7789,
-  colour-inverted.** Unverified. §6 makes this a runtime concern rather than a rebuild.
+- **Display controller unknown, and it has already bitten once.** `2432S028` ships with ILI9341
+  *or* ST7789, differing in colour inversion, RGB/BGR order and column offset. The community
+  heuristic is that **dual-USB boards (Micro-B + Type-C) are the ST7789 "CYD2USB" variant with
+  inverted colours** — and the inventory records the operator's units as having *both* connectors
+  (`inventory.md:567`). **Working hypothesis: these are ST7789, colour-inverted.**
+  **2026-09-20: a unit running firmware from another project shows the left ~25 % of the panel
+  blank.** In landscape that is 320 px across and 25 % of 320 is **80** — exactly the
+  `CGRAM_OFFSET` an ST7789 config applies for a panel that does not need it. This is the predicted
+  failure mode arriving on schedule, and the diagnosis is written up in
+  `inventory.md` under "CYD — operator chip reading and a display fault". It is also *useful*:
+  whichever setting renders full width identifies the controller and answers AU-01.
+- **The touch controller is now confirmed**: the operator read `XPT2046` off the PCB on
+  2026-09-20, so these are resistive `R` units, and §4.2's objection stands on evidence rather
+  than on the supplied stylus. The display controller is **not** readable this way — it is
+  chip-on-glass under the flex.
 - **Never connect both USB ports at once** — one bridge, two sockets.
 - Some Type-C sockets on this board lack CC resistors and will not enumerate with a C-to-C cable.
 - Touch shares no bus with the TFT; use the bit-banged XPT2046 driver to avoid contention.
@@ -412,8 +422,24 @@ clock is NTP.
 
 ## 8. The interface
 
-240×320 panel, **landscape 320×240** on a stand. Designed for *pressed taps on large targets*,
-because §4.2 says the touch is resistive.
+**Portrait: 240 wide × 320 tall**, long side vertical (operator direction, 2026-09-20). Designed
+for *pressed taps on large targets*, because §4.2 says the touch is resistive.
+
+Portrait is the better orientation for this product and not only a preference. The Now screen is a
+vertical hierarchy — one verdict, then its supporting figures, then climate — and portrait lets
+that stack read top to bottom at full width instead of competing for a short 240 px column. It
+also puts the tab bar at the bottom of a tall object, where a thumb naturally lands, and it makes
+the device a narrow upright thing on a shelf rather than a wide one. Practical consequences:
+
+- LVGL is configured `hor_res = 240`, `ver_res = 320`; the panel is driven at its native rotation
+  rather than rotated in software, which avoids a rotation-dependent offset bug of exactly the
+  kind §3 warns about.
+- **Touch must be calibrated in the same orientation as the display, and the XPT2046's axes do
+  not follow the panel rotation automatically** — mismatched or swapped touch axes is the single
+  most common CYD bring-up complaint, and it is a portrait-specific trap. AU-01 verifies rotation
+  and touch mapping together, not separately.
+- nicholaswilde's reference UI already builds both portrait and landscape variants with
+  per-orientation label strings, so the responsive pattern is there to copy.
 
 **Navigation:** a bottom tab bar — **Now · Trend · Outside · Settings**. Tabs are a big, forgiving
 target; swipe works where touch allows but is never the only way to reach anything.
@@ -421,19 +447,28 @@ target; swipe works where touch allows but is never the only way to reach anythi
 **Now** is the screen the device shows 99 % of the time and it must read from across a room:
 
 ```text
-┌────────────────────────────────────────────┐
-│  Living room            ⌂ 21:04    [ wifi ]│
-│                                            │
-│        ╭──────────╮                        │
-│        │  Stuffy  │      21.4 °C           │
-│        │          │      47 % RH           │
-│        ╰──────────╯                        │
-│        Air quality      eCO₂ ~1240 est.    │
-│                         TVOC  340 ppb      │
-│      Open a window                         │
-├────────────────────────────────────────────┤
-│   Now  │  Trend  │  Outside  │  Settings   │
-└────────────────────────────────────────────┘
+        240 px wide
+┌──────────────────────────┐ ─┐
+│ Living room   21:04  ((•))│  │  header: room, clock, link
+├──────────────────────────┤  │
+│                          │  │
+│      ╭────────────╮      │  │
+│     ╱              ╲     │  │
+│    │     Stuffy     │    │  │  the verdict, colour-banded arc,
+│     ╲              ╱     │  │  readable across a room
+│      ╰────────────╯      │  │
+│       Air quality        │  │
+│                          │  │
+│   Open a window          │  │  the action, in plain words
+│                          │  │  320 px tall
+├──────────────────────────┤  │
+│  eCO₂     ~1240  est.    │  │  supporting figures, small type,
+│  TVOC       340  ppb     │  │  never the headline
+├──────────────────────────┤  │
+│  21.4 °C        47 % RH  │  │  climate, from the BME280
+├──────────────────────────┤  │
+│ Now │ Trend │ Out │ Set  │  │  tab bar, thumb height
+└──────────────────────────┘ ─┘
 ```
 
 - **The word is the headline, the numbers are the supporting detail.** The brief is useful
