@@ -1,16 +1,21 @@
-# AtmosMesh Aura — giftable air-quality station (AU-01 … AU-06)
+# AtmosMesh Aura — giftable air-quality station
+#
+# Implements: AU-01 (geometry), AU-02 (bus), AU-03 (reading states + air bands), AU-04 (Now
+# screen), AU-06 (live sensors with honest failure).
+# NOT implemented here: AU-05 provisioning, AU-07 Open-Meteo, AU-08 MQTT.
 #
 # Sunton ESP32-2432S028 "Cheap Yellow Display", portrait 240x320.
 # Sensors on CN1: SGP41 @ 0x59 (VOC + NOx Index), BME280 @ 0x76 (temperature, humidity, pressure).
 #
-# Design rules this file is holding up:
-#   G4  — everything on the Now screen renders with no network at all.
-#   D-002 as amended by D-036 — no eCO2, no ppm, no CO2 anywhere. VOC Index is the air number.
-#   AU-01 — orientation comes from `transform:` ONLY. Never LVGL `rotation:` (it rotates in
-#           software for this driver and the flush path stretches the image).
+# Rules this file holds up:
+#   G4    — everything on the Now screen renders with no network at all.
+#   G5    — a dead sensor must never leave its last number on screen.
+#   D-002 as amended by D-036 — no eCO2, no ppm, no CO2 anywhere.
+#   AU-01 — orientation comes from `transform:` ONLY. Never LVGL `rotation:`: ili9xxx does not
+#           register hardware rotation, so LVGL rotates in software and the flush path stretches.
 
 substitutions:
-  device_id: atmosmesh-aura-0001
+  device_id: atmosmesh-aura
   friendly: Aura
 
   # --- palette (AU-04). One accent at a time, taken from the current air band. -----------------
@@ -27,22 +32,20 @@ substitutions:
 esphome:
   name: ${device_id}
   friendly_name: ${friendly}
+  # Two of these are being built. Without a MAC suffix both claim the same hostname and the same
+  # mDNS name on one LAN, and AU-05's fallback AP would advertise one SSID for both units.
+  name_add_mac_suffix: true
 
 esp32:
   board: esp32dev
   framework:
     type: arduino
-  # The boot log asks for this explicitly; rev 3.1 was read off this silicon in AU-01.
-  # Smaller image, which matters because AU-07 still has to fit TLS in the same OTA slot.
-  variant: esp32
 
 logger:
-  level: DEBUG
+  # INFO, not DEBUG: at DEBUG the SGP41 prints its serial number and one "Stabilizing" line per
+  # second for 90 s. A handover image should not narrate itself.
+  level: INFO
 
-# --------------------------------------------------------------------------------------------
-# AU-02 — the sensor bus. Four wires on CN1, nothing else fits: the CYD leaves only GPIO22,
-# GPIO27 and the input-only GPIO35 free, so every sensor on this product must be I2C.
-# --------------------------------------------------------------------------------------------
 i2c:
   - id: bus_cn1
     sda: GPIO27
@@ -89,8 +92,11 @@ touchscreen:
     spi_id: spi_touch
     cs_pin: GPIO33
     interrupt_pin: GPIO36
-    update_interval: 50ms
     threshold: 400
+    # PROVISIONAL. These are the landscape community numbers and this product runs portrait with
+    # swap_xy. Nothing on the Now screen is tappable, so a wrong axis is invisible until AU-05's
+    # keyboard - where it would present as "resistive typing is intolerable" rather than as a
+    # calibration bug. AU-01 must close this with a four-corner test before AU-05 starts.
     calibration:
       x_min: 280
       x_max: 3860
@@ -114,10 +120,29 @@ light:
     default_transition_length: 400ms
 
 # --------------------------------------------------------------------------------------------
-# AU-06 — the readings.
+# AU-03 — freshness bookkeeping.
+# `on_value` alone cannot implement the state machine: when a read fails, both drivers return
+# WITHOUT publishing (sgp4x.cpp:229 sets UINT16_MAX and skips publish_state; bme280_base does the
+# same). So a callback-only UI freezes on the last good number forever - exactly the failure G5
+# forbids. These timestamps let a timer notice the silence.
 # --------------------------------------------------------------------------------------------
+globals:
+  - id: t_voc
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: t_nox
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: t_climate
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
 sensor:
   - platform: bme280_i2c
+    id: bme
     i2c_id: bus_cn1
     address: 0x76
     update_interval: 5s
@@ -125,28 +150,21 @@ sensor:
       id: room_temp
       name: Temperature
       on_value:
-        - lvgl.label.update:
-            id: lbl_temp
-            text: !lambda 'return str_sprintf("%.1f°", x);'
+        - lambda: 'id(t_climate) = millis();'
     humidity:
       id: room_hum
       name: Humidity
-      on_value:
-        - lvgl.label.update:
-            id: lbl_hum
-            text: !lambda 'return str_sprintf("%.0f%%", x);'
     pressure:
       id: room_press
       name: Pressure
-      on_value:
-        - lvgl.label.update:
-            id: lbl_press
-            text: !lambda 'return str_sprintf("%.0f hPa", x);'
 
   # The SGP41's index is relative to what this room is normally like. `store_baseline` keeps that
-  # learning across a power cut, which is the difference between a gift that is useful on day one
-  # and one that spends every reboot pretending it has never smelled anything.
+  # learning across a power cut - but note the driver writes no sooner than 3 h after boot and
+  # only once the baseline has drifted, so a power cut inside the first three hours does restart
+  # the learning window. AU-06's acceptance criterion must be written against that, not against a
+  # hoped-for instant resume.
   - platform: sgp4x
+    id: sgp
     i2c_id: bus_cn1
     address: 0x59
     update_interval: 5s
@@ -158,18 +176,21 @@ sensor:
       id: voc
       name: VOC Index
       on_value:
-        - script.execute: render_air
+        - lambda: 'id(t_voc) = millis();'
     nox_index:
       id: nox
       name: NOx Index
       on_value:
-        - lvgl.label.update:
-            id: lbl_nox
-            text: !lambda 'return "NOx " + to_string((int) x);'
+        - lambda: 'id(t_nox) = millis();'
 
-  # AU-04 — night dimming. Sampled slowly and deliberately: ESP32 errata 3.11 briefly pulls
-  # GPIO36/39 low when ADC1 is read, and those are the touch IRQ and touch MISO. Once a minute
-  # makes a phantom tap unlikely; once a second would not.
+  # AU-04 — night dimming.
+  # Cadence: update_interval 60s x send_every 1 = one backlight decision per minute. (`median`
+  # defaults to send_every: 5, which would have made this five minutes; stated explicitly so the
+  # comment and the behaviour cannot drift apart.)
+  # Errata 3.11: sampling ADC1 briefly pulls GPIO36/39 low - the touch IRQ and touch MISO. A slow
+  # cadence reduces the exposure; it does not remove it. The IRQ side is harmless because xpt2046
+  # gates on the pressure threshold, but a glitch during an active touch read can still corrupt
+  # MISO.
   - platform: adc
     pin: GPIO34
     id: ldr
@@ -179,46 +200,116 @@ sensor:
     filters:
       - median:
           window_size: 3
+          send_every: 1
     on_value:
       - light.turn_on:
           id: backlight
           brightness: !lambda |-
-            // Bright room -> low voltage on this divider. Clamp hard: a gift must never go dark.
+            // PROVISIONAL CONSTANTS - not yet measured on this board. AU-04 AC5 cannot be claimed
+            // until the LDR node is metered bright and dark and both numbers are in inventory.md.
+            // The clamp is the safety net: a gift must never dim itself to invisible.
             float b = 1.0f - ((x - 0.15f) / 2.0f);
             if (b < 0.25f) b = 0.25f;
             if (b > 1.0f) b = 1.0f;
             return b;
 
 # --------------------------------------------------------------------------------------------
-# AU-03 — the air bands, and the WARMING state that stops a stabilising zero reading as
-# "perfect air". This script owns every pixel that changes colour.
+# AU-03 — the state machine, and every pixel that changes colour.
 # --------------------------------------------------------------------------------------------
 script:
-  - id: render_air
-    mode: restart
+  - id: update_ui
     then:
       - lambda: |-
-          const bool have = id(voc).has_state() && !std::isnan(id(voc).state);
-          const int v = have ? (int) id(voc).state : 0;
+          // ---------------------------------------------------------------------------------
+          // EXTENSION POINT 1 of 2.
+          // Every simple numeric reading is one row in `chans` below. Adding a sensor later -
+          // SCD41 CO2, SPS30 particulates, VEML7700 lux - means adding one row here and one
+          // widget on the page. Nothing else in this file changes.
+          // The hero (VOC) is handled separately because it also drives the arc and the colour
+          // of the whole screen.
+          // ---------------------------------------------------------------------------------
+          const uint32_t now = millis();
+          const uint32_t stale_after = 3 * 5000;  // 3 x the 5 s update interval
 
-          // The SGP41 emits 0 for its first ~90 samples while the hotplate stabilises.
-          // Zero is not a measurement; showing it would invert the meaning.
-          const bool warming = !have || v <= 0;
+          // 0 = OK, 1 = WARMING, 2 = STALE, 3 = FAULT.
+          auto state_of = [&](esphome::sensor::Sensor *s, esphome::Component *c,
+                              uint32_t last) -> int {
+            if (c->is_failed()) return 3;
+            if (!s->has_state() || std::isnan(s->state)) return 1;
+            if (last == 0) return 1;
+            if (now - last > stale_after) return 2;
+            return 0;
+          };
+
+          // Colour alone separates the four states, so the screen is readable without reading
+          // the words (AU-04 AC2).
+          auto state_colour = [&](int st, uint32_t ok_colour) -> lv_color_t {
+            switch (st) {
+              case 0:  return lv_color_hex(ok_colour);
+              case 1:  return lv_color_hex(${col_unknown});
+              case 2:  return lv_color_hex(${col_stuffy});
+              default: return lv_color_hex(${col_alert});
+            }
+          };
+
+          struct Channel {
+            esphome::sensor::Sensor *sensor;
+            esphome::Component *owner;    // the bus device, for is_failed()
+            uint32_t *last_seen;          // set from that sensor's on_value
+            lv_obj_t *label;
+            const char *format;           // printf format applied to the value
+            const char *absent;           // what to show when there is no trustworthy value
+            uint32_t ok_colour;
+          };
+
+          static const Channel chans[] = {
+            { id(room_temp),  id(bme), &id(t_climate), id(lbl_temp),  "%.1f°", "--",     ${col_text} },
+            { id(room_hum),   id(bme), &id(t_climate), id(lbl_hum),   "%.0f%%",   "--",       ${col_text} },
+            { id(room_press), id(bme), &id(t_climate), id(lbl_press), "%.0f hPa", "-- hPa",   ${col_dim}  },
+            { id(nox),        id(sgp), &id(t_nox),     id(lbl_nox),   "NOx %.0f", "NOx --",   ${col_dim}  },
+          };
+
+          for (const Channel &c : chans) {
+            const int st = state_of(c.sensor, c.owner, *c.last_seen);
+            // STALE still shows its last value - that is the point of distinguishing it from
+            // FAULT, which has no value worth showing.
+            if (st == 0 || st == 2) {
+              lv_label_set_text(c.label, str_sprintf(c.format, c.sensor->state).c_str());
+            } else {
+              lv_label_set_text(c.label, c.absent);
+            }
+            lv_obj_set_style_text_color(c.label, state_colour(st, c.ok_colour), LV_PART_MAIN);
+          }
+
+          // ---- the hero: VOC Index ----------------------------------------------------------
+          const int voc_state = state_of(id(voc), id(sgp), id(t_voc));
+          const bool show_voc = (voc_state == 0 || voc_state == 2);
+          const int v = show_voc ? (int) id(voc).state : 0;
 
           const char *word;
-          lv_color_t accent;
-          if (warming)        { word = "SETTLING";      accent = lv_color_hex(${col_unknown}); }
-          else if (v < 80)    { word = "FRESH";         accent = lv_color_hex(${col_fresh});   }
-          else if (v < 150)   { word = "FINE";          accent = lv_color_hex(${col_fine});    }
-          else if (v < 250)   { word = "STUFFY";        accent = lv_color_hex(${col_stuffy});  }
-          else                { word = "OPEN A WINDOW"; accent = lv_color_hex(${col_alert});   }
+          lv_color_t band_colour;
+          if (voc_state == 3)      { word = "NO SENSOR";     band_colour = lv_color_hex(${col_alert}); }
+          else if (voc_state == 1) { word = "SETTLING";      band_colour = lv_color_hex(${col_unknown}); }
+          else if (voc_state == 2) { word = "STALE";         band_colour = lv_color_hex(${col_stuffy}); }
+          else if (v < 80)         { word = "FRESH";         band_colour = lv_color_hex(${col_fresh}); }
+          else if (v < 150)        { word = "FINE";          band_colour = lv_color_hex(${col_fine}); }
+          else if (v < 250)        { word = "STUFFY";        band_colour = lv_color_hex(${col_stuffy}); }
+          else                     { word = "OPEN A WINDOW"; band_colour = lv_color_hex(${col_alert}); }
 
-          lv_label_set_text(id(lbl_voc), warming ? "--" : to_string(v).c_str());
+          lv_label_set_text(id(lbl_voc), show_voc ? to_string(v).c_str() : "--");
           lv_label_set_text(id(lbl_band), word);
-          lv_obj_set_style_text_color(id(lbl_band), accent, LV_PART_MAIN);
-          lv_obj_set_style_text_color(id(lbl_voc), accent, LV_PART_MAIN);
-          lv_obj_set_style_arc_color(id(voc_arc), accent, LV_PART_INDICATOR);
-          lv_arc_set_value(id(voc_arc), warming ? 0 : v);
+          lv_obj_set_style_text_color(id(lbl_voc), band_colour, LV_PART_MAIN);
+          lv_obj_set_style_text_color(id(lbl_band), band_colour, LV_PART_MAIN);
+          lv_obj_set_style_arc_color(id(voc_arc), band_colour, LV_PART_INDICATOR);
+          lv_arc_set_value(id(voc_arc), show_voc ? v : 0);
+
+# A timer, not a callback. This is what notices a sensor that has gone quiet, and it is also what
+# paints FAULT at boot: a component that failed its setup is never scheduled again, so no
+# on_value will ever fire for it.
+interval:
+  - interval: 2s
+    then:
+      - script.execute: update_ui
 
 # --------------------------------------------------------------------------------------------
 # AU-04 — the Now screen.
@@ -228,7 +319,10 @@ lvgl:
     - tft
   touchscreens:
     - touch
-  buffer_size: 50%
+  # 25%: 38,400 bytes of contiguous heap. AU-01 proved 25% and 50% render identically - the 50%
+  # was a diagnostic knob for a flush theory that turned out to be wrong, and keeping it would
+  # have cost 76,800 bytes of the largest free block that AU-07's TLS handshake needs.
+  buffer_size: 25%
   default_font: montserrat_16
   # NOTE: no `rotation:` here, and there must never be one. See AU-01.
   style_definitions:
@@ -237,7 +331,7 @@ lvgl:
       bg_opa: cover
       radius: 16
       border_width: 0
-      pad_all: 12
+      pad_all: 8
       text_color: ${col_text}
     - id: caption
       text_color: ${col_dim}
@@ -248,31 +342,42 @@ lvgl:
       bg_color: ${col_bg}
       bg_opa: cover
       widgets:
-        # --- status strip ---------------------------------------------------------------------
+        # --- status bar -----------------------------------------------------------------------
         - label:
             id: lbl_place
             x: 14
-            y: 10
+            y: 8
             text: "AURA"
             text_color: ${col_dim}
             text_font: montserrat_14
         - label:
             id: lbl_clock
-            x: 150
-            y: 10
+            x: 146
+            y: 8
             width: 80
             text: ""
             text_align: RIGHT
             text_color: ${col_dim}
             text_font: montserrat_14
+        - obj:
+            x: 14
+            y: 30
+            width: 212
+            height: 1
+            bg_color: 0x1E2A3D
+            bg_opa: cover
+            border_width: 0
+            pad_all: 0
 
-        # --- the hero: VOC Index --------------------------------------------------------------
+        # --- hero -------------------------------------------------------------------------------
+        # The band word and the caption sit INSIDE the arc. A 270 degree arc leaves its bottom
+        # open, and in the first layout that hole was simply dead screen.
         - arc:
             id: voc_arc
-            x: 30
-            y: 36
-            width: 180
-            height: 180
+            x: 40
+            y: 38
+            width: 160
+            height: 160
             min_value: 0
             max_value: 250
             value: 0
@@ -286,79 +391,93 @@ lvgl:
               bg_opa: TRANSP
         - label:
             id: lbl_voc
-            x: 30
-            y: 100
-            width: 180
+            x: 40
+            y: 84
+            width: 160
             text: "--"
             text_align: CENTER
             text_color: ${col_unknown}
             text_font: montserrat_48
         - label:
-            id: lbl_voc_cap
-            x: 30
-            y: 150
-            width: 180
-            text: "voc index"
-            text_align: CENTER
-            styles: caption
-        - label:
             id: lbl_band
-            x: 20
-            y: 222
-            width: 200
+            x: 40
+            y: 140
+            width: 160
             text: "SETTLING"
             text_align: CENTER
             text_color: ${col_unknown}
             text_font: montserrat_20
+        - label:
+            x: 40
+            y: 168
+            width: 160
+            text: "voc index"
+            text_align: CENTER
+            text_color: ${col_dim}
+            text_font: montserrat_12
 
-        # --- two tiles ------------------------------------------------------------------------
+        # --- climate tiles -----------------------------------------------------------------------
+        # 104x62 with pad 8 gives an 88x46 content box. montserrat_26 (line 28) over montserrat_12
+        # (line 13) needs 41, and "24.5" at montserrat_26 is about 65px wide. Both fit with margin,
+        # which the previous 106x64/pad-6/montserrat_28 layout did not.
         - obj:
             id: tile_temp
             x: 12
-            y: 252
-            width: 106
-            height: 56
+            y: 208
+            width: 104
+            height: 62
+            scrollable: false
             styles: card
             widgets:
               - label:
                   id: lbl_temp
                   align: TOP_LEFT
                   text: "--"
-                  text_font: montserrat_28
+                  text_font: montserrat_26
               - label:
                   align: BOTTOM_LEFT
                   text: "temperature"
-                  styles: caption
+                  text_color: ${col_dim}
+                  text_font: montserrat_12
         - obj:
             id: tile_hum
-            x: 122
-            y: 252
-            width: 106
-            height: 56
+            x: 124
+            y: 208
+            width: 104
+            height: 62
+            scrollable: false
             styles: card
             widgets:
               - label:
                   id: lbl_hum
                   align: TOP_LEFT
                   text: "--"
-                  text_font: montserrat_28
+                  text_font: montserrat_26
               - label:
                   align: BOTTOM_LEFT
                   text: "humidity"
-                  styles: caption
+                  text_color: ${col_dim}
+                  text_font: montserrat_12
 
-        # --- quiet secondary row --------------------------------------------------------------
-        - label:
-            id: lbl_press
-            x: 14
-            y: 300
-            text: "-- hPa"
-            styles: caption
-        - label:
-            id: lbl_nox
-            x: 150
-            y: 300
-            width: 80
-            text: "NOx --"
-            text_align: RIGHT
-            styles: caption
+        # --- secondary strip ----------------------------------------------------------------------
+        - obj:
+            id: strip_secondary
+            x: 12
+            y: 278
+            width: 216
+            height: 32
+            scrollable: false
+            styles: card
+            widgets:
+              - label:
+                  id: lbl_press
+                  align: LEFT_MID
+                  text: "-- hPa"
+                  text_color: ${col_dim}
+                  text_font: montserrat_14
+              - label:
+                  id: lbl_nox
+                  align: RIGHT_MID
+                  text: "NOx --"
+                  text_color: ${col_dim}
+                  text_font: montserrat_14

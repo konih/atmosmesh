@@ -786,6 +786,52 @@ framebuffer — ESPHome rejects `auto_clear_enabled` alongside LVGL — that str
 rather than black. Widgets are now 100 %-width. This is the same class of fault as the
 `cyd-dashboard` image: **a rotation/geometry mismatch, not a CGRAM offset.**
 
+### CYD display geometry — settled on the bench, 2026-09-20
+
+**The final configuration, verified by rendering to all four edges:**
+
+```yaml
+model: ILI9341
+dimensions: { width: 240, height: 320 }
+transform: { swap_xy: true, mirror_x: false, mirror_y: false }   # -> MADCTL 0x28
+# and in lvgl:  NO `rotation:` key at all
+```
+
+**Two rules that fall out of this, and matter beyond this board.**
+
+1. **Orientation must come from `transform:`, never from LVGL's `rotation:`.** The `ili9xxx`
+   component never registers hardware rotation, so LVGL always rotates in *software*, and its
+   flush path renders stretched and mirrored on this driver. Every attempt that used
+   `lvgl: rotation:` produced a worse result than the one before it.
+2. **`buffer_size` is not a geometry knob.** Raising it from 25 % to 50 % changed the missing
+   fraction not at all, which is what finally ruled out the "one flush chunk is being dropped"
+   theory. It was the single most useful negative result of the session.
+
+**Five explanations were flashed and withdrawn before this one.** Recorded because each looked
+plausible, and because the sequence is the actual cost of diagnosing a chip-on-glass controller
+you cannot read an ID register from:
+
+| # | Theory | Killed by |
+| --- | --- | --- |
+| 1 | CGRAM offset | cyd-dashboard runs this panel with zero offsets |
+| 2 | wrong `TFT_HEIGHT` | the same reference has correct 240x320 dimensions |
+| 3 | "the fault identifies the controller" | the fault is driver-agnostic; it says nothing about ILI9341 vs ST7789 |
+| 4 | driver clamps CASET at 239, leaving 80 columns unaddressed | reading the driver source: LVGL's flush bypasses the buffer and writes a `CASET`/`PASET` window with **no clipping and no offsets**, so the driver cannot leave a band unwritten |
+| 5 | one of four flush chunks is lost | `buffer_size` 25 % -> 50 % changed nothing |
+
+**What was actually wrong.** Every earlier attempt paired the *right* idea with the *wrong*
+partner: portrait dimensions with `MV = 0`, or `MV = 1` with landscape dimensions. The panel is
+fully addressable only when the declared dimensions and the MADCTL mode agree. `swap_xy: true`
+with `240x320` is that pairing; nothing else tried was.
+
+**A caution for whoever reads the intermediate logs.** The configuration `MADCTL 0x68` with
+`dimensions: 320x240` *looked* like full coverage on the bench and was briefly treated as a
+working baseline. It is almost certainly a **wrapped write** — 320 columns pushed into a 240-column
+window, which paints every pixel while shearing the image. A diagonal drawn corner to corner is
+the cheap test that distinguishes the two, and it should have been the first thing drawn, not the
+fifth.
+
+
 ### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
 
 Two seller images ([back](../assets/inventory/gc9b72-round-tft-back-2026-09-19.png),
