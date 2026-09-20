@@ -85,7 +85,10 @@ display:
   - platform: ili9xxx
     id: tft
     model: ILI9341
-    # invert_colors: true      # <- uncomment if the test card looks like a photographic negative
+    # Q1 KNOB 2 OF 2. Flip to `true` if the test card looks like a photographic negative.
+    # ESPHome requires this to be stated explicitly, which is a small mercy: the CYD variants
+    # genuinely differ here and a silent default would hide the question the spike is asking.
+    invert_colors: false
     spi_id: spi_tft
     cs_pin: GPIO15
     dc_pin: GPIO2
@@ -99,6 +102,22 @@ output:
     pin: GPIO21
     id: backlight_pwm
     frequency: 20000Hz
+  # The on-board RGB LED is active-low; `inverted` makes 100% mean "fully on".
+  - platform: ledc
+    pin:
+      number: GPIO4
+      inverted: true
+    id: led_r
+  - platform: ledc
+    pin:
+      number: GPIO16
+      inverted: true
+    id: led_g
+  - platform: ledc
+    pin:
+      number: GPIO17
+      inverted: true
+    id: led_b
 
 light:
   - platform: monochromatic
@@ -116,16 +135,6 @@ light:
     green: led_g
     blue: led_b
 
-output:
-  - platform: ledc
-    pin: { number: GPIO4, inverted: true }
-    id: led_r
-  - platform: ledc
-    pin: { number: GPIO16, inverted: true }
-    id: led_g
-  - platform: ledc
-    pin: { number: GPIO17, inverted: true }
-    id: led_b
 
 # ---------------------------------------------------------------------------------------------
 # Q4 — is typing on this resistive panel tolerable?
@@ -217,6 +226,44 @@ sensor:
       if (isnan(id(aht_temp).state) || isnan(id(room_temp).state)) return NAN;
       return id(aht_temp).state - id(room_temp).state;
     update_interval: 10s
+
+  # Drive the labels from the sensors. Deliberately shows "--" when a reading is NaN, which is
+  # the rule G5 demands and which HenrysCat's reference sketch gets wrong.
+  - platform: template
+    id: ui_tick
+    internal: true
+    update_interval: 2s
+    lambda: return 0;
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: lbl_room
+            text: !lambda |-
+              if (isnan(id(room_temp).state)) return {"BME280:  -- (no data)"};
+              char b[48];
+              snprintf(b, sizeof(b), "BME280:  %.1f C  %.0f %%", id(room_temp).state, id(room_hum).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_aht
+            text: !lambda |-
+              if (isnan(id(aht_temp).state)) return {"AHT20:   -- (no data)"};
+              char b[48];
+              snprintf(b, sizeof(b), "AHT20:   %.1f C  %.0f %%", id(aht_temp).state, id(aht_hum).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_offset
+            text: !lambda |-
+              if (isnan(id(heat_offset).state)) return {"OFFSET:  --"};
+              char b[48];
+              snprintf(b, sizeof(b), "OFFSET:  %+.1f C", id(heat_offset).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_gas
+            text: !lambda |-
+              if (isnan(id(gas_tvoc).state)) return {"ENS160:  warming up / no data"};
+              char b[64];
+              snprintf(b, sizeof(b), "ENS160:  TVOC %.0f ppb  AQI %.0f", id(gas_tvoc).state, id(gas_aqi).state);
+              return {b};
 
 # ---------------------------------------------------------------------------------------------
 # Q5 — what does ESPHome's LVGL actually look and feel like?
@@ -359,45 +406,6 @@ lvgl:
             widgets: [ label: { text: "Back to 1", align: CENTER } ]
             on_click:
               - lvgl.page.show: page_testcard
-
-# Drive the labels from the sensors. Deliberately shows "--" when a reading is NaN, which is the
-# behaviour rule G5 demands and which HenrysCat's reference sketch gets wrong.
-sensor:
-  - platform: template
-    id: ui_tick
-    internal: true
-    update_interval: 2s
-    lambda: return 0;
-    on_value:
-      then:
-        - lvgl.label.update:
-            id: lbl_room
-            text: !lambda |-
-              if (isnan(id(room_temp).state)) return {"BME280:  -- (no data)"};
-              char b[48];
-              snprintf(b, sizeof(b), "BME280:  %.1f C  %.0f %%", id(room_temp).state, id(room_hum).state);
-              return {b};
-        - lvgl.label.update:
-            id: lbl_aht
-            text: !lambda |-
-              if (isnan(id(aht_temp).state)) return {"AHT20:   -- (no data)"};
-              char b[48];
-              snprintf(b, sizeof(b), "AHT20:   %.1f C  %.0f %%", id(aht_temp).state, id(aht_hum).state);
-              return {b};
-        - lvgl.label.update:
-            id: lbl_offset
-            text: !lambda |-
-              if (isnan(id(heat_offset).state)) return {"OFFSET:  --"};
-              char b[48];
-              snprintf(b, sizeof(b), "OFFSET:  %+.1f C", id(heat_offset).state);
-              return {b};
-        - lvgl.label.update:
-            id: lbl_gas
-            text: !lambda |-
-              if (isnan(id(gas_tvoc).state)) return {"ENS160:  warming up / no data"};
-              char b[64];
-              snprintf(b, sizeof(b), "ENS160:  TVOC %.0f ppb  AQI %.0f", id(gas_tvoc).state, id(gas_aqi).state);
-              return {b};
 
 # ---------------------------------------------------------------------------------------------
 # Wi-Fi is OPTIONAL for this spike and deliberately last in the file.

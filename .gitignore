@@ -75,3 +75,6 @@ temp/
 
 # Cloned upstream reference projects (read-only study material, never product code)
 references/
+
+# ESPHome spike build artefacts (throwaway; see firmware/spike/README.md)
+firmware/spike/.esphome/

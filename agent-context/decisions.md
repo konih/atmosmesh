@@ -602,6 +602,17 @@
 - **Revisit if:** the ventilation prompt is missed in use — a Winsen MH-Z19C (~€15–25, real NDIR)
   can be added later on the otherwise useless input-only `GPIO35` via its PWM output, powered from
   USB 5 V. `GPIO35` is kept free for exactly that.
+- **Open follow-on, operator 2026-09-20:** *"Maybe we'll build a version of this with the 41
+  instead of the room2."* i.e. release the **SCD41 currently reserved for Room v2** and build a
+  second Aura carrying true NDIR CO₂. Noted, **not decided** — it is a reservation change, so it
+  belongs in `inventory.md`'s reservation table and needs Room v2's owner to agree, not a
+  side-effect of this decision. Two things make it attractive and one makes it awkward: the SCD41
+  is I²C (`0x62`) so it drops straight onto the same CN1 bus with no new pins and no 5 V tap,
+  unlike the MH-Z19C; and it would let the *same* firmware ship in two trims. The awkward part is
+  §3's power budget — the SCD41's 205 mA peak is the one load on this board's weak LDO that
+  genuinely needs the local decoupling and the low-power measurement mode, so the trim is not a
+  drop-in and would want its own bench check. It would also make the eCO₂ labelling rule moot on
+  that unit, since a real measurement may be called CO₂.
 
 ### D-037 — The CYD station is named AtmosMesh Aura
 

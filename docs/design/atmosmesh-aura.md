@@ -297,6 +297,15 @@ half the SCD41:
 addition if the ventilation prompt turns out to be missed. Nothing in the chosen build forecloses
 it — GPIO35 stays free precisely so it can be added without redesigning the pigtail.*
 
+**Possible second trim (operator, 2026-09-20; noted, not decided).** Release the **SCD41 reserved
+for Room v2** and build a second Aura with true NDIR CO₂. It is the tidier upgrade than the
+MH-Z19C: I²C at `0x62`, so it drops onto the same CN1 bus with no extra pin and no 5 V tap, and
+the same firmware ships in two trims with the CO₂ entity simply present or absent. The catch is
+§3's power budget — the SCD41's 205 mA peak is the one load this board's LDO genuinely feels, so
+the trim needs the local decoupling and the low-power mode, not a plug-in. It also retires the
+§5 labelling rule on that unit, because a real measurement may be called CO₂. Being a change to
+someone else's reservation, it belongs in `inventory.md`'s reservation table, not here.*
+
 ### Deliberately excluded, with reasons
 
 | Part | Why not |
