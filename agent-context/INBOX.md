@@ -4,9 +4,9 @@ Repo-local coordination. Not the workspace harness inbox.
 
 ---
 
-## DECISION NEEDED — AtmosMesh Gift: a giftable CYD air-quality + weather station (2026-09-20)
+## DECISION NEEDED — AtmosMesh Aura: a giftable CYD air-quality + weather station (2026-09-20)
 
-**Full proposal:** [`docs/design/atmosmesh-gift.md`](../docs/design/atmosmesh-gift.md). Nine upstream
+**Full proposal:** [`docs/design/atmosmesh-aura.md`](../docs/design/atmosmesh-aura.md). Nine upstream
 reference projects cloned to the gitignored `references/` (index in `references/README.md`).
 
 ### Context
@@ -51,8 +51,11 @@ but its code does not.
 **O-4 — Does MQTT ship enabled?** *Recommended: no.* Off by default, enabled from Settings if the
 recipient has Home Assistant. D-007 and D-019 are otherwise untouched.
 
-**O-5 — Product name.** *Recommended: `Gift`* — fits the one-word-noun family (Room, Spot, Aqua,
-Grove) and states the intent. Alternatives: `Glass`, `Desk`, `Cube`.
+**O-5 — Product name. ANSWERED 2026-09-20 → [D-037](decisions.md).** **AtmosMesh Aura.** The
+operator vetoed the working title `Gift`, which named the occasion rather than the object. `Aura`
+names what the device does: an aura is the atmosphere surrounding something, which is both the
+measurement and the behaviour of the ambient RGB glow. Fits the one-word-noun family and
+alliterates with AtmosMesh. Rejected: `Nimbus`, `Halo`, `Zephyr`, `Glass`, `Desk`, `Cube`.
 
 **O-6 — OTA.** A dual-OTA partition layout on 4 MB flash must be chosen before the first flash, not
 after. Worth it for a device that leaves the house.

@@ -22,7 +22,7 @@ photo-verifying parts before wiring — see [decisions.md](decisions.md) and
 | [Chill](#atmosmesh-chill) | Second brain for the fridge/freezer compressor | ESP32-C6, ADS1115, DS18B20, BME280, current clamp (buy) |
 | [Sprout](#atmosmesh-sprout) | Seedling-shelf / grow-light companion | ESP32-C3 SuperMini, SGP40, soil probes, DS18B20, VEML7700, IRLZ34 |
 | [Ear](#atmosmesh-ear) | 868 MHz sniffer bridge for store-bought RF sensors | classic ESP32 DevKit, RFM12S, spare OLED |
-| [Gift](#atmosmesh-gift) | Giftable CYD touchscreen air-quality + weather station, self-provisioning | ESP32-2432S028 CYD, ENS160+AHT20, BME280 |
+| [Aura](#atmosmesh-aura) | Giftable CYD touchscreen air-quality + weather station, self-provisioning | ESP32-2432S028 CYD, ENS160+AHT20, BME280 |
 
 ---
 
@@ -147,9 +147,9 @@ to add a freezer, greenhouse, or attic reading without building another node fro
   transmitter — it doubles as the freezer probe Chill would otherwise need to wire.
 
 
-### AtmosMesh Gift
+### AtmosMesh Aura
 
-**This one has a full design doc already: [`../docs/design/atmosmesh-gift.md`](../docs/design/atmosmesh-gift.md),
+**This one has a full design doc already: [`../docs/design/atmosmesh-aura.md`](../docs/design/atmosmesh-aura.md),
 and an open decision in [`INBOX.md`](INBOX.md).** It is further along than the rest of this file.
 
 A desk object built on a Sunton `ESP32-2432S028` "Cheap Yellow Display" that shows indoor air

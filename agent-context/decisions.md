@@ -543,11 +543,11 @@
   still correct, since the physical inverter changes the electrical picture even though it
   happens to currently match the logical result already in effect.
 
-### D-036 — AtmosMesh Gift measures gas with the ENS160, climate with a BME280, and no CO₂
+### D-036 — AtmosMesh Aura measures gas with the ENS160, climate with a BME280, and no CO₂
 
-- **Status:** Accepted 2026-09-20, operator decision, for the AtmosMesh Gift concept
-  ([design](../docs/design/atmosmesh-gift.md)). Not a wiring approval and not a reservation.
-- **Rule:** the Gift build uses the spare **ENS160 + AHT20** module for gas (ENS160 at `0x52`/`0x53`,
+- **Status:** Accepted 2026-09-20, operator decision, for the AtmosMesh Aura concept
+  ([design](../docs/design/atmosmesh-aura.md)). Not a wiring approval and not a reservation.
+- **Rule:** the Aura build uses the spare **ENS160 + AHT20** module for gas (ENS160 at `0x52`/`0x53`,
   AHT20 fixed `0x38`) and a **BME280** (`0x76`) for the temperature and humidity the screen shows.
   Both hang off the CYD's CN1 I²C header, which is the only sensor bus this board has. **No CO₂
   sensor is fitted.** The single free SHT41 is deliberately left on the shelf as the fleet spare
@@ -582,7 +582,7 @@
   says ventilate and ventilating is never wrong. The reverse is the one that matters: CO₂ from a
   low-VOC source (gas hob, wood burner, fermentation) climbs without moving `eCO₂`. A device that
   promised "CO₂" would be silently wrong in exactly the case a CO₂ monitor is bought for.
-- **`gift_view_model` guards the label, not the value.** Its host test asserts the eCO₂ figure
+- **`aura_view_model` guards the label, not the value.** Its host test asserts the eCO₂ figure
   reaches the UI and MQTT through the estimated-label path, and that no path emits it under a bare
   CO₂ name or entity id.
 - **Counterpoint recorded, since the design recommended otherwise.** The proposal recommended
@@ -596,12 +596,37 @@
   and does not clash with anything chosen here.
 - **Consequence:** the 205 mA supply pulse that drove the design's power section disappears with
   the SCD41. The ENS160 still drives a hotplate, so its current comes from its datasheet and is
-  then measured at GF-02, per this repo's standing rule that heater figures are not taken from
+  then measured at AU-02, per this repo's standing rule that heater figures are not taken from
   memory. The `WARMING_UP` reading state stops being a nicety and becomes required, because the
   ENS160 genuinely has nothing useful to say for the first minutes after power-on.
 - **Revisit if:** the ventilation prompt is missed in use — a Winsen MH-Z19C (~€15–25, real NDIR)
   can be added later on the otherwise useless input-only `GPIO35` via its PWM output, powered from
   USB 5 V. `GPIO35` is kept free for exactly that.
+
+### D-037 — The CYD station is named AtmosMesh Aura
+
+- **Status:** Accepted 2026-09-20, operator decision. Supersedes the working title `Gift` used in
+  the first draft of [the design](../docs/design/atmosmesh-aura.md).
+- **Rule:** the product is **AtmosMesh Aura**. Product id `atmosmesh-aura-v1`, default station id
+  `atmosmesh-aura-0001`, MQTT root `home/air/atmosmesh-aura-0001/`, composition root
+  `firmware/src/products/atmosmesh_aura_v1.cpp`, headers `atmosmesh/aura_*.hpp`, stories `AU-01`
+  onward.
+- **Why:** the operator vetoed `Gift` — it named the occasion, not the object, and would have
+  outlived its own accuracy the moment the thing was handed over. `Aura` names what the device
+  does: an aura is the atmosphere surrounding something, which is simultaneously what the sensors
+  measure and what the onboard RGB LED does when it glows the air-quality colour across a room.
+  It is a single short noun, so it fits the existing family (Room, Spot, Aqua, Grove), and it
+  alliterates with AtmosMesh.
+- **Considered and rejected:** `Nimbus` (rain cloud and halo at once — the strongest runner-up,
+  and the least contested name commercially), `Halo` (names the arc gauge and the LED ring, but
+  points at the display rather than the air), `Zephyr` (evocative, but describes moving air rather
+  than the object, and is longer than the rest of the family), `Glass`, `Desk`, `Cube`.
+- **Consequence:** "giftable" survives as a design adjective throughout the documents — the
+  giftability contract G1–G6 is the real constraint driving the design and is unaffected by the
+  name. Only the product identifiers changed.
+- **Revisit if:** never, ideally. A rename after firmware exists costs MQTT topics, Home Assistant
+  entity ids and stored NVS keys, which is exactly why this was settled before any code was
+  written.
 
 ## Additional accepted decision
 

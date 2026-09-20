@@ -1,4 +1,4 @@
-# AtmosMesh Gift — design and architecture proposal
+# AtmosMesh Aura — design and architecture proposal
 
 - **Status:** Proposal. Nothing here is approved, no part is reserved, no wiring is authorised.
 - **Date:** 2026-09-20
@@ -96,7 +96,7 @@ so the sensor choice in §5 is partly a power decision. **With the chosen set �
 BME280 — this is not expected to be a problem:** the BME280 is a microamp part, and while the
 ENS160 drives a metal-oxide hotplate and is therefore not one, it is nowhere near the 205 mA pulse
 of the CO₂ sensor this design rejected. **Take the ENS160's actual figure from its datasheet and
-then measure it at GF-02** — this repo does not take heater currents from memory
+then measure it at AU-02** — this repo does not take heater currents from memory
 (`inventory.md:415`), and "not expected to be a problem" is a hypothesis until the rail is watched.
 
 It matters only if a **CO₂ sensor is added** (§5, optional). For the record, from the Sensirion
@@ -188,7 +188,7 @@ invisible on a gift's display. If a second Spot or a Room repair ever needs it, 
 - **It needs warm-up.** ScioSense state roughly **3 minutes** before readings are meaningful, plus
   a longer first-use conditioning period. That is precisely what §8's `WARMING_UP` state exists
   for: on a gift's first power-on the screen must say "Warming up…" and show `"--"`, not a wrong
-  number that later moves. Take the exact conditioning figure from the datasheet at GF-02 — this
+  number that later moves. Take the exact conditioning figure from the datasheet at AU-02 — this
   repo does not take heater or warm-up numbers from memory (`inventory.md:415`).
 - **Its current is a hotplate current, not a microamp one.** It will not trouble the 3.3 V rail the
   way the SCD41's 205 mA pulse would, but the figure goes in `inventory.md` measured, not guessed.
@@ -218,7 +218,7 @@ is the same thing — people. They co-vary, which is why ScioSense's own Figure 
 tracking a reference NDIR sensor closely across two meeting sessions, and why their Figure 4 argues
 `eCO₂` is *better* than NDIR in a bedroom or bathroom, because it also catches odours and
 bio-effluents a pure CO₂ sensor is blind to. Driving a ventilation prompt from it is the sensor's
-designed purpose, not an abuse of it. **So the Gift shows a stuffiness reading and does say "open a
+designed purpose, not an abuse of it. **So the Aura shows a stuffiness reading and does say "open a
 window."**
 
 **The one failure mode to know about, stated once and then designed around.** The correlation runs
@@ -252,7 +252,7 @@ difference between the two parts, because it is real and the earlier draft blurr
 the ENS160's `eCO₂` is a vendor-engineered, NDIR-validated output with a documented purpose. The
 ENS160 is allowed on screen. It is still not allowed to be called CO₂.
 
-**`gift_view_model` carries the host test** — asserting that the eCO₂ value always reaches the UI
+**`aura_view_model` carries the host test** — asserting that the eCO₂ value always reaches the UI
 and MQTT through its estimated-label path, and that no code path emits it under a bare CO₂ name or
 entity id. The test now guards the label rather than suppressing the value.
 
@@ -302,36 +302,36 @@ separately), and it **has a fan**, so G3 is being traded away deliberately rathe
 
 ## 6. Firmware architecture
 
-AtmosMesh Gift becomes a fourth product under ADR-0001's existing four-layer scheme — one
+AtmosMesh Aura becomes a fourth product under ADR-0001's existing four-layer scheme — one
 PlatformIO project, one explicit composition root, shared host-tested domain code.
 
 ```text
 firmware/
   include/atmosmesh/
-    gift_pins.hpp            CYD pin map + CN1 I2C assignment, one place
-    gift_profile.hpp         ProductProfile entry: atmosmesh-gift-v1
+    aura_pins.hpp            CYD pin map + CN1 I2C assignment, one place
+    aura_profile.hpp         ProductProfile entry: atmosmesh-aura-v1
     air_band.hpp             TVOC / AQI -> named band + verdict wording [host-tested]
     reading_state.hpp        WARMING_UP | OK | STALE | FAULT            [host-tested]
     wifi_credentials.hpp     SSID/PSK validation, NVS record shape      [host-tested]
     provisioning.hpp         the provisioning state machine             [host-tested]
-    gift_view_model.hpp      every string the UI draws, incl. "--"      [host-tested]
-    gift_openmeteo.hpp       JSON -> outdoor reading struct             [host-tested]
-    gift_mqtt_contract.hpp   GiftMqttState, extends the D-007 contract  [host-tested]
+    aura_view_model.hpp      every string the UI draws, incl. "--"      [host-tested]
+    aura_openmeteo.hpp       JSON -> outdoor reading struct             [host-tested]
+    aura_mqtt_contract.hpp   AuraMqttState, extends the D-007 contract  [host-tested]
   src/
     air_band.cpp  reading_state.cpp  wifi_credentials.cpp
-    provisioning.cpp  gift_view_model.cpp  gift_openmeteo.cpp     <- native env
-    gift_display.cpp      LovyanGFX panel + LVGL bind      \
-    gift_touch.cpp        XPT2046, bit-banged               |
-    gift_sensors.cpp      ENS160+AHT20 + BME280, one bus   |  device only,
-    gift_nvs_store.cpp    Preferences/NVS                   |  excluded from
-    gift_net.cpp          Wi-Fi + NTP + Open-Meteo client   |  the native env
-    gift_ui_*.cpp         one file per screen              /
-    products/atmosmesh_gift_v1.cpp   the composition root
+    provisioning.cpp  aura_view_model.cpp  aura_openmeteo.cpp     <- native env
+    aura_display.cpp      LovyanGFX panel + LVGL bind      \
+    aura_touch.cpp        XPT2046, bit-banged               |
+    aura_sensors.cpp      ENS160+AHT20 + BME280, one bus   |  device only,
+    aura_nvs_store.cpp    Preferences/NVS                   |  excluded from
+    aura_net.cpp          Wi-Fi + NTP + Open-Meteo client   |  the native env
+    aura_ui_*.cpp         one file per screen              /
+    products/atmosmesh_aura_v1.cpp   the composition root
 ```
 
 **The rule that makes this testable:** anything that decides *what* to show is a pure function in
 the native env with Unity tests written first (AGENTS.md workflow step 3, GUIDELINES §A3). Anything
-that touches a pin or a socket is a thin device-only file with no logic in it. `gift_view_model`
+that touches a pin or a socket is a thin device-only file with no logic in it. `aura_view_model`
 is the seam — it turns readings and state into the exact strings and colour-band enums the LVGL
 layer paints, so the screen's behaviour on a dead sensor is a host test, not a bench observation.
 
@@ -355,7 +355,7 @@ unchanged; this is an addition, not a migration.
 
 **MQTT stays exactly as D-007 and D-019 define it,** and ships **disabled**. A gift recipient with
 no broker must never see an error about one. Settings gains an "Advanced → Home Assistant" panel
-that, when filled in, brings up the existing `mqtt_session` machinery with a `GiftMqttState` built
+that, when filled in, brings up the existing `mqtt_session` machinery with an `AuraMqttState` built
 from the same `MqttReading{value, valid, age_ms}` shape the other products use — so a stopped
 sensor reaches Home Assistant as *unavailable*, never as clean air.
 
@@ -484,8 +484,8 @@ behaviour is verified without a bench.
 
 These belong in `agent-context/INBOX.md` as decisions before any part is bought or any story opened.
 
-1. **Product name.** `Gift` fits the existing one-word-noun family (Room, Spot, Aqua, Grove) and
-   states the intent. Alternatives: `Glass`, `Desk`, `Cube`. *Recommended: Gift.*
+1. ~~**Product name.**~~ **Answered 2026-09-20 → D-037: AtmosMesh Aura.** The working title was
+   `Gift`; the operator vetoed it as naming the occasion rather than the object. See D-037.
 2. ~~**Sensor tier.**~~ **Answered 2026-09-20 → D-036: ENS160 + AHT20 for gas, BME280 for
    climate, SHT41 kept as the fleet spare, no CO₂ sensor.** See §5. The MH-Z19C upgrade path stays
    open and GPIO35 is reserved for it.
@@ -506,13 +506,13 @@ not displace a ready MVP story:
 
 | Story | Outcome | Gate |
 | --- | --- | --- |
-| GF-01 | CYD unit identified from its own silicon: display controller, touch controller, board suffix, RGB LED and LDR exercised | A self-test image reports every device over serial and on screen |
-| GF-02 | CN1 I²C bus proven with one sensor, pull-ups measured, 3.3 V rail watched under load | Meter (or scope) evidence on the rail; `inventory.md` updated with measured facts, replacing the community pin map with probed ones |
-| GF-03 | Host-tested domain: `air_band`, `reading_state`, `wifi_credentials`, `provisioning`, `gift_view_model` | `task test` green, tests written first |
-| GF-04 | LVGL 9 + LovyanGFX bring-up with runtime panel detection; the Now screen renders from fake readings | Both on-hand units render correctly from one image |
-| GF-05 | Provisioning end to end: wizard, keyboard, test-before-save, inline failure, SetupAP + join QR, forget | A factory-reset unit joins a network with no serial cable touched |
-| GF-06 | ENS160+AHT20 and BME280 live, four reading states visible on demand, `eCO2` shown as an estimate | Sensor unplugged mid-run shows FAULT not a frozen number; a host test proves every `eCO2` path carries the estimated label and none emits a bare `co2` name or entity id |
-| GF-07 | Open-Meteo: geocoding search, forecast, outdoor AQI, NTP clock | Works with no account and no key |
-| GF-08 | Optional MQTT + Home Assistant discovery, off by default | Existing D-007 contract unchanged |
-| GF-09 | Enclosure, self-heating measured against a reference thermometer, offset documented or designed out | §4.1 closed with numbers |
-| GF-10 | 48-hour unattended run, then hand it over | Power-loss, sensor-loss and network-loss behaviour all observed |
+| AU-01 | CYD unit identified from its own silicon: display controller, touch controller, board suffix, RGB LED and LDR exercised | A self-test image reports every device over serial and on screen |
+| AU-02 | CN1 I²C bus proven with one sensor, pull-ups measured, 3.3 V rail watched under load | Meter (or scope) evidence on the rail; `inventory.md` updated with measured facts, replacing the community pin map with probed ones |
+| AU-03 | Host-tested domain: `air_band`, `reading_state`, `wifi_credentials`, `provisioning`, `aura_view_model` | `task test` green, tests written first |
+| AU-04 | LVGL 9 + LovyanGFX bring-up with runtime panel detection; the Now screen renders from fake readings | Both on-hand units render correctly from one image |
+| AU-05 | Provisioning end to end: wizard, keyboard, test-before-save, inline failure, SetupAP + join QR, forget | A factory-reset unit joins a network with no serial cable touched |
+| AU-06 | ENS160+AHT20 and BME280 live, four reading states visible on demand, `eCO2` shown as an estimate | Sensor unplugged mid-run shows FAULT not a frozen number; a host test proves every `eCO2` path carries the estimated label and none emits a bare `co2` name or entity id |
+| AU-07 | Open-Meteo: geocoding search, forecast, outdoor AQI, NTP clock | Works with no account and no key |
+| AU-08 | Optional MQTT + Home Assistant discovery, off by default | Existing D-007 contract unchanged |
+| AU-09 | Enclosure, self-heating measured against a reference thermometer, offset documented or designed out | §4.1 closed with numbers |
+| AU-10 | 48-hour unattended run, then hand it over | Power-loss, sensor-loss and network-loss behaviour all observed |
