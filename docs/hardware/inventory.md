@@ -740,6 +740,52 @@ specified **portrait, 240 x 320**, which is the panel's native orientation. Sett
 change. Note the related portrait trap: the XPT2046's touch axes do not follow the panel rotation,
 so touch must be re-checked whenever rotation changes.
 
+### CYD unit 1 — measured on the bench 2026-09-20 (ESPHome spike)
+
+Unit `20:50:0d:34:46:3c` (unit 1), re-confirmed by `esptool` at the start of this session:
+ESP32-D0WD-V3 rev v3.1, 4 MB, CH340 on `/dev/ttyUSB0`. These are **measurements from a running
+image**, not community reference. Source: the ESPHome bring-up spike, `firmware/spike/`.
+
+| Fact | Measured value |
+| --- | --- |
+| **Display controller** | Renders correctly as **ILI9341** with `invert_colors: false`, colour order **BGR**, `Mirror_x: YES`. The driver wrote `MADCTL 0x48`. Not a register read, but the panel accepts the ILI9341 command set and produces correct colours and geometry |
+| **Panel dimensions** | **240 x 320**, reported by the driver and matched by LVGL at `rotation: 0` |
+| **Pin map** | The community map is **correct on this unit**: TFT on SPI2 (CLK 14, SDO 13, SDI 12, CS 15, DC 2), touch on SPI3 (CLK 25, SDO 32, SDI 39, CS 33, IRQ 36) |
+| **Touch** | XPT2046 responds with sensible coordinates and pressure (e.g. `[2681, 2453] z=1944` under a real finger). Working |
+| **CN1 I²C** | Bus initialises on SDA 27 / SCL 22 at 100 kHz and **recovers cleanly** when idle. `Found no devices` — correct, nothing was wired yet |
+| **Flash used** | **1,098,703 bytes** for a full LVGL + Wi-Fi + 3-sensor image |
+| **Partition layout** | ESPHome's own table: `app0` and `app1` each **0x1c0000 = 1,835,008 B (1.75 MB)**, plus 384 KB nvs. The image is **59.9 %** of one slot |
+| **Static RAM** | 50,108 B of 180,736 B DRAM (27.7 %); IRAM 80,303 B of 131,072 B (61.3 %) |
+
+**The flash-budget worry in the design is resolved, in the good direction.** The adversarial review
+estimated 1.6–1.9 MB and warned it would overflow the Arduino `default.csv` 1.28 MB slots. The real
+figure is **1.10 MB**, and ESPHome ships 1.75 MB slots, so **dual-OTA fits with 40 % headroom**.
+Caveats before this is reused for the bespoke build: this image has **no TLS client**, no
+Open-Meteo, no chart and only the default fonts, all of which the product adds.
+
+**Two real defects surfaced that the design had not accounted for:**
+
+- **`GPIO36` has no internal pull-up.** The boot log carries
+  `gpio_pullup_en(85): GPIO number error (input-only pad has no internal PU)` when the touch
+  interrupt is attached. GPIO36 is an input-only pad; the touch IRQ therefore needs an **external**
+  pull-up or must be polled instead. This compounds the known ESP32 errata 3.11 interaction (ADC1
+  sampling pulls GPIO36/39 low), which is why the spike does not read the LDR.
+- **LVGL blocks for ~88 ms at startup**, over ESPHome's 50 ms component budget
+  (`lvgl took a long time for an operation (88 ms)`). Harmless here, but it is exactly the
+  render-versus-sensor contention the design's two-task split exists to prevent, appearing on the
+  first run.
+
+**Also worth keeping:** ESPHome performs **I²C bus recovery automatically** and logged
+`Recovery: bus successfully recovered`. The review flagged that this repo's own `i2c_bus.cpp` has
+no 9-clock recovery — so this is a capability the bespoke route would have to add by hand.
+
+**Re the "left/right 25 %" fault:** reproduced and explained, and it is **not** a hardware or
+controller problem. The spike's widgets were hard-coded 240 px wide; when LVGL's surface was
+320 px (landscape), the remaining 80 px was simply never painted, and because LVGL owns the
+framebuffer — ESPHome rejects `auto_clear_enabled` alongside LVGL — that strip showed stale GRAM
+rather than black. Widgets are now 100 %-width. This is the same class of fault as the
+`cyd-dashboard` image: **a rotation/geometry mismatch, not a CGRAM offset.**
+
 ### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
 
 Two seller images ([back](../assets/inventory/gc9b72-round-tft-back-2026-09-19.png),

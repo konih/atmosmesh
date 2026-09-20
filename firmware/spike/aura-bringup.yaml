@@ -92,7 +92,10 @@ display:
     spi_id: spi_tft
     cs_pin: GPIO15
     dc_pin: GPIO2
-    rotation: 0
+    # Must stay false: ESPHome rejects auto_clear together with LVGL, because LVGL owns the
+    # framebuffer. That is fine once the rotation is right, since LVGL paints its own screen
+    # background across the whole surface -- but it is also why a rotation mismatch shows up as
+    # *garbage* rather than as black, which is what made the first bench result look alarming.
     auto_clear_enabled: false
     update_interval: never
 
@@ -271,6 +274,23 @@ sensor:
 # close enough to the intended product UI that writing seven stories of C++ is not worth it?
 # ---------------------------------------------------------------------------------------------
 lvgl:
+  # Q1 KNOB 1 OF 2. 2026-09-20 bench result: with no rotation the surface came up 320 wide, so the
+  # 240-wide widgets left the right ~80 px unpainted -- garbage, since LVGL owns the framebuffer
+  # and auto_clear cannot be used with it. The panel's native scan on this unit is LANDSCAPE, so
+  # the portrait the product wants needs a 90 deg turn. That is also the honest explanation of the
+  # cyd-dashboard fault: a rotation mismatch, as inventory.md concluded, not a CGRAM offset.
+  #
+  # NOTE for the bespoke-vs-ESPHome decision (Q5): rotation, auto_clear and lambdas must all move
+  # out of the `display:` block once LVGL is enabled -- ESPHome rejects them there. LVGL owns the
+  # display, and the YAML does not let you forget it.
+  # Q1 KNOB 1 OF 2 -- and the one that actually bit.
+  # 2026-09-20 bench: the panel reports 240x320 and `rotation: 90` made LVGL 320x240, i.e.
+  # LANDSCAPE. The product wants portrait, so rotation stays 0 and LVGL matches the panel 1:1.
+  # The "right 25% garbled" seen on the first flash was NOT a controller fault: the widgets were
+  # hard-coded 240 wide on a 320-wide surface, and LVGL owns the framebuffer (auto_clear is
+  # rejected with LVGL), so the unpainted strip showed stale GRAM. Widgets are now 100%-width so
+  # that confound cannot return.
+  rotation: 0
   displays:
     - tft
   touchscreens:
@@ -287,12 +307,17 @@ lvgl:
             text: "1/3  DISPLAY TEST"
             align: TOP_MID
             y: 6
+        - label:
+            id: lbl_res
+            align: TOP_MID
+            y: 22
+            text: "expect 240 x 320 portrait"
         # Full-width bars: if the left or right edge is missing, the panel is not being addressed
         # across its full width -- the fault the cyd-dashboard firmware showed.
         - obj:
             x: 0
             y: 30
-            width: 240
+            width: 100%
             height: 40
             bg_color: 0xFF0000
             bg_opa: COVER
@@ -300,7 +325,7 @@ lvgl:
         - obj:
             x: 0
             y: 70
-            width: 240
+            width: 100%
             height: 40
             bg_color: 0x00FF00
             bg_opa: COVER
@@ -308,7 +333,7 @@ lvgl:
         - obj:
             x: 0
             y: 110
-            width: 240
+            width: 100%
             height: 40
             bg_color: 0x0000FF
             bg_opa: COVER
@@ -320,7 +345,7 @@ lvgl:
         - button:
             align: BOTTOM_MID
             y: -6
-            width: 200
+            width: 90%
             height: 30
             widgets: [ label: { text: "Next: sensors", align: CENTER } ]
             on_click:
@@ -366,7 +391,7 @@ lvgl:
         - button:
             align: BOTTOM_MID
             y: -6
-            width: 200
+            width: 90%
             height: 30
             widgets: [ label: { text: "Next: typing test", align: CENTER } ]
             on_click:
@@ -387,7 +412,7 @@ lvgl:
             id: ta_test
             align: TOP_MID
             y: 62
-            width: 224
+            width: 90%
             height: 40
             one_line: true
             placeholder_text: "tap here, then type"
@@ -395,7 +420,7 @@ lvgl:
             id: kb_test
             textarea: ta_test
             align: BOTTOM_MID
-            width: 240
+            width: 100%
             height: 150
         - button:
             align: TOP_LEFT
