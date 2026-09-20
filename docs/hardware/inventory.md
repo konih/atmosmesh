@@ -650,16 +650,59 @@ one edge *and clip the same width of content off the opposite edge*. The operato
 complete and unsquashed, so nothing is being clipped. The two faults produce bands of the same
 width for different reasons, and the noise-after-reboot observation separates them.
 
-**Most likely cause, to check first:** `TFT_HEIGHT` set to **240** instead of **320**. Under
-TFT_eSPI a landscape rotation takes its width from `TFT_HEIGHT`, so a 240x240 configuration — a
-common default in ST7789 setups, since many ST7789 boards really are 240x240 — yields a 240 px
-landscape width on a 320 px panel. The equivalent LVGL-side cause is `hor_res` left at 240 while
-the panel is driven rotated. Check, in order:
+**The firmware on the board is identified.** It is
+`PlatformRelay/.tooling/third-party/cyd-dashboard/`, a clone of upstream `Matt-Housley/cyd-dashboard`
+at `v1.18.033`, cloned 2026-09-19 14:37 and built at 15:00 — with the stock backup taken at 14:38,
+one minute after the clone and before the build. Pristine checkout, no local commits, so the
+configuration below is upstream's, unmodified. It uses **LovyanGFX**, not TFT_eSPI.
 
-1. `TFT_WIDTH` / `TFT_HEIGHT` in the other project's `User_Setup.h` or `build_flags` — expect
-   **240 and 320**.
-2. LVGL's `hor_res` / `ver_res` against the rotation actually set by `setRotation()`.
-3. Whether the display buffer is sized from the same constants the flush callback uses.
+Its `include/lgfx_config.h`, verbatim on the lines that matter:
+
+```cpp
+lgfx::Panel_ILI9341  _panel_instance;     // hard-wired to ILI9341
+cfg.memory_width     = 240;   // -DCYD_PANEL_W=240
+cfg.memory_height    = 320;   // -DCYD_PANEL_H=320
+cfg.panel_width      = 240;
+cfg.panel_height     = 320;
+cfg.offset_x         = 0;
+cfg.offset_y         = 0;
+cfg.offset_rotation  = 5;     // upstream comment: ODD value is what swaps the axes
+cfg.invert           = false;
+cfg.rgb_order        = false;
+```
+with `tft.setRotation(1)` in `src/main.cpp:616`.
+
+**Both earlier hypotheses in this entry are now disproved by the config itself, and both are
+withdrawn:**
+
+- **Not a `CGRAM_OFFSET` shift.** `offset_x` and `offset_y` are **0**. No offset is applied at all,
+  so no offset can be shifting the image.
+- **Not a wrong width/height.** `memory_*` and `panel_*` are **correctly 240 x 320**. The
+  "`TFT_HEIGHT` left at 240" guess was wrong, and it was also aimed at the wrong library — this
+  project has no `User_Setup.h` and never used TFT_eSPI.
+
+**Prime suspect: `offset_rotation = 5` interacting with `setRotation(1)`.** LovyanGFX adds
+`offset_rotation` to the rotation index, and an odd result swaps the axes. `5` is a hand-tuned,
+board-specific value — the kind of constant that is correct for the author's unit and wrong for
+another. If the combination lands the panel in a **320-wide landscape** surface while the
+application lays out for **240-wide**, the application writes only columns 0-239 and the remaining
+80 columns are never addressed — which is precisely the observed band of uninitialised GRAM noise,
+with the drawn portion complete and correctly scaled. This mechanism is inferred from the config
+and the symptom; the upstream application's own layout assumptions have not been read.
+
+**Secondary suspect: a panel-class mismatch.** The config is hard-wired `Panel_ILI9341`, while this
+board's controller is still unidentified and the dual-USB heuristic points at ST7789. Note what the
+symptom does and does not tell us here: ST7789 and ILI9341 share most of their MIPI DCS opcodes
+(`CASET`, `RASET`, `RAMWR`, `MADCTL`, `COLMOD`), so an ST7789 driven by ILI9341 init will often
+render *mostly* correctly — which is why 75 % of a correct, unsquashed image does **not** settle
+which die is fitted. It only tells us the controller is responding to that command set.
+
+**What this means for AtmosMesh Aura: very little, and that is the useful conclusion.** This is a
+third-party dashboard's hand-tuned rotation constant on a board whose hardware is proven sound. It
+is not a defect to fix and not a blocker. `AU-01` writes its own bring-up image, sets the native
+portrait rotation directly (`offset_rotation = 0`, rotation 0, 240 x 320), and reads the controller
+ID register rather than inheriting anyone's constants. Reflash the stock backup or `AU-01`'s image;
+do not spend time debugging `cyd-dashboard`.
 
 **Which edge is blank is not consistently recorded.** The fault was first described as the *left*
 ~25 %, then as the *right* ~25 %. Both were reported by eye and the board may have been viewed in
