@@ -24,10 +24,10 @@ and the sensor and MQTT choices follow from giftability rather than from what th
 
 | # | Rule | Consequence |
 | --- | --- | --- |
-| G1 | The recipient never sees a terminal | Wi-Fi, location and units are set on-screen |
+| G1 | The recipient never sees a terminal | **Operator-confirmed 2026-09-20:** "I don't want to gift something that has to be flashed." Wi-Fi, **location** and units are set on-screen. The location picker (§7) is an explicit operator requirement, not an inferred one |
 | G2 | No account, no API key, no subscription | Open-Meteo (keyless) for outdoor data; never OpenWeatherMap |
 | G3 | It is silent | No fan. This disqualifies every PM sensor with a fan — see §5 |
-| G4 | It is useful with no network at all | Onboard sensors render offline; the network adds outdoor data, clock and optional MQTT |
+| G4 | It is useful with no network at all | **Operator-confirmed 2026-09-20:** "It should be usable without wifi, so in case it's not in wifi, it should at least show the sensor data." Onboard sensors render offline and are never gated on a network; the network only *adds* outdoor data, clock and optional MQTT |
 | G5 | It never lies about a number | An estimate may be shown, and must be labelled as one: only a real NDIR-class part may carry a bare `CO₂` label (D-002, `inventory.md:415`). A stale reading is never a zero |
 | G6 | It is recoverable without tools | On-screen "forget network"; a fallback setup access point |
 
