@@ -120,12 +120,14 @@ datasheet also asks for < 30 mV unloaded supply ripple and recommends the sensor
   heuristic is that **dual-USB boards (Micro-B + Type-C) are the ST7789 "CYD2USB" variant with
   inverted colours** — and the inventory records the operator's units as having *both* connectors
   (`inventory.md:567`). **Working hypothesis: these are ST7789, colour-inverted.**
-  **2026-09-20: a unit running firmware from another project shows the left ~25 % of the panel
-  blank.** In landscape that is 320 px across and 25 % of 320 is **80** — exactly the
-  `CGRAM_OFFSET` an ST7789 config applies for a panel that does not need it. This is the predicted
-  failure mode arriving on schedule, and the diagnosis is written up in
-  `inventory.md` under "CYD — operator chip reading and a display fault". It is also *useful*:
-  whichever setting renders full width identifies the controller and answers AU-01.
+  **2026-09-20: a unit running firmware from another project leaves a ~25 % band of the panel
+  unwritten** — it shows uninitialised GRAM noise after a reboot while the rest of the image is
+  complete and correctly scaled. Diagnosed in `inventory.md` as a **dimension mismatch**: a
+  240-wide area drawn onto a 320-wide surface, most likely `TFT_HEIGHT` left at 240. **The stock
+  firmware renders the full screen, so the hardware is sound.** Note that this fault is
+  *driver-agnostic* and therefore says nothing about which controller is fitted — AU-01 still has
+  to read the ID register. Fixing it and delivering §8's required portrait orientation are the
+  same change: `TFT_WIDTH 240`, `TFT_HEIGHT 320`, rotation 0.
 - **The touch controller is now confirmed**: the operator read `XPT2046` off the PCB on
   2026-09-20, so these are resistive `R` units, and §4.2's objection stands on evidence rather
   than on the supplied stylus. The display controller is **not** readable this way — it is

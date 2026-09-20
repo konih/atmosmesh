@@ -625,49 +625,60 @@ under the panel's flex, not a package on the PCB. It cannot be read by eye at al
 by reading the controller's ID register from running firmware, which is what story `AU-01` exists
 for.
 
-#### Fault: the left ~25 % of the panel does not display
+#### Fault: a ~25 % band of the panel is never written — diagnosed 2026-09-20
 
-Observed 2026-09-20 on the plugged-in unit, which is **running firmware flashed from another
-project, not the stock image**. That matters: it moves a configuration cause ahead of a hardware
-one.
+Observed on the plugged-in unit while running firmware flashed from another project.
 
-**Leading hypothesis — a column-offset mismatch, and the arithmetic is suggestive.** In landscape
-the panel is 320 px across and **25 % of 320 is 80** — which is exactly the `CGRAM_OFFSET` value
-that ST7789 configurations apply for panels smaller than the controller's 240×320 addressable
-area. A driver applying an 80-pixel offset that this panel does not need (or omitting one it does)
-shifts the whole image sideways and leaves a dead band of precisely this width. The `2432S028`
-ships with **either** ILI9341 **or** ST7789 and they need different settings, so a config written
-for the wrong one produces this class of fault.
+**Operator evidence, in the order it arrived:**
 
-**This makes the fault diagnostic rather than merely annoying:** whichever driver setting renders
-the full width identifies the controller actually fitted, and answers `AU-01`'s main question.
+| Observation | What it rules in or out |
+| --- | --- |
+| **The stock firmware renders the whole screen** | **Hardware is sound.** Panel, flex, backlight and controller all work. FPC seating and panel damage are out. The fault is in the other project's configuration |
+| The dead band is **not lit** in normal operation | Nothing is being written there, so it stays at whatever the controller last held |
+| **After a reboot the band shows random noise** | The decisive one. Noise is uninitialised GRAM being scanned out, which means the controller **is** addressing and scanning those columns — the firmware simply never writes to them |
+| The image is **not squashed** | Content is drawn at correct scale. This rules out a wrong width/height *scaling* |
+| A **~25 % band at one edge** is blank | 25 % of a 320 px landscape axis is **80**, and 320 − 240 = 80 |
 
-Test cheapest-first, and record the result here:
+**Diagnosis: the firmware draws a 240-wide area onto a 320-wide surface.** Every observation fits
+a dimension/rotation mismatch and nothing else does. The drawn region is correct, correctly scaled,
+and simply does not extend to the panel's full width; the remaining 80 columns are never addressed,
+so they hold power-on garbage until something overwrites them.
 
-1. **Is the dead band lit or dark?** Lit and uniform means the panel and backlight are fine and
-   the controller is being addressed wrongly — a software cause. Dark means look at backlight and
-   panel instead.
-2. **Is the visible 75 % a *complete* image squashed, or a *cropped* one?** Cropped and shifted
-   points at an offset. Complete but squashed points at a wrong width/height pair.
-3. **Reflash the stock backup** — `PlatformRelay/.tooling/firmware-backups/esp32-2432s028_20500d34463c_stock-factory_2026-09-19.bin`
-   exists for exactly this and is why it was taken. **Stock renders full width → the fault is the
-   other project's display config, and the board is fine.** Stock shows the same band → hardware:
-   a partly seated or cracked FPC, or panel damage. This single test splits the diagnosis and
-   should be done before any config is edited. (The backup is for unit 1; confirm the MAC first.)
-4. Only then try the driver permutations: `ILI9341_2_DRIVER` with no offset versus `ST7789_DRIVER`
-   with `CGRAM_OFFSET`, plus `TFT_RGB_ORDER` and inversion, per the two `User_Setup.h` variants in
-   the community reference.
+**This is not the `CGRAM_OFFSET` shift proposed in the first draft of this entry, and that
+hypothesis is withdrawn.** An offset shift moves the image sideways: it would leave a blank band at
+one edge *and clip the same width of content off the opposite edge*. The operator reports the image
+complete and unsquashed, so nothing is being clipped. The two faults produce bands of the same
+width for different reasons, and the noise-after-reboot observation separates them.
 
-**Note against the earlier inference.** The 2026-09-19 entry reasoned that dual USB sockets
-(Micro-B + Type-C) suggest the ST7789 "CYD2USB" variant. That remains an inference from a
-community heuristic, and this fault is consistent with it — but a fault consistent with a
-hypothesis is not confirmation of it. Only the ID register settles the controller.
+**Most likely cause, to check first:** `TFT_HEIGHT` set to **240** instead of **320**. Under
+TFT_eSPI a landscape rotation takes its width from `TFT_HEIGHT`, so a 240x240 configuration — a
+common default in ST7789 setups, since many ST7789 boards really are 240x240 — yields a 240 px
+landscape width on a 320 px panel. The equivalent LVGL-side cause is `hor_res` left at 240 while
+the panel is driven rotated. Check, in order:
 
-**Design consequence, recorded in [the Aura design](../design/atmosmesh-aura.md) §3 and §6.** This
-is the concrete instance of the risk that argued for LovyanGFX with runtime panel construction
-over TFT_eSPI's compile-time panel selection: with two units of possibly differing variants, a
-single image that probes the controller and configures offset, inversion and colour order at run
-time removes this whole failure mode instead of debugging it once per board.
+1. `TFT_WIDTH` / `TFT_HEIGHT` in the other project's `User_Setup.h` or `build_flags` — expect
+   **240 and 320**.
+2. LVGL's `hor_res` / `ver_res` against the rotation actually set by `setRotation()`.
+3. Whether the display buffer is sized from the same constants the flush callback uses.
+
+**Which edge is blank is not consistently recorded.** The fault was first described as the *left*
+~25 %, then as the *right* ~25 %. Both were reported by eye and the board may have been viewed in
+different orientations. It does not change the diagnosis — an unwritten band is an unwritten band —
+but note the true edge when the fix is applied, because left-versus-right distinguishes which end
+of the address range is being missed.
+
+**Correction to a claim made earlier in this entry: this fault does *not* identify the display
+controller.** A width/height mismatch is driver-agnostic — ILI9341 and ST7789 both misbehave
+identically when told the wrong dimensions — so fixing it reveals nothing about which die is
+fitted. `AU-01` still has to read the controller's ID register. The only weak hint remains that a
+240x240 default is more idiomatic of ST7789 configurations, which is suggestive of the CYD2USB
+variant and no more than that.
+
+**Design consequence, in [the Aura design](../design/atmosmesh-aura.md) §3 and §8.** The product is
+specified **portrait, 240 x 320**, which is the panel's native orientation. Setting `TFT_WIDTH 240`,
+`TFT_HEIGHT 320` with rotation 0 fixes this fault and delivers the required orientation in the same
+change. Note the related portrait trap: the XPT2046's touch axes do not follow the panel rotation,
+so touch must be re-checked whenever rotation changes.
 
 ### Round 360x360 GC9B72 TFT — listing images reviewed 2026-09-19
 
