@@ -28,7 +28,7 @@ and the sensor and MQTT choices follow from giftability rather than from what th
 | G2 | No account, no API key, no subscription | Open-Meteo (keyless) for outdoor data; never OpenWeatherMap |
 | G3 | It is silent | No fan. This disqualifies every PM sensor with a fan — see §5 |
 | G4 | It is useful with no network at all | Onboard sensors render offline; the network adds outdoor data, clock and optional MQTT |
-| G5 | It never lies about a number | D-002 applies unchanged: only a real NDIR-class part may be labelled CO₂; a stale reading is never a zero |
+| G5 | It never lies about a number | An estimate may be shown, and must be labelled as one: only a real NDIR-class part may carry a bare `CO₂` label (D-002, `inventory.md:415`). A stale reading is never a zero |
 | G6 | It is recoverable without tools | On-screen "forget network"; a fallback setup access point |
 
 ## 2. Reference survey
@@ -195,30 +195,66 @@ invisible on a gift's display. If a second Spot or a Room repair ever needs it, 
   The module carries a regulator for the ENS160's 1.8 V core; **feed it 3V3** until that regulator
   and the board's pull-ups have been inspected.
 
-### The trade-off this makes, stated plainly
+### The eCO₂ register: displayed, but never labelled bare "CO₂"
 
-**A VOC index is not a substitute for CO₂, and it is important not to pretend otherwise.** They
-answer different questions:
+**Operator direction, 2026-09-20:** the product wants *useful* information, not laboratory
+accuracy — "CO₂ is high" is worth showing even when the ppm figure is not trustworthy. That is
+the right call for this product, and an earlier draft of this document was wrong to exclude the
+ENS160's `eCO₂` output entirely. What follows is the corrected rule and the evidence for it.
 
-- **CO₂** answers *"have too many people been breathing in here too long?"* — it is the number that
-  justifies the instruction **open a window**.
-- **VOC** answers *"has something been released into the air?"* — cooking, spray, solvent, damp.
+**What `eCO₂` actually is.** The ENS160 has four metal-oxide elements and **no CO₂-sensitive
+element at all**. ScioSense are explicit about how the register is produced (datasheet v1.3 §5.2):
 
-A closed bedroom overnight can reach 1500 ppm CO₂ while a VOC index sits at a contented 100.
-Doing without a CO₂ sensor means the gift **has no ventilation prompt** and is an
-air-*cleanliness* monitor rather than an air-*freshness* one. That is a perfectly good gift — it
-is what most commercial sub-€50 "air quality" gadgets actually are — but the UI must stop promising
-what it cannot measure, so the verdict line in §8 says what the ENS160's index genuinely supports
-and never *"open a window"*.
+> "The ENS160 **reverses the proportional correlation of VOCs and CO₂, by providing a standardized
+> output signal in ppmCO₂-equivalents from measured VOCs plus hydrogen**, thereby adhering to
+> today's CO₂ standards."
+
+and the front-page footnote: *"eCO2 = equivalent CO2 values for **compatibility with HVAC
+ventilation standards**."* So `eCO₂` is the VOC measurement re-expressed in ppm units, on purpose,
+so it can drive the ventilation logic that HVAC equipment already speaks.
+
+**Why that is good enough here.** In a home the dominant source of both VOC bio-effluents and CO₂
+is the same thing — people. They co-vary, which is why ScioSense's own Figure 3 shows `eCO₂`
+tracking a reference NDIR sensor closely across two meeting sessions, and why their Figure 4 argues
+`eCO₂` is *better* than NDIR in a bedroom or bathroom, because it also catches odours and
+bio-effluents a pure CO₂ sensor is blind to. Driving a ventilation prompt from it is the sensor's
+designed purpose, not an abuse of it. **So the Gift shows a stuffiness reading and does say "open a
+window."**
+
+**The one failure mode to know about, stated once and then designed around.** The correlation runs
+through VOCs, so it breaks where the two decouple:
+
+- **False alarm (harmless):** a squirt of window cleaner or a hot pan can push `eCO₂` past 2000
+  while real CO₂ has not moved. The device says ventilate; ventilating is never wrong.
+- **False quiet (the one that matters):** CO₂ from a source that emits little VOC — a gas hob, a
+  wood burner, fermentation — climbs without moving `eCO₂` much. A device that promised "CO₂"
+  would be silently wrong in exactly the case a CO₂ monitor is bought for.
+
+That second case is why the **label** matters even though the **signal** is useful.
 
 ### The one hard rule on this part
 
-**The ENS160 reports an `eCO₂` register. It is derived from VOC, not measured.** Under D-002 it must
-never be drawn on the screen, named in a label, published to MQTT, or stored in the trend history —
-not even with a qualifier. The firmware reads TVOC and the air-quality index and ignores the eCO₂
-register entirely, and `gift_view_model` has a host test asserting that no code path can put it on
-screen. This is the single easiest way for this product to start lying, and D-002 exists because
-this project has been here before with the MQ135.
+**The reading is shown. The word "CO₂", unqualified, is not used for it.** This is a labelling
+rule, not a precision rule, and it is narrower than the earlier draft:
+
+| Allowed | Not allowed |
+| --- | --- |
+| A stuffiness / freshness band and arc driven by `eCO₂`, with a verdict including *"open a window"* | A bare `CO₂` label, or a headline number presented as a CO₂ measurement |
+| The figure shown in the detail row as **`eCO₂ ~1200 (estimated from VOC)`** | `1200 ppm CO₂` |
+| MQTT publication under an `eco2_estimated` key, with its own Home Assistant name | Publishing it as the `co2` entity, where Home Assistant and any dashboard will treat it as measured |
+| A Settings "About the sensors" line explaining it is estimated | Silence about how it is produced |
+
+The reason is recorded and pre-existing: `inventory.md:415` already states that the ENS160's eCO₂
+is *"an eCO₂ estimate derived from VOC — not a CO₂ measurement; only the SCD41 may be labelled
+CO₂."* [D-002](../../agent-context/decisions.md) governs the same ground for the MQ135. Note the
+difference between the two parts, because it is real and the earlier draft blurred it: the MQ135's
+"CO₂ ppm" is a hobby formula applied to an uncalibrated resistance and is simply invented, whereas
+the ENS160's `eCO₂` is a vendor-engineered, NDIR-validated output with a documented purpose. The
+ENS160 is allowed on screen. It is still not allowed to be called CO₂.
+
+**`gift_view_model` carries the host test** — asserting that the eCO₂ value always reaches the UI
+and MQTT through its estimated-label path, and that no code path emits it under a bare CO₂ name or
+entity id. The test now guards the label rather than suppressing the value.
 
 ### Still free in stock, if a later revision wants better
 
@@ -389,27 +425,31 @@ target; swipe works where touch allows but is never the only way to reach anythi
 │  Living room            ⌂ 21:04    [ wifi ]│
 │                                            │
 │        ╭──────────╮                        │
-│        │  Clean   │      21.4 °C           │
+│        │  Stuffy  │      21.4 °C           │
 │        │          │      47 % RH           │
 │        ╰──────────╯                        │
-│         Air quality     TVOC  120 ppb      │
-│                                            │
-│      Nothing unusual in the air            │
+│        Air quality      eCO₂ ~1240 est.    │
+│                         TVOC  340 ppb      │
+│      Open a window                         │
 ├────────────────────────────────────────────┤
 │   Now  │  Trend  │  Outside  │  Settings   │
 └────────────────────────────────────────────┘
 ```
 
-- **The word is the headline, not the number.** Since the brief says exact measurements are not
-  required, the ENS160's air-quality index is shown as a band word in the arc — *Clean · Normal ·
-  Something in the air · Poor* — with the raw TVOC in small type beside it for anyone who wants it.
-  A gift should be readable by someone who has never heard of a VOC, and a band is a more honest
-  presentation of a self-baselining metal-oxide sensor than a large precise-looking number.
-- **The wording must not overclaim (G5).** With no CO₂ sensor fitted, the verdict describes what
-  the index actually supports — *"nothing unusual in the air"*, *"cooking or cleaning detected"* —
-  and never *"stuffy"* or *"open a window"*, which are ventilation claims only a CO₂ measurement
-  earns. And the ENS160's `eCO₂` register never reaches this screen at all (§5). If the MH-Z19C
-  option is added later, the ventilation verdict arrives with it and this line changes.
+- **The word is the headline, the numbers are the supporting detail.** The brief is useful
+  information, not laboratory accuracy, so the arc carries a band word — *Clean · Normal · Stuffy ·
+  Poor* — driven by the ENS160's air-quality index and `eCO₂`. A gift should be readable by someone
+  who has never heard of a VOC, and a band is the honest presentation of a self-baselining
+  metal-oxide sensor. The figures sit beside it in small type for anyone who wants them.
+- **The ventilation verdict is in, and `eCO₂` drives it** — *"open a window"* is exactly what
+  ScioSense built this output for (§5). What the UI does not do is print a bare `CO₂` label: the
+  detail row reads **`eCO₂ ~1240 est.`**, and a Settings → About line says it is estimated from
+  VOC. The value is surfaced; the unearned word is not. That keeps `inventory.md:415` intact
+  ("only the SCD41 may be labelled CO₂") while giving the recipient the prompt that makes the
+  object useful.
+- **Approximate by design, and it should look approximate.** The `~` and the `est.` are not
+  hedging for its own sake — they stop a recipient from comparing 1240 against a number they
+  googled, when a squirt of window cleaner can move this reading by a thousand.
 - **Temperature and humidity come from the BME280, never the AHT20** (§5). The AHT20's numbers are
   the ENS160's compensation inputs and are not displayed.
 - **The RGB LED is the ambient layer** — a slow, gamma-corrected glow in the current air-quality
@@ -471,7 +511,7 @@ not displace a ready MVP story:
 | GF-03 | Host-tested domain: `air_band`, `reading_state`, `wifi_credentials`, `provisioning`, `gift_view_model` | `task test` green, tests written first |
 | GF-04 | LVGL 9 + LovyanGFX bring-up with runtime panel detection; the Now screen renders from fake readings | Both on-hand units render correctly from one image |
 | GF-05 | Provisioning end to end: wizard, keyboard, test-before-save, inline failure, SetupAP + join QR, forget | A factory-reset unit joins a network with no serial cable touched |
-| GF-06 | ENS160+AHT20 and BME280 live, four reading states visible on demand, `eCO2` unreachable | Sensor unplugged mid-run shows FAULT not a frozen number; a host test proves no path draws `eCO2` |
+| GF-06 | ENS160+AHT20 and BME280 live, four reading states visible on demand, `eCO2` shown as an estimate | Sensor unplugged mid-run shows FAULT not a frozen number; a host test proves every `eCO2` path carries the estimated label and none emits a bare `co2` name or entity id |
 | GF-07 | Open-Meteo: geocoding search, forecast, outdoor AQI, NTP clock | Works with no account and no key |
 | GF-08 | Optional MQTT + Home Assistant discovery, off by default | Existing D-007 contract unchanged |
 | GF-09 | Enclosure, self-heating measured against a reference thermometer, offset documented or designed out | §4.1 closed with numbers |

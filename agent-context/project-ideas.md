@@ -163,8 +163,9 @@ credential storage in NVS** and **a settings UI**.
   limitation is pins, not speed: **three free GPIOs, one input-only**, so every sensor is I²C on
   the CN1 header.
 - **ENS160 + AHT20** (free, the spare of two) — the gas sensor, plus the AHT20 that feeds its
-  compensation. Per D-036 the ENS160's `eCO2` register is never displayed or published: it is
-  derived from VOC, not measured, and D-002 applies.
+  compensation. Per D-036 its `eCO2` output *is* shown and drives the "open a window" verdict, but
+  always labelled as derived (`eCO2 ~1240 est.`) — it is computed from VOC, not measured, and only
+  the SCD41 may carry a bare CO2 label.
 - **BME280** (free, 6 in stock) — the temperature and humidity the screen actually shows, on its
   own lead away from both the ENS160's hotplate and the board's heat.
 - **Onboard RGB LED** — a slow ambient glow in the air-quality colour, readable across a room
@@ -172,7 +173,7 @@ credential storage in NVS** and **a settings UI**.
 - **Open-Meteo** (keyless, no signup) — outdoor conditions, forecast, and the outdoor PM2.5 / AQI
   that stands in for the fan-based particulate sensor a silent gift cannot have.
 
-Deliberately *not* CO₂ (D-036): the SCD41 is the expensive part and the one free unit is reserved
-for Room v2, and the brief is a gift rather than an instrument. The design records the cost of that
-honestly — a gas index is not a ventilation prompt, so the UI never says "open a window" — and
-keeps the input-only `GPIO35` free for a ~EUR 20 MH-Z19C if that prompt is ever missed.
+Deliberately no *measured* CO₂ (D-036): the SCD41 is the expensive part and the one free unit is
+reserved for Room v2, and the brief is a gift rather than an instrument. The ENS160's derived eCO2
+carries the ventilation prompt instead, labelled as an estimate. The input-only `GPIO35` stays free
+for a ~EUR 20 MH-Z19C if a real NDIR reading is ever wanted.

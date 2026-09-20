@@ -560,15 +560,36 @@
   ENS160's metal-oxide hotplate and will read high. It feeds the ENS160's own compensation; the
   BME280, on its own lead away from that module and away from the CYD's warm board, is what the
   display and any MQTT state use. The firmware must never average or substitute the two.
-- **The ENS160's `eCO₂` register is not used, at all.** It is derived from VOC, not measured, so
-  under [D-002](#d-002--mq135-is-not-co) it must never be drawn, labelled, published or stored —
-  not even qualified. `gift_view_model` carries a host test asserting no code path can surface it.
-  This is the most likely way for this product to start lying, and it is the same failure mode
-  D-002 was written for.
+- **The ENS160's `eCO₂` is displayed, and labelled as derived — amended 2026-09-20.** The first
+  draft of this decision suppressed the register entirely. The operator disagreed, on the grounds
+  that "CO₂ is high" is useful information even when the ppm figure is not trustworthy, and that
+  labelling it `eCO₂ (derived)` is truthful. That is correct and the rule is now narrower: **the
+  value is shown and published; the bare word `CO₂` is not used for it.** On screen it reads
+  `eCO₂ ~1240 est.`, it drives the stuffiness band and the "open a window" verdict, it publishes
+  under an `eco2_estimated` key rather than as a `co2` entity, and Settings carries an "About the
+  sensors" line saying it is estimated from VOC.
+- **Why the narrower rule is still consistent with D-002.** ScioSense state the derivation
+  explicitly (ENS160 datasheet v1.3 §5.2): the part "reverses the proportional correlation of VOCs
+  and CO₂, by providing a standardized output signal in ppmCO₂-equivalents from measured VOCs plus
+  hydrogen", for "compatibility with HVAC ventilation standards". There is no CO₂-sensitive
+  element on the die. But this is a vendor-engineered, NDIR-validated output with a documented
+  ventilation purpose — materially different from the MQ135's "CO₂ ppm", which is a hobby formula
+  applied to an uncalibrated resistance and is simply invented. D-002 and `inventory.md:415` both
+  govern the **label** ("only the SCD41 may be labelled CO₂"), not the utility of the signal, and
+  the label is what this product withholds.
+- **The failure mode that justifies the label rule, recorded once.** The correlation runs through
+  VOCs. A cleaning spray can push `eCO₂` past 2000 with real CO₂ unmoved — harmless, the device
+  says ventilate and ventilating is never wrong. The reverse is the one that matters: CO₂ from a
+  low-VOC source (gas hob, wood burner, fermentation) climbs without moving `eCO₂`. A device that
+  promised "CO₂" would be silently wrong in exactly the case a CO₂ monitor is bought for.
+- **`gift_view_model` guards the label, not the value.** Its host test asserts the eCO₂ figure
+  reaches the UI and MQTT through the estimated-label path, and that no path emits it under a bare
+  CO₂ name or entity id.
 - **Counterpoint recorded, since the design recommended otherwise.** The proposal recommended
   SGP41 + SHT41 — also €0 from stock — on the grounds that Sensirion's gas-index algorithm
   self-baselines to the room and needs no conditioning ritual, where the ENS160 needs roughly three
-  minutes of warm-up plus a longer first-use conditioning period and carries the eCO₂ trap above.
+  minutes of warm-up plus a longer first-use conditioning period and carries the eCO₂ labelling
+  trap above.
   The operator's counter is sound for this product: one module and one cable covers gas *and* the
   ENS160's compensation climate, exactness is explicitly not the goal, and it keeps the better
   Sensirion parts free for builds that do need precision. The SGP41 remains an easy later upgrade
