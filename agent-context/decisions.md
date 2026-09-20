@@ -628,6 +628,55 @@
   entity ids and stored NVS keys, which is exactly why this was settled before any code was
   written.
 
+### D-038 — The gas-label guard narrows to a claim rule, and Aura ships the fleet MQTT credential
+
+- **Status:** Accepted 2026-09-20, operator decision, answering CRITICAL findings C1 and C2 of the
+  [adversarial review](inbox/2026-09-20-aura-adversarial-review.md).
+
+**Part 1 — the guard (C1).** `mqtt_payload_mentions_forbidden_gas_label()` previously rejected any
+payload containing `co2`, `CO2` or `ppm` anywhere. That blocked AtmosMesh Aura's honest
+`eco2_estimated` key and its `ppm` unit, so D-036 asserted a consistency with D-002 it did not
+have. Operator direction: "fix the test to not block this."
+
+- **Rule now:** the guard strips an exact allow-list of derived-estimate tokens
+  (`eco2_estimated`, `eCO2`) and then applies the old scan to the remainder. A `ppm` unit passes
+  **only** on a payload that also carries one of those tokens.
+- **Why this is narrowing and not gutting:** D-002's purpose is that a non-NDIR reading may not be
+  labelled as a CO2 *measurement*. A payload that says `eCO2 (estimated from VOC)` makes no such
+  claim; one that says `co2` does. Every bare claim still fails, including the MQ135 case the rule
+  was written for (`gas_index` carrying a `ppm` unit), and the near-misses `{"eco2":1240}` and
+  `{"eco2_estimated":...,"co2":...}` both still fail.
+- **Evidence:** two tests written first and failing
+  (`firmware/test/test_mqtt/test_mqtt_contract.cpp`), then `firmware/src/mqtt_contract.cpp`
+  changed; `pio test -e native` green at **184 cases**, up from 182.
+- **Risk accepted:** the allow-list is the only hole in D-002's sole machine guard. A careless
+  future addition (a bare `eco2`) would silently license the forbidden claim. The list is
+  commented to say so.
+
+**Part 2 — the fleet MQTT credential ships on the gift (C2).** The review found that AU-10 hands
+over a device whose NVS holds the fleet-wide kumulus Mosquitto `homeassistant` password, with no
+factory reset anywhere in the project. Operator direction: *"You can ship the fleet wide password,
+the people I gift this to will be people I trust."*
+
+- **Decision:** proceed. Aura may be provisioned with the fleet broker credential before handover.
+- **Counterpoint recorded, since the design advised otherwise and was overruled.** The risk is not
+  about trusting the recipient, who is trusted by definition here. It is that (a) the credential is
+  *fleet-wide*, so its blast radius is the whole home-automation stack rather than one device;
+  (b) NVS is unencrypted, so it is readable by anyone who later holds the hardware — resale,
+  repair, loss, disposal — not only by the recipient; and (c) rotating it afterwards means
+  re-flashing every AtmosMesh node, so the cost of a mistake is paid later and by the operator.
+  **The cheaper version of exactly what was asked for** is a dedicated broker user whose ACL is
+  limited to `home/air/atmosmesh-aura-+/#` and its discovery topics: the gift still works, nothing
+  about the recipient experience changes, and the blast radius collapses to one device. That is
+  one line of Mosquitto config. It is offered once here and not raised again.
+- **Consequence:** the factory-reset work from C2 is **not** dropped, but its justification
+  changes. It is no longer a secrets-scrubbing gate before handover; it is ordinary recipient
+  functionality — moving house, changing router, passing the device on — and it stays in the
+  backlog on that basis.
+- **Revisit if:** the broker password is ever rotated, or a unit leaves the circle of trust
+  (sold, given on, returned, lost). Either event makes the ACL-scoped user the cheaper option
+  retroactively.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

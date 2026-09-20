@@ -707,6 +707,37 @@ void test_spot_session_replays_retained_discovery_and_availability_on_reconnect(
     TEST_ASSERT_FALSE(actions[9].retained);
 }
 
+// D-038: the Aura product publishes a VOC-derived estimate. The label rule is narrowed from
+// "no payload may contain co2/ppm anywhere" to "no payload may claim a CO2 *measurement*", so
+// the explicitly-allowed `eco2_estimated` token and its unit survive while every bare CO2 claim
+// still fails. The guard is the only machine-enforced form of D-002 and must not become a
+// rubber stamp: these tests pin both halves.
+void test_eco2_estimated_token_is_allowed_for_derived_estimates(void) {
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "{\"eco2_estimated\":1240}"));
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "home/air/atmosmesh-aura-0001/eco2_estimated"));
+    TEST_ASSERT_FALSE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "{\"name\":\"eCO2 (estimated from VOC)\",\"unit_of_measurement\":\"ppm\","
+        "\"value_template\":\"{{ value_json.eco2_estimated }}\"}"));
+}
+
+void test_bare_co2_claims_are_still_rejected(void) {
+    // A real CO2 entity, which only an NDIR part may publish. Still forbidden.
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label("{\"co2\":812}"));
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label("{\"CO2\":812}"));
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label("{\"co2_ppm\":812}"));
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "home/air/atmosmesh-0001/co2"));
+    // The MQ135 case D-002 was written for: a gas reading dressed up with a ppm unit.
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "{\"gas_index\":300,\"unit_of_measurement\":\"ppm\"}"));
+    // Near-misses must not slip through on a naive substring strip.
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label(
+        "{\"eco2_estimated\":1240,\"co2\":812}"));
+    TEST_ASSERT_TRUE(atmosmesh::mqtt_payload_mentions_forbidden_gas_label("{\"eco2\":1240}"));
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_mqtt_ids_and_topics_are_station_not_room);
@@ -737,5 +768,7 @@ int main() {
     RUN_TEST(test_spot_state_marks_missing_probe_and_radar_invalid_rather_than_zero);
     RUN_TEST(test_spot_discovery_is_the_spot_entity_set);
     RUN_TEST(test_spot_session_replays_retained_discovery_and_availability_on_reconnect);
+    RUN_TEST(test_eco2_estimated_token_is_allowed_for_derived_estimates);
+    RUN_TEST(test_bare_co2_claims_are_still_rejected);
     return UNITY_END();
 }

@@ -435,10 +435,44 @@ bool mqtt_payload_mentions_forbidden_room(std::string_view text) {
            text.find("office") != std::string_view::npos;
 }
 
+namespace {
+
+// Tokens that name a VOC-derived estimate rather than a CO2 measurement. They are removed before
+// the forbidden-label scan, so the estimate can be published honestly while everything they do
+// not cover still fails. Keep this list exact and short: it is the only hole in D-002's machine
+// guard, and a loose entry (a bare "eco2", say) would silently license the claim D-002 forbids.
+constexpr std::string_view kDerivedEstimateTokens[] = {
+    "eco2_estimated",  // the MQTT state key and topic segment
+    "eCO2",            // the human-facing name, as in "eCO2 (estimated from VOC)"
+};
+
+std::string strip_derived_estimate_tokens(std::string_view text, bool& found_any) {
+    std::string out(text);
+    found_any = false;
+    for (std::string_view token : kDerivedEstimateTokens) {
+        for (std::size_t at = out.find(token); at != std::string::npos; at = out.find(token)) {
+            out.erase(at, token.size());
+            found_any = true;
+        }
+    }
+    return out;
+}
+
+}  // namespace
+
+// D-002 forbids labelling a non-NDIR reading as CO2. D-038 narrows that from "the substring co2
+// may not appear" to "a CO2 *measurement* may not be claimed", so AtmosMesh Aura can publish the
+// ENS160's VOC-derived estimate under an explicitly-derived name. A `ppm` unit is tolerated only
+// on a payload that also carries one of those derived tokens; on its own it is still the MQ135
+// dressed up as a measurement, which is the case this guard was written for.
 bool mqtt_payload_mentions_forbidden_gas_label(std::string_view text) {
-    return text.find("co2") != std::string_view::npos ||
-           text.find("CO2") != std::string_view::npos ||
-           text.find("ppm") != std::string_view::npos;
+    bool carries_derived_estimate = false;
+    const std::string scanned = strip_derived_estimate_tokens(text, carries_derived_estimate);
+
+    if (scanned.find("co2") != std::string::npos || scanned.find("CO2") != std::string::npos) {
+        return true;
+    }
+    return scanned.find("ppm") != std::string::npos && !carries_derived_estimate;
 }
 
 }  // namespace atmosmesh

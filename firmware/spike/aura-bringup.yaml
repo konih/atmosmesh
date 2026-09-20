@@ -1,0 +1,417 @@
+# AtmosMesh Aura — one-day bring-up spike (ESPHome)
+#
+# THIS IS NOT THE PRODUCT. It is a throwaway diagnostic whose only job is to answer, in one day
+# and with no C++ written, the five questions that otherwise stay open until story AU-09.
+# See README.md in this directory for the runbook and the results table to fill in.
+#
+# Target: Sunton ESP32-2432S028 "Cheap Yellow Display", portrait 240x320.
+# Pin map below is the community reference (docs/hardware/inventory.md) and is a HYPOTHESIS.
+# If the display stays black, the pin map is the first thing to doubt, not the last.
+
+substitutions:
+  name: aura-spike
+  # Pigtail sensors on the CN1 header. HenrysCat's working sketch on this exact board uses
+  # SDA=27 / SCL=22; we keep that orientation so the 4-pin cable colours line up.
+  i2c_sda: GPIO27
+  i2c_scl: GPIO22
+
+esphome:
+  name: ${name}
+  friendly_name: Aura Spike
+  # The spike must prove G4: sensors render with no network at all. ESPHome does not block
+  # startup on Wi-Fi, but make it explicit so a failed join never gates the display.
+  on_boot:
+    priority: 600
+    then:
+      - light.turn_on:
+          id: status_led
+          red: 100%
+          green: 60%
+          blue: 0%
+          brightness: 30%
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+
+# ---------------------------------------------------------------------------------------------
+# Q2 — does the CN1 I2C bus work, and do all three sensors ACK?
+# `scan: true` prints every responding address at boot. Expect:
+#   0x38 AHT20 (fixed)   0x52 or 0x53 ENS160 (ADDR pin)   0x76 BME280 (SDO low)
+# A missing address here is a wiring or pull-up problem, NOT a sensor fault. Record what you see.
+# ---------------------------------------------------------------------------------------------
+i2c:
+  - id: bus_cn1
+    sda: ${i2c_sda}
+    scl: ${i2c_scl}
+    scan: true
+    # Start conservative. The sensor breakouts carry their own 10k pull-ups; adding 4.7k in
+    # parallel lands near 2.4k effective, which is legal but should be measured, not assumed.
+    frequency: 100kHz
+
+# Two SPI buses: the TFT has its own, and the XPT2046 touch controller has its own pins.
+spi:
+  - id: spi_tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+  - id: spi_touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+# ---------------------------------------------------------------------------------------------
+# Q1 — WHICH DISPLAY CONTROLLER IS FITTED?
+#
+# ESPHome cannot read the controller's ID register, so this spike identifies it EMPIRICALLY.
+# Start with ILI9341 below. Then judge against the test card the UI draws:
+#
+#   correct geometry, correct colours          -> ILI9341, no inversion.     Record it.
+#   correct geometry, colours look negative    -> add `invert_colors: true`.
+#   nothing, or a shifted/garbled image        -> switch to `model: ST7789V`.
+#
+# The dual Micro-USB + Type-C sockets on these units point at the ST7789 "CYD2USB" variant, so
+# do not be surprised if ILI9341 is wrong. Whichever renders the RED/GREEN/BLUE bars in the right
+# order, at the right size, with no dead band, is the answer -- write it into inventory.md.
+#
+# Note `rotation: 0` = native portrait 240x320, which is what the product wants and which also
+# sidesteps the rotation fault the cyd-dashboard firmware showed on this board.
+# ---------------------------------------------------------------------------------------------
+display:
+  - platform: ili9xxx
+    id: tft
+    model: ILI9341
+    # invert_colors: true      # <- uncomment if the test card looks like a photographic negative
+    spi_id: spi_tft
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    rotation: 0
+    auto_clear_enabled: false
+    update_interval: never
+
+# Backlight on GPIO21. PWM so the spike can also answer whether dimming is smooth.
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+    frequency: 20000Hz
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    id: backlight
+    name: Backlight
+    restore_mode: ALWAYS_ON
+    default_transition_length: 250ms
+  # The on-board RGB LED is active-low. The product wants this as an ambient air-quality glow,
+  # so the spike proves it works and that gamma/observability are acceptable.
+  - platform: rgb
+    id: status_led
+    name: Status LED
+    red: led_r
+    green: led_g
+    blue: led_b
+
+output:
+  - platform: ledc
+    pin: { number: GPIO4, inverted: true }
+    id: led_r
+  - platform: ledc
+    pin: { number: GPIO16, inverted: true }
+    id: led_g
+  - platform: ledc
+    pin: { number: GPIO17, inverted: true }
+    id: led_b
+
+# ---------------------------------------------------------------------------------------------
+# Q4 — is typing on this resistive panel tolerable?
+# The touchscreen must be calibrated per unit. These x/y min/max are a STARTING POINT copied from
+# community configs; if taps land offset, that is expected -- adjust and record the values, because
+# the product will need them stored per unit anyway.
+#
+# NOTE (ESP32 errata 3.11): sampling ADC1 pulls GPIO36/39 low briefly, and those are the touch IRQ
+# and MISO. This spike deliberately does NOT read the LDR on GPIO34, so that interaction cannot
+# confound the touch results. Test the LDR separately, afterwards.
+# ---------------------------------------------------------------------------------------------
+touchscreen:
+  - platform: xpt2046
+    id: touch
+    spi_id: spi_touch
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    update_interval: 50ms
+    threshold: 400
+    calibration:
+      x_min: 280
+      x_max: 3860
+      y_min: 340
+      y_max: 3860
+    transform:
+      swap_xy: false
+
+# ---------------------------------------------------------------------------------------------
+# Q3 — the sensors, and the self-heating question.
+#
+# The AHT20 rides on the ENS160 module next to its hotplate, so it is the COMPENSATION source
+# only. The BME280 on its own lead is the honest room reading. Both are exposed here precisely so
+# the spike can show the gap between them -- that difference IS the self-heating measurement.
+# ---------------------------------------------------------------------------------------------
+sensor:
+  - platform: aht10
+    variant: AHT20
+    i2c_id: bus_cn1
+    address: 0x38
+    temperature:
+      id: aht_temp
+      name: "AHT20 temperature (compensation only)"
+    humidity:
+      id: aht_hum
+      name: "AHT20 humidity (compensation only)"
+    update_interval: 10s
+
+  - platform: bme280_i2c
+    i2c_id: bus_cn1
+    address: 0x76
+    temperature:
+      id: room_temp
+      name: "BME280 room temperature"
+      accuracy_decimals: 1
+    humidity:
+      id: room_hum
+      name: "BME280 room humidity"
+      accuracy_decimals: 0
+    pressure:
+      id: room_press
+      name: "BME280 pressure"
+    update_interval: 10s
+
+  - platform: ens160_i2c
+    i2c_id: bus_cn1
+    address: 0x52
+    eco2:
+      id: gas_eco2
+      name: "ENS160 eCO2 (derived from VOC, NOT a CO2 measurement)"
+    tvoc:
+      id: gas_tvoc
+      name: "ENS160 TVOC"
+    aqi:
+      id: gas_aqi
+      name: "ENS160 AQI-UBA"
+    compensation:
+      temperature: aht_temp
+      humidity: aht_hum
+    update_interval: 10s
+
+  # The live difference between the two thermometers. This is the number story AU-09 exists to
+  # find, and the spike gets it on day one instead of at story nine.
+  - platform: template
+    name: "Self-heating offset (AHT20 minus BME280)"
+    id: heat_offset
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    lambda: |-
+      if (isnan(id(aht_temp).state) || isnan(id(room_temp).state)) return NAN;
+      return id(aht_temp).state - id(room_temp).state;
+    update_interval: 10s
+
+# ---------------------------------------------------------------------------------------------
+# Q5 — what does ESPHome's LVGL actually look and feel like?
+# This is the decision input for "bespoke firmware vs ESPHome YAML". Judge it honestly: is this
+# close enough to the intended product UI that writing seven stories of C++ is not worth it?
+# ---------------------------------------------------------------------------------------------
+lvgl:
+  displays:
+    - tft
+  touchscreens:
+    - touch
+  # No PSRAM on this ESP32-WROOM-32, so keep the draw buffer modest. If the device crashes or
+  # renders in torn bands, lower this first -- and record the value, because it is a direct input
+  # to the RAM budget the review says the design is missing.
+  buffer_size: 25%
+  pages:
+    # --- Page 1: the display test card. Answers Q1. ---
+    - id: page_testcard
+      widgets:
+        - label:
+            text: "1/3  DISPLAY TEST"
+            align: TOP_MID
+            y: 6
+        # Full-width bars: if the left or right edge is missing, the panel is not being addressed
+        # across its full width -- the fault the cyd-dashboard firmware showed.
+        - obj:
+            x: 0
+            y: 30
+            width: 240
+            height: 40
+            bg_color: 0xFF0000
+            bg_opa: COVER
+            widgets: [ label: { text: "RED   full width", align: CENTER, text_color: 0xFFFFFF } ]
+        - obj:
+            x: 0
+            y: 70
+            width: 240
+            height: 40
+            bg_color: 0x00FF00
+            bg_opa: COVER
+            widgets: [ label: { text: "GREEN full width", align: CENTER, text_color: 0x000000 } ]
+        - obj:
+            x: 0
+            y: 110
+            width: 240
+            height: 40
+            bg_color: 0x0000FF
+            bg_opa: COVER
+            widgets: [ label: { text: "BLUE  full width", align: CENTER, text_color: 0xFFFFFF } ]
+        - label:
+            align: BOTTOM_MID
+            y: -40
+            text: "Bars must reach BOTH edges.\nColours must match their names.\nIf negative: invert_colors.\nIf wrong/garbled: try ST7789V."
+        - button:
+            align: BOTTOM_MID
+            y: -6
+            width: 200
+            height: 30
+            widgets: [ label: { text: "Next: sensors", align: CENTER } ]
+            on_click:
+              - lvgl.page.next
+
+    # --- Page 2: live sensors. Answers Q2 and Q3, and proves G4 (no Wi-Fi needed). ---
+    - id: page_sensors
+      widgets:
+        - label:
+            text: "2/3  SENSORS (offline OK)"
+            align: TOP_MID
+            y: 6
+        - label:
+            id: lbl_room
+            align: TOP_LEFT
+            x: 8
+            y: 40
+            text: "BME280:  --"
+        - label:
+            id: lbl_aht
+            align: TOP_LEFT
+            x: 8
+            y: 70
+            text: "AHT20:   --"
+        - label:
+            id: lbl_offset
+            align: TOP_LEFT
+            x: 8
+            y: 100
+            text_color: 0xFF8800
+            text: "OFFSET:  --"
+        - label:
+            id: lbl_gas
+            align: TOP_LEFT
+            x: 8
+            y: 140
+            text: "ENS160:  warming up"
+        - label:
+            align: TOP_LEFT
+            x: 8
+            y: 200
+            text: "ENS160 needs ~3 min warm-up.\nUntil then its numbers are\nmeaningless -- the product must\nshow '--', never a wrong value."
+        - button:
+            align: BOTTOM_MID
+            y: -6
+            width: 200
+            height: 30
+            widgets: [ label: { text: "Next: typing test", align: CENTER } ]
+            on_click:
+              - lvgl.page.next
+
+    # --- Page 3: the resistive typing test. Answers Q4. ---
+    - id: page_typing
+      widgets:
+        - label:
+            text: "3/3  TYPE A PASSWORD"
+            align: TOP_MID
+            y: 6
+        - label:
+            align: TOP_MID
+            y: 26
+            text: "Type a real Wi-Fi password here.\nIs this tolerable as a GIFT?"
+        - textarea:
+            id: ta_test
+            align: TOP_MID
+            y: 62
+            width: 224
+            height: 40
+            one_line: true
+            placeholder_text: "tap here, then type"
+        - keyboard:
+            id: kb_test
+            textarea: ta_test
+            align: BOTTOM_MID
+            width: 240
+            height: 150
+        - button:
+            align: TOP_LEFT
+            x: 8
+            y: 110
+            width: 100
+            height: 28
+            widgets: [ label: { text: "Back to 1", align: CENTER } ]
+            on_click:
+              - lvgl.page.show: page_testcard
+
+# Drive the labels from the sensors. Deliberately shows "--" when a reading is NaN, which is the
+# behaviour rule G5 demands and which HenrysCat's reference sketch gets wrong.
+sensor:
+  - platform: template
+    id: ui_tick
+    internal: true
+    update_interval: 2s
+    lambda: return 0;
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: lbl_room
+            text: !lambda |-
+              if (isnan(id(room_temp).state)) return {"BME280:  -- (no data)"};
+              char b[48];
+              snprintf(b, sizeof(b), "BME280:  %.1f C  %.0f %%", id(room_temp).state, id(room_hum).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_aht
+            text: !lambda |-
+              if (isnan(id(aht_temp).state)) return {"AHT20:   -- (no data)"};
+              char b[48];
+              snprintf(b, sizeof(b), "AHT20:   %.1f C  %.0f %%", id(aht_temp).state, id(aht_hum).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_offset
+            text: !lambda |-
+              if (isnan(id(heat_offset).state)) return {"OFFSET:  --"};
+              char b[48];
+              snprintf(b, sizeof(b), "OFFSET:  %+.1f C", id(heat_offset).state);
+              return {b};
+        - lvgl.label.update:
+            id: lbl_gas
+            text: !lambda |-
+              if (isnan(id(gas_tvoc).state)) return {"ENS160:  warming up / no data"};
+              char b[64];
+              snprintf(b, sizeof(b), "ENS160:  TVOC %.0f ppb  AQI %.0f", id(gas_tvoc).state, id(gas_aqi).state);
+              return {b};
+
+# ---------------------------------------------------------------------------------------------
+# Wi-Fi is OPTIONAL for this spike and deliberately last in the file.
+#
+# Leave `ssid`/`password` EMPTY and the device comes up in AP mode with a captive portal -- which
+# is itself part of what the spike evaluates, and which keeps the operator's real credentials out
+# of this file and out of git. The sensors and the display work with no network at all; that is
+# requirement G4 and the spike should be run at least once with no Wi-Fi to prove it.
+#
+# NEVER put the fleet MQTT credentials in this file. There is no MQTT here on purpose.
+# ---------------------------------------------------------------------------------------------
+wifi:
+  ap:
+    ssid: "Aura-Spike-Setup"
+    # Leave the AP open for the spike only. The product must generate a per-device random PSK.
+
+captive_portal:
