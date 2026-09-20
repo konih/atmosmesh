@@ -543,6 +543,45 @@
   still correct, since the physical inverter changes the electrical picture even though it
   happens to currently match the logical result already in effect.
 
+### D-036 — AtmosMesh Gift measures gas with the ENS160, climate with a BME280, and no CO₂
+
+- **Status:** Accepted 2026-09-20, operator decision, for the AtmosMesh Gift concept
+  ([design](../docs/design/atmosmesh-gift.md)). Not a wiring approval and not a reservation.
+- **Rule:** the Gift build uses the spare **ENS160 + AHT20** module for gas (ENS160 at `0x52`/`0x53`,
+  AHT20 fixed `0x38`) and a **BME280** (`0x76`) for the temperature and humidity the screen shows.
+  Both hang off the CYD's CN1 I²C header, which is the only sensor bus this board has. **No CO₂
+  sensor is fitted.** The single free SHT41 is deliberately left on the shelf as the fleet spare
+  across Room, Room v2 and Spot.
+- **Why:** the operator's brief is a gift, not an instrument — "it needs not to be exact
+  measurements" — and both parts are already unreserved stock, so the build costs nothing. The
+  SCD41 that a CO₂ reading would require is the expensive part (~€30–45) and the one unit in stock
+  is reserved for Room v2.
+- **The AHT20 is a compensation input, not a room reading.** It shares a small PCB with the
+  ENS160's metal-oxide hotplate and will read high. It feeds the ENS160's own compensation; the
+  BME280, on its own lead away from that module and away from the CYD's warm board, is what the
+  display and any MQTT state use. The firmware must never average or substitute the two.
+- **The ENS160's `eCO₂` register is not used, at all.** It is derived from VOC, not measured, so
+  under [D-002](#d-002--mq135-is-not-co) it must never be drawn, labelled, published or stored —
+  not even qualified. `gift_view_model` carries a host test asserting no code path can surface it.
+  This is the most likely way for this product to start lying, and it is the same failure mode
+  D-002 was written for.
+- **Counterpoint recorded, since the design recommended otherwise.** The proposal recommended
+  SGP41 + SHT41 — also €0 from stock — on the grounds that Sensirion's gas-index algorithm
+  self-baselines to the room and needs no conditioning ritual, where the ENS160 needs roughly three
+  minutes of warm-up plus a longer first-use conditioning period and carries the eCO₂ trap above.
+  The operator's counter is sound for this product: one module and one cable covers gas *and* the
+  ENS160's compensation climate, exactness is explicitly not the goal, and it keeps the better
+  Sensirion parts free for builds that do need precision. The SGP41 remains an easy later upgrade
+  and does not clash with anything chosen here.
+- **Consequence:** the 205 mA supply pulse that drove the design's power section disappears with
+  the SCD41. The ENS160 still drives a hotplate, so its current comes from its datasheet and is
+  then measured at GF-02, per this repo's standing rule that heater figures are not taken from
+  memory. The `WARMING_UP` reading state stops being a nicety and becomes required, because the
+  ENS160 genuinely has nothing useful to say for the first minutes after power-on.
+- **Revisit if:** the ventilation prompt is missed in use — a Winsen MH-Z19C (~€15–25, real NDIR)
+  can be added later on the otherwise useless input-only `GPIO35` via its PWM output, powered from
+  USB 5 V. `GPIO35` is kept free for exactly that.
+
 ## Additional accepted decision
 
 ### D-011 — One PlatformIO project with explicit product composition roots

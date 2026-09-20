@@ -22,7 +22,7 @@ photo-verifying parts before wiring — see [decisions.md](decisions.md) and
 | [Chill](#atmosmesh-chill) | Second brain for the fridge/freezer compressor | ESP32-C6, ADS1115, DS18B20, BME280, current clamp (buy) |
 | [Sprout](#atmosmesh-sprout) | Seedling-shelf / grow-light companion | ESP32-C3 SuperMini, SGP40, soil probes, DS18B20, VEML7700, IRLZ34 |
 | [Ear](#atmosmesh-ear) | 868 MHz sniffer bridge for store-bought RF sensors | classic ESP32 DevKit, RFM12S, spare OLED |
-| [Gift](#atmosmesh-gift) | Giftable CYD touchscreen air-quality + weather station, self-provisioning | ESP32-2432S028 CYD, SGP41, SHT41 |
+| [Gift](#atmosmesh-gift) | Giftable CYD touchscreen air-quality + weather station, self-provisioning | ESP32-2432S028 CYD, ENS160+AHT20, BME280 |
 
 ---
 
@@ -162,14 +162,17 @@ credential storage in NVS** and **a settings UI**.
 - **ESP32-2432S028 CYD** (2 unreserved) — 2.8" 240x320 touch TFT, RGB LED, LDR, speaker. Its real
   limitation is pins, not speed: **three free GPIOs, one input-only**, so every sensor is I²C on
   the CN1 header.
-- **SGP41** (free) — VOC Index and NOx Index, self-baselining, honest by construction.
-- **SHT41** (free) — accurate temperature and humidity, mounted at the far end of the pigtail so
-  the board's own heat does not corrupt it.
+- **ENS160 + AHT20** (free, the spare of two) — the gas sensor, plus the AHT20 that feeds its
+  compensation. Per D-036 the ENS160's `eCO2` register is never displayed or published: it is
+  derived from VOC, not measured, and D-002 applies.
+- **BME280** (free, 6 in stock) — the temperature and humidity the screen actually shows, on its
+  own lead away from both the ENS160's hotplate and the board's heat.
 - **Onboard RGB LED** — a slow ambient glow in the air-quality colour, readable across a room
   without looking at the screen.
 - **Open-Meteo** (keyless, no signup) — outdoor conditions, forecast, and the outdoor PM2.5 / AQI
   that stands in for the fan-based particulate sensor a silent gift cannot have.
 
-Deliberately *not* CO₂ in the recommended build: the SCD41 is the expensive part and the one free
-unit is reserved for Room v2. The design records the cost of that honestly — a VOC index is not a
-ventilation prompt — and offers a ~EUR 20 MH-Z19C on the input-only `GPIO35` as the upgrade path.
+Deliberately *not* CO₂ (D-036): the SCD41 is the expensive part and the one free unit is reserved
+for Room v2, and the brief is a gift rather than an instrument. The design records the cost of that
+honestly — a gas index is not a ventilation prompt, so the UI never says "open a window" — and
+keeps the input-only `GPIO35` free for a ~EUR 20 MH-Z19C if that prompt is ever missed.

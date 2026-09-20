@@ -31,23 +31,11 @@ Three findings shape it, all recorded with evidence in the design doc:
 
 ### Options
 
-**O-1 — Sensor set.** The obvious part is the SCD41 (true CO₂), and it is the expensive one
-(~€30–45); the one unit in stock is reserved for Room v2.
-
-- **(A) SGP41 + SHT41 — €0, both free in stock. *Recommended.*** VOC Index + NOx Index from a
-  self-baselining Sensirion algorithm, plus accurate temperature and humidity. Honest by
-  construction: an index, never a fabricated ppm.
-- (B) ENS160 + AHT20 — also €0, one module and one cable, gas and climate together. Weaker climate
-  accuracy, and the ENS160's `eCO₂` register is VOC-derived and must stay unused under D-002.
-- (C) A, plus a **Winsen MH-Z19C** (~€15–25) for real NDIR CO₂ — read as PWM on the otherwise
-  useless input-only `GPIO35`, powered from USB 5 V, leaving CN1 free for the I²C parts.
-- (D) Sensirion SEN55 — particulates included, but it has a fan and costs more than the SCD41.
-
-**The trade-off in (A) must be understood before it is chosen:** a VOC index is *not* a substitute
-for CO₂. CO₂ answers "has the room been breathed out?" and justifies **open a window**; VOC answers
-"has something been released into the air?". A closed bedroom can hit 1500 ppm CO₂ with a contented
-VOC index of 100. Choosing (A) means the gift loses the ventilation prompt and the UI wording must
-stop promising it (G5). (C) buys it back for ~€20.
+**O-1 — Sensor set. ANSWERED 2026-09-20 → [D-036](decisions.md).** ENS160 + AHT20 for gas,
+BME280 for the climate the screen shows, SHT41 kept as the fleet spare, no CO₂ sensor. The
+counterpoint (SGP41 + SHT41) and the reasoning are recorded in D-036. A Winsen MH-Z19C on the
+input-only `GPIO35` remains the upgrade path if the ventilation prompt is missed; that pin is kept
+free for it.
 
 **O-2 — Which CYD.** The two on hand are the resistive `R` variant (stylus supplied). Resistive
 touch needs deliberate pressure and does not glide; next to any phone it feels dated, which is the

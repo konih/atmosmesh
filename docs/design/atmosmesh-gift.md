@@ -92,11 +92,12 @@ and measure before trusting a bus.
 ### Power
 
 The CYD's 3.3 V LDO has little headroom once the panel and backlight are lit (`inventory.md:584`),
-so the sensor choice in §5 is partly a power decision. **With the recommended set — SGP41 and
-SHT41 — this stops being a problem:** both are single-digit-milliamp parts and the pigtail carries
-a load the rail will not notice. Confirm the SGP41's heater peak from its own datasheet before
-wiring (the repo does not take heater currents from memory), but nothing in that set approaches the
-rail's limit.
+so the sensor choice in §5 is partly a power decision. **With the chosen set — ENS160 + AHT20 and
+BME280 — this is not expected to be a problem:** the BME280 is a microamp part, and while the
+ENS160 drives a metal-oxide hotplate and is therefore not one, it is nowhere near the 205 mA pulse
+of the CO₂ sensor this design rejected. **Take the ENS160's actual figure from its datasheet and
+then measure it at GF-02** — this repo does not take heater currents from memory
+(`inventory.md:415`), and "not expected to be a problem" is a hypothesis until the rail is watched.
 
 It matters only if a **CO₂ sensor is added** (§5, optional). For the record, from the Sensirion
 SCD4x datasheet v1.5 Table 4 at VDD = 3.3 V — the part this design deliberately does *not* use:
@@ -155,20 +156,44 @@ constraints above written down rather than discovered later.
 
 ## 5. Sensors
 
-The SCD41 is the obvious sensor for this and it is also the expensive one (~€30–45). It is not
-required. **The recommended build below costs nothing — both parts are already free in the
-drawer** (`inventory.md` "Unreserved and looking for a project": *SGP40 and SGP41 … 1 SHT41 …
-the second ENS160+AHT20*).
+**Operator decision, 2026-09-20 (D-036):** ENS160 + AHT20 for gas — exact measurements are not
+required for this product — with BME280 for climate rather than spending the fleet's last SHT41.
+The SCD41 (~€30–45, and the one unit in stock is reserved for Room v2) is out.
 
-### Recommended build — €0, everything already in stock
+### The build — €0, both parts already free in the drawer
 
-| Part | Measures | I²C addr | Stock | Why this one |
+| Part | Measures | I²C addr | Stock | Role |
 | --- | --- | --- | --- | --- |
-| **Sensirion SGP41** | **VOC Index and NOx Index**, 1–500 | `0x59` | 1 free | The headline gas sensor, and a genuinely good one. Sensirion's gas-index algorithm **self-baselines to the room**, so it needs no calibration, no user action and no warm-up ritual — it just reports how the air compares to this room's own normal. Catches cooking, solvents, cleaning products, a full bin, a stuffy unaired room. Honest by construction: an index, not a fabricated ppm |
-| **Sensirion SHT41** | T, RH | `0x44` | 1 free | Accurate (±1.8 % RH), sub-µA, and — critically for §4.1 — small enough to sit at the far end of the pigtail away from the board's heat |
+| **ENS160 + AHT20** combo | ENS160: TVOC and an air-quality index. AHT20: T and RH | `0x52` or `0x53` (ADDR pin) + `0x38` (fixed) | 1 free (of 2; the other is Room v2's) | The gas sensor, and the ENS160's compensation climate source in one module — one cable for both |
+| **BME280** | T, RH, pressure | `0x76` (SDO low) | 6 free | The **room** climate reading, on its own short lead away from the ENS160's hotplate. See below for why this is not redundant |
 
-Two parts, two wires, one bus, no address clash, no fan, no heater the rail will notice, and
-nothing needing a pin this board does not have. Cost: a 4-pin pigtail and two pull-up resistors.
+No address collisions: `0x52`/`0x53`, `0x38`, `0x76` are all distinct. No fan, no 5 V rail, nothing
+needing a pin this board does not have. Cost: a 4-pin pigtail and two pull-up resistors.
+
+**Why a BME280 when the module already carries an AHT20.** The AHT20 sits on the same small PCB as
+the ENS160, whose metal-oxide hotplate runs warm by design. Its temperature is therefore a *sensor
+compensation* input, not a room reading — it will read high, and how high depends on the ENS160's
+duty cycle. §4.1 already says the board's heat is the main threat to an honest temperature; putting
+the room's thermometer on the gas module repeats that mistake in miniature. So: **the AHT20 feeds
+the ENS160's compensation, and the BME280 on its own lead is what the screen shows.** The firmware
+must keep these two straight and never average them.
+
+**The SHT41 stays on the shelf.** Exactly one is free, and it is the fleet's only spare across
+Room, Room v2 and Spot. Against six free BME280s, and against an operator brief that says exact
+measurements are not required, spending it here would be a poor trade — ±3 % RH versus ±1.8 % is
+invisible on a gift's display. If a second Spot or a Room repair ever needs it, it is still there.
+
+**Two things about the ENS160 that must be handled, not assumed:**
+
+- **It needs warm-up.** ScioSense state roughly **3 minutes** before readings are meaningful, plus
+  a longer first-use conditioning period. That is precisely what §8's `WARMING_UP` state exists
+  for: on a gift's first power-on the screen must say "Warming up…" and show `"--"`, not a wrong
+  number that later moves. Take the exact conditioning figure from the datasheet at GF-02 — this
+  repo does not take heater or warm-up numbers from memory (`inventory.md:415`).
+- **Its current is a hotplate current, not a microamp one.** It will not trouble the 3.3 V rail the
+  way the SCD41's 205 mA pulse would, but the figure goes in `inventory.md` measured, not guessed.
+  The module carries a regulator for the ENS160's 1.8 V core; **feed it 3V3** until that regulator
+  and the board's pull-ups have been inspected.
 
 ### The trade-off this makes, stated plainly
 
@@ -179,20 +204,29 @@ answer different questions:
   justifies the instruction **open a window**.
 - **VOC** answers *"has something been released into the air?"* — cooking, spray, solvent, damp.
 
-A closed bedroom overnight can reach 1500 ppm CO₂ while the VOC index sits at a contented 100.
-Dropping the SCD41 means the gift **loses the ventilation prompt** and becomes an
+A closed bedroom overnight can reach 1500 ppm CO₂ while a VOC index sits at a contented 100.
+Doing without a CO₂ sensor means the gift **has no ventilation prompt** and is an
 air-*cleanliness* monitor rather than an air-*freshness* one. That is a perfectly good gift — it
-is what most commercial sub-€50 "air quality" gadgets actually are — but the UI must then stop
-promising what it cannot measure, so the verdict line in §8 changes from *"Open a window"* to
-statements about what the VOC index genuinely supports.
+is what most commercial sub-€50 "air quality" gadgets actually are — but the UI must stop promising
+what it cannot measure, so the verdict line in §8 says what the ENS160's index genuinely supports
+and never *"open a window"*.
 
-### Also free in stock, as an alternative or an addition
+### The one hard rule on this part
 
-| Part | Measures | I²C addr | Verdict |
+**The ENS160 reports an `eCO₂` register. It is derived from VOC, not measured.** Under D-002 it must
+never be drawn on the screen, named in a label, published to MQTT, or stored in the trend history —
+not even with a qualifier. The firmware reads TVOC and the air-quality index and ignores the eCO₂
+register entirely, and `gift_view_model` has a host test asserting that no code path can put it on
+screen. This is the single easiest way for this product to start lying, and D-002 exists because
+this project has been here before with the MQ135.
+
+### Still free in stock, if a later revision wants better
+
+| Part | Measures | I²C addr | Note |
 | --- | --- | --- | --- |
-| **ENS160 + AHT20** combo | TVOC, an air-quality index, (eCO₂), plus T/RH from the AHT20 | `0x52`/`0x53` + `0x38` | 1 free. **One module, one cable, gas *and* climate** — the cheapest possible path if the SGP41 or SHT41 get claimed elsewhere. Two caveats: the AHT20 is a clear step down from the SHT41 on accuracy, and **the ENS160's "eCO₂" is derived from VOC, not measured — under D-002 it must never be drawn, labelled or published as CO₂.** Use its TVOC and index, ignore the eCO₂ register entirely |
-| **SGP40** | VOC Index only (no NOx) | `0x59` | 1 free. The SGP41's predecessor and a drop-in fallback if the SGP41 is wanted elsewhere. Same address, so the two cannot share a bus |
-| **BME280** | T, RH, pressure | `0x76` | 6 free. Substitute for the SHT41 if that gets claimed; ±3 % RH instead of ±1.8 %, and adds a pressure reading a gift recipient will not use |
+| **Sensirion SGP41** | VOC Index + NOx Index, 1–500 | `0x59` | 1 free. A genuinely better gas sensor than the ENS160 — its gas-index algorithm self-baselines to the room and needs no conditioning ritual. Not chosen here because the ENS160 module brings its own climate sensor in the same package and exact measurement is not the brief. A straightforward upgrade later; it does not clash with anything above |
+| **SGP40** | VOC Index only | `0x59` | 1 free. The SGP41's predecessor; same address, so the two cannot share a bus |
+| **Sensirion SHT41** | T, RH | `0x44` | 1 free — **deliberately left on the shelf** as the fleet spare, see above |
 
 ### If CO₂ is wanted after all, the cheap way in
 
@@ -209,8 +243,9 @@ half the SCD41:
   plug-in job. Signals are 3.3 V TTL, so no level shifting is needed, but this must be confirmed
   against the actual module before anything is energised.
 
-*Recommendation: ship the €0 SGP41 + SHT41 build, and treat the MH-Z19C as a later addition if the
-ventilation prompt turns out to be missed.*
+*Recommendation: ship the €0 ENS160 + AHT20 + BME280 build, and treat the MH-Z19C as a later
+addition if the ventilation prompt turns out to be missed. Nothing in the chosen build forecloses
+it — GPIO35 stays free precisely so it can be added without redesigning the pigtail.*
 
 ### Deliberately excluded, with reasons
 
@@ -224,10 +259,10 @@ ventilation prompt turns out to be missed.*
 ### If particulates are non-negotiable
 
 Buy a **Sensirion SEN55** — PM1/2.5/4/10 plus VOC, NOx, T and RH in one I²C part, replacing both
-recommended sensors. It is *more* expensive than the SCD41 this section just dropped, so it only
-makes sense if particulates are the point. Two caveats change the build: it **needs 5 V** (CN1 supplies only
-3.3 V, so it must be tapped off the USB input separately), and it **has a fan**, so G3 is being
-traded away deliberately rather than by accident.
+chosen sensors. It costs substantially more than the SCD41 that D-036 declined on price grounds,
+so it only makes sense if particulates are the point rather than a nice-to-have. Two caveats change
+the build: it **needs 5 V** (CN1 supplies only 3.3 V, so it must be tapped off the USB input
+separately), and it **has a fan**, so G3 is being traded away deliberately rather than by accident.
 
 ## 6. Firmware architecture
 
@@ -239,7 +274,7 @@ firmware/
   include/atmosmesh/
     gift_pins.hpp            CYD pin map + CN1 I2C assignment, one place
     gift_profile.hpp         ProductProfile entry: atmosmesh-gift-v1
-    air_band.hpp             VOC / NOx index -> named band + verdict    [host-tested]
+    air_band.hpp             TVOC / AQI -> named band + verdict wording [host-tested]
     reading_state.hpp        WARMING_UP | OK | STALE | FAULT            [host-tested]
     wifi_credentials.hpp     SSID/PSK validation, NVS record shape      [host-tested]
     provisioning.hpp         the provisioning state machine             [host-tested]
@@ -251,7 +286,7 @@ firmware/
     provisioning.cpp  gift_view_model.cpp  gift_openmeteo.cpp     <- native env
     gift_display.cpp      LovyanGFX panel + LVGL bind      \
     gift_touch.cpp        XPT2046, bit-banged               |
-    gift_sensors.cpp      SGP41 + SHT41 on one I2C bus     |  device only,
+    gift_sensors.cpp      ENS160+AHT20 + BME280, one bus   |  device only,
     gift_nvs_store.cpp    Preferences/NVS                   |  excluded from
     gift_net.cpp          Wi-Fi + NTP + Open-Meteo client   |  the native env
     gift_ui_*.cpp         one file per screen              /
@@ -354,10 +389,10 @@ target; swipe works where touch allows but is never the only way to reach anythi
 │  Living room            ⌂ 21:04    [ wifi ]│
 │                                            │
 │        ╭──────────╮                        │
-│        │    34    │      21.4 °C           │
-│        │   VOC    │      47 % RH           │
+│        │  Clean   │      21.4 °C           │
+│        │          │      47 % RH           │
 │        ╰──────────╯                        │
-│        Air · Clean       NOx  1 · none     │
+│         Air quality     TVOC  120 ppb      │
 │                                            │
 │      Nothing unusual in the air            │
 ├────────────────────────────────────────────┤
@@ -365,14 +400,18 @@ target; swipe works where touch allows but is never the only way to reach anythi
 └────────────────────────────────────────────┘
 ```
 
-- One dominant number in a colour-banded arc, one plain-language verdict underneath
-  (*Clean · Normal · Something in the air · Ventilate*). A gift should be readable by someone who
-  has never heard of a VOC index — the index itself is secondary to the word next to it.
+- **The word is the headline, not the number.** Since the brief says exact measurements are not
+  required, the ENS160's air-quality index is shown as a band word in the arc — *Clean · Normal ·
+  Something in the air · Poor* — with the raw TVOC in small type beside it for anyone who wants it.
+  A gift should be readable by someone who has never heard of a VOC, and a band is a more honest
+  presentation of a self-baselining metal-oxide sensor than a large precise-looking number.
 - **The wording must not overclaim (G5).** With no CO₂ sensor fitted, the verdict describes what
-  the VOC index actually supports — *"nothing unusual in the air"*, *"cooking or cleaning
-  detected"* — and never *"stuffy"* or *"open a window"*, which are ventilation claims only a CO₂
-  measurement earns. If the MH-Z19C option of §5 is ever added, the ventilation verdict comes with
-  it and this line changes.
+  the index actually supports — *"nothing unusual in the air"*, *"cooking or cleaning detected"* —
+  and never *"stuffy"* or *"open a window"*, which are ventilation claims only a CO₂ measurement
+  earns. And the ENS160's `eCO₂` register never reaches this screen at all (§5). If the MH-Z19C
+  option is added later, the ventilation verdict arrives with it and this line changes.
+- **Temperature and humidity come from the BME280, never the AHT20** (§5). The AHT20's numbers are
+  the ENS160's compensation inputs and are not displayed.
 - **The RGB LED is the ambient layer** — a slow, gamma-corrected glow in the current air-quality
   colour, so the room state is legible without looking at the screen at all. This is the detail
   that makes the object feel designed rather than assembled, and the board already has the LED.
@@ -383,7 +422,7 @@ target; swipe works where touch allows but is never the only way to reach anythi
 - **Settings:** Wi-Fi, location, units (°C/°F), theme, brightness, night dimming, Home Assistant.
 
 **Look:** a palette *token table* read at draw time — `base / surface / text / muted` plus one
-accent per quantity (VOC, NOx, temperature, humidity) — with the flavour switchable from Settings,
+accent per quantity (air quality, temperature, humidity, outdoor) — flavour switchable from Settings,
 exactly as nicholaswilde does. Icons compiled as an **LVGL bitmap font** rather than images, so one
 glyph recolours per air-quality band and the whole icon set costs kilobytes instead of megabytes.
 Backlight fades rather than steps, dims on idle, and follows the onboard LDR at night.
@@ -407,12 +446,9 @@ These belong in `agent-context/INBOX.md` as decisions before any part is bought 
 
 1. **Product name.** `Gift` fits the existing one-word-noun family (Room, Spot, Aqua, Grove) and
    states the intent. Alternatives: `Glass`, `Desk`, `Cube`. *Recommended: Gift.*
-2. **Sensor tier.** (A) **SGP41 + SHT41 — €0, both already in stock**, VOC/NOx + accurate
-   climate, no ventilation prompt. (B) ENS160+AHT20 alone — also €0, one module and one cable,
-   weaker climate accuracy, eCO₂ register must stay unused. (C) A + **MH-Z19C** (~€15–25) to buy
-   back the CO₂ ventilation prompt, at the cost of a 5 V tap and a second wire. (D) SEN55 alone,
-   particulates included, fan noise accepted — the most expensive option. *Recommended: A, with C
-   as the upgrade if the ventilation prompt is missed.*
+2. ~~**Sensor tier.**~~ **Answered 2026-09-20 → D-036: ENS160 + AHT20 for gas, BME280 for
+   climate, SHT41 kept as the fleet spare, no CO₂ sensor.** See §5. The MH-Z19C upgrade path stays
+   open and GPIO35 is reserved for it.
 3. **Which CYD.** Use an on-hand `R` (resistive, stylus) unit, or buy a `C` (capacitive) unit for
    the gift and keep the `R` pair for bench work. *Recommended: buy a `C` — see §4.2.*
 4. **Graphics stack.** LVGL 9 + LovyanGFX with runtime panel detection, or LVGL 8 + TFT_eSPI to
@@ -435,7 +471,7 @@ not displace a ready MVP story:
 | GF-03 | Host-tested domain: `air_band`, `reading_state`, `wifi_credentials`, `provisioning`, `gift_view_model` | `task test` green, tests written first |
 | GF-04 | LVGL 9 + LovyanGFX bring-up with runtime panel detection; the Now screen renders from fake readings | Both on-hand units render correctly from one image |
 | GF-05 | Provisioning end to end: wizard, keyboard, test-before-save, inline failure, SetupAP + join QR, forget | A factory-reset unit joins a network with no serial cable touched |
-| GF-06 | SGP41 and SHT41 live, with the four reading states visible on demand | Sensor unplugged mid-run shows FAULT, not a frozen number |
+| GF-06 | ENS160+AHT20 and BME280 live, four reading states visible on demand, `eCO2` unreachable | Sensor unplugged mid-run shows FAULT not a frozen number; a host test proves no path draws `eCO2` |
 | GF-07 | Open-Meteo: geocoding search, forecast, outdoor AQI, NTP clock | Works with no account and no key |
 | GF-08 | Optional MQTT + Home Assistant discovery, off by default | Existing D-007 contract unchanged |
 | GF-09 | Enclosure, self-heating measured against a reference thermometer, offset documented or designed out | §4.1 closed with numbers |
