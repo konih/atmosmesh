@@ -89,6 +89,23 @@ display:
     # ESPHome requires this to be stated explicitly, which is a small mercy: the CYD variants
     # genuinely differ here and a silent default would hide the question the spike is asking.
     invert_colors: false
+    # THE ACTUAL FIX, 2026-09-20. The driver defaulted to 240x320 and therefore only ever wrote
+    # CASET 0..239, leaving 80 of the panel's 320 columns unaddressed. That band stayed in the
+    # same PHYSICAL place while LVGL rotation moved the content over it -- which is why it looked
+    # like "right 25%" at rotation 0 and "top 25%" at rotation 90. A rotation knob can never fix
+    # it; only telling the driver the panel's true width can.
+    dimensions:
+      width: 320
+      height: 240
+    # ...and the panel itself must agree. The driver was writing MADCTL 0x48, i.e. MV=0, so the
+    # controller stayed in its native 240-column portrait addressing and clipped every row at 239
+    # however wide we declared the surface. `swap_xy` sets MV, putting the controller into
+    # 320-column landscape so all 320 columns are actually addressable. Declaring the dimensions
+    # without this just moves the clip; both are needed together.
+    transform:
+      swap_xy: true
+      mirror_x: true
+      mirror_y: false
     spi_id: spi_tft
     cs_pin: GPIO15
     dc_pin: GPIO2
@@ -298,6 +315,13 @@ lvgl:
   #   2. LVGL owns the framebuffer (ESPHome rejects auto_clear with it), so any region the UI
   #      does not paint shows stale GRAM and reads as a hardware fault. Size widgets in %, never
   #      in pixels assumed from a resolution.
+  # SOLVED 2026-09-20, and the two concerns are now cleanly separated:
+  #   * the `display:` block owns PHYSICAL geometry -- 320x240 with swap_xy, so MADCTL is 0x68 and
+  #     all 320 columns are addressable. Confirmed on the bench: full width, no missing strip.
+  #   * this rotation owns CONTENT orientation only. 90 turns the 320x240 surface into a 240x320
+  #     portrait canvas, which is the long-side-vertical the product wants.
+  # Before, rotation was being used to paper over the geometry bug, which is why the unpainted
+  # band just migrated from one edge to another. It could never have worked.
   rotation: 90
   displays:
     - tft
@@ -306,7 +330,7 @@ lvgl:
   # No PSRAM on this ESP32-WROOM-32, so keep the draw buffer modest. If the device crashes or
   # renders in torn bands, lower this first -- and record the value, because it is a direct input
   # to the RAM budget the review says the design is missing.
-  buffer_size: 25%
+  buffer_size: 50%
   pages:
     # --- Page 1: the display test card. Answers Q1. ---
     - id: page_testcard

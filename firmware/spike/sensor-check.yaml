@@ -1,0 +1,62 @@
+# AtmosMesh Aura — sensor bring-up check (THROWAWAY)
+# No display, no LVGL, no Wi-Fi: the fastest possible answer to "is the bus alive and are both
+# parts talking?" Everything here is machine-verifiable from the boot log.
+esphome:
+  name: sensor-check
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+
+i2c:
+  - id: bus_cn1
+    sda: GPIO27
+    scl: GPIO22
+    scan: true
+    frequency: 100kHz
+
+sensor:
+  - platform: bme280_i2c
+    i2c_id: bus_cn1
+    address: 0x76
+    temperature:
+      name: "Temperature"
+      id: bme_temp
+      on_value:
+        then:
+          - logger.log:
+              format: "BME280 TEMP = %.2f C"
+              args: ['x']
+              level: INFO
+    humidity:
+      name: "Humidity"
+      id: bme_hum
+      on_value:
+        then:
+          - logger.log:
+              format: "BME280 HUMIDITY = %.2f %%"
+              args: ['x']
+              level: INFO
+    pressure:
+      name: "Pressure"
+      id: bme_press
+      on_value:
+        then:
+          - logger.log:
+              format: "BME280 PRESSURE = %.2f hPa"
+              args: ['x']
+              level: INFO
+    update_interval: 2s
+
+  # VOC Index needs humidity/temperature compensation to be meaningful; the BME280 is the source,
+  # which is exactly why dropping the ENS160's AHT20 cost us nothing.
+  - platform: sgp4x
+    i2c_id: bus_cn1
+    voc_index:
+      name: "VOC Index"
+      id: voc_idx
+    update_interval: 5s

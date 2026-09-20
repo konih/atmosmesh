@@ -81,6 +81,24 @@ order above.
 | Spot-1 | [SP-01](stories/SP-01.md) | In flight | P3 | — | Carrier built; acceptance tests left: empty-room presence, Room comparison, 24 h Wi-Fi, probe unplug |
 | Spot-2 | [SP-02](stories/SP-02.md) | In flight | P3 | SP-01 | C3 product image on the unit: all sensors, radar distance/state, OLED, MQTT; HA and OLED-orientation checks left |
 
+## AtmosMesh Aura — giftable station (ESPHome, CYD)
+
+Independent of the RLS line. Built on ESPHome after the bring-up spike settled the
+bespoke-vs-ESPHome question on the bench (adversarial review CRITICAL C3).
+
+| Order | Story | Status | Priority | Depends on | Outcome |
+| ---: | --- | --- | --- | --- | --- |
+| Aura-1 | [AU-01](stories/AU-01.md) | Done | P0 | — | Portrait geometry locked: MADCTL 0x28, 240x320, no software rotation |
+| Aura-2 | [AU-02](stories/AU-02.md) | In flight | P0 | AU-01 | CN1 bus proven; SGP41 verified, BME280 verified and awaiting solder |
+| Aura-3 | [AU-03](stories/AU-03.md) | Ready | P0 | AU-02 | Four reading states and the VOC air bands |
+| Aura-4 | [AU-04](stories/AU-04.md) | Ready | P0 | AU-01, AU-03 | The Now screen: portrait, dark, one accent colour |
+| Aura-5 | [AU-05](stories/AU-05.md) | Ready | P0 | AU-01, AU-04 | Wi-Fi set from the touchscreen, captive-portal fallback |
+| Aura-6 | [AU-06](stories/AU-06.md) | Ready | P0 | AU-02, AU-03, AU-04 | Live sensors with honest FAULT behaviour |
+| Aura-7 | [AU-07](stories/AU-07.md) | Ready | P1 | AU-05 | Open-Meteo place search, forecast and clock, no API key |
+| Aura-8 | [AU-08](stories/AU-08.md) | Ready | P2 | AU-06 | Optional MQTT and HA discovery, off by default |
+| Aura-9 | [AU-09](stories/AU-09.md) | Ready | P1 | AU-06 | Self-heating measured, not fudged |
+| Aura-10 | [AU-10](stories/AU-10.md) | Ready | P0 | AU-01…AU-09 | 48-hour unattended run and the handover card |
+
 ## Milestones
 
 ### M1 — Hardware approved

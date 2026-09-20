@@ -1,0 +1,83 @@
+# AtmosMesh Aura — display geometry probe (THROWAWAY)
+#
+# Purpose: determine, unambiguously and with no LVGL in the way, how the CYD panel's memory
+# maps to its glass. Every previous attempt confounded three variables at once — the driver's
+# declared dimensions, the MADCTL transform, and LVGL's software rotation. This config removes
+# the last of those and draws shapes whose identity fixes their position.
+#
+# Runs in 8-bit GRAYSCALE so the full framebuffer (320*240 = 76,800 B) fits in DRAM. A 16-bit
+# buffer would be 153,600 B and will not allocate on a no-PSRAM WROOM-32.
+#
+# Delete this file once docs/hardware/inventory.md records the answer.
+
+esphome:
+  name: geometry-probe
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+
+spi:
+  - id: spi_tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+    frequency: 20000Hz
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    id: backlight
+    restore_mode: ALWAYS_ON
+
+display:
+  - platform: ili9xxx
+    id: tft
+    model: ILI9341
+    invert_colors: false
+    spi_id: spi_tft
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    # 8-bit buffer: the whole point, so a full-frame non-LVGL draw fits in RAM.
+    color_palette: GRAYSCALE
+    # THE UNTRIED CELL. Every prior 320-wide surface was paired with swap_xy:true. If the panel
+    # is addressable as 320 columns with MV=0, this covers the glass and the markers land square.
+    dimensions:
+      width: 240
+      height: 320
+    transform:
+      swap_xy: true
+      mirror_x: false
+      mirror_y: false
+    update_interval: 2s
+    # Marker alphabet. Each shape is distinguishable from every other by SHAPE ALONE, so the
+    # observer can name what they see without having to trust any assumption about orientation:
+    #
+    #   long horizontal bar  -> origin (0,0)
+    #   tall vertical bar    -> far end of the X axis
+    #   small square         -> far end of the Y axis
+    #   nothing              -> the opposite corner
+    #
+    # The diagonal runs origin -> opposite corner, so a shear or a wrap shows up as a broken or
+    # repeated line rather than a straight one. A wrapped write is the failure mode that could
+    # masquerade as "full coverage", which is exactly what this has to rule out.
+    lambda: |-
+      const int w = it.get_width();
+      const int h = it.get_height();
+      it.fill(Color::BLACK);
+      it.rectangle(0, 0, w, h, Color::WHITE);
+      it.rectangle(1, 1, w - 2, h - 2, Color::WHITE);
+      it.filled_rectangle(0, 0, 80, 20, Color::WHITE);          // origin
+      it.filled_rectangle(w - 20, 0, 20, 80, Color::WHITE);     // far X
+      it.filled_rectangle(0, h - 25, 25, 25, Color::WHITE);     // far Y
+      it.line(0, 0, w - 1, h - 1, Color::WHITE);                // shear/wrap detector
+      it.line(0, h / 2, w - 1, h / 2, Color::WHITE);            // horizontal midline

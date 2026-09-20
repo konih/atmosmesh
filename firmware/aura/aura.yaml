@@ -1,0 +1,364 @@
+# AtmosMesh Aura — giftable air-quality station (AU-01 … AU-06)
+#
+# Sunton ESP32-2432S028 "Cheap Yellow Display", portrait 240x320.
+# Sensors on CN1: SGP41 @ 0x59 (VOC + NOx Index), BME280 @ 0x76 (temperature, humidity, pressure).
+#
+# Design rules this file is holding up:
+#   G4  — everything on the Now screen renders with no network at all.
+#   D-002 as amended by D-036 — no eCO2, no ppm, no CO2 anywhere. VOC Index is the air number.
+#   AU-01 — orientation comes from `transform:` ONLY. Never LVGL `rotation:` (it rotates in
+#           software for this driver and the flush path stretches the image).
+
+substitutions:
+  device_id: atmosmesh-aura-0001
+  friendly: Aura
+
+  # --- palette (AU-04). One accent at a time, taken from the current air band. -----------------
+  col_bg: "0x0B1220"
+  col_surface: "0x151E2E"
+  col_text: "0xE9EEF7"
+  col_dim: "0x8899AE"
+  col_fresh: "0x4ADE80"
+  col_fine: "0x38BDF8"
+  col_stuffy: "0xFBBF24"
+  col_alert: "0xF87171"
+  col_unknown: "0x64748B"
+
+esphome:
+  name: ${device_id}
+  friendly_name: ${friendly}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+  # The boot log asks for this explicitly; rev 3.1 was read off this silicon in AU-01.
+  # Smaller image, which matters because AU-07 still has to fit TLS in the same OTA slot.
+  variant: esp32
+
+logger:
+  level: DEBUG
+
+# --------------------------------------------------------------------------------------------
+# AU-02 — the sensor bus. Four wires on CN1, nothing else fits: the CYD leaves only GPIO22,
+# GPIO27 and the input-only GPIO35 free, so every sensor on this product must be I2C.
+# --------------------------------------------------------------------------------------------
+i2c:
+  - id: bus_cn1
+    sda: GPIO27
+    scl: GPIO22
+    scan: true
+    frequency: 100kHz
+
+spi:
+  - id: spi_tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+  - id: spi_touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+# --------------------------------------------------------------------------------------------
+# AU-01 — display geometry, settled on the bench after five wrong theories.
+# MADCTL 0x28. `swap_xy` is what puts the controller into the addressing mode where all
+# 240x320 pixels are reachable; declaring the dimensions alone does not.
+# --------------------------------------------------------------------------------------------
+display:
+  - platform: ili9xxx
+    id: tft
+    model: ILI9341
+    invert_colors: false
+    spi_id: spi_tft
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    dimensions:
+      width: 240
+      height: 320
+    transform:
+      swap_xy: true
+      mirror_x: false
+      mirror_y: false
+    auto_clear_enabled: false
+    update_interval: never
+
+touchscreen:
+  - platform: xpt2046
+    id: touch
+    spi_id: spi_touch
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    update_interval: 50ms
+    threshold: 400
+    calibration:
+      x_min: 280
+      x_max: 3860
+      y_min: 340
+      y_max: 3860
+    transform:
+      swap_xy: true
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+    frequency: 20000Hz
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    id: backlight
+    name: Backlight
+    restore_mode: ALWAYS_ON
+    default_transition_length: 400ms
+
+# --------------------------------------------------------------------------------------------
+# AU-06 — the readings.
+# --------------------------------------------------------------------------------------------
+sensor:
+  - platform: bme280_i2c
+    i2c_id: bus_cn1
+    address: 0x76
+    update_interval: 5s
+    temperature:
+      id: room_temp
+      name: Temperature
+      on_value:
+        - lvgl.label.update:
+            id: lbl_temp
+            text: !lambda 'return str_sprintf("%.1f°", x);'
+    humidity:
+      id: room_hum
+      name: Humidity
+      on_value:
+        - lvgl.label.update:
+            id: lbl_hum
+            text: !lambda 'return str_sprintf("%.0f%%", x);'
+    pressure:
+      id: room_press
+      name: Pressure
+      on_value:
+        - lvgl.label.update:
+            id: lbl_press
+            text: !lambda 'return str_sprintf("%.0f hPa", x);'
+
+  # The SGP41's index is relative to what this room is normally like. `store_baseline` keeps that
+  # learning across a power cut, which is the difference between a gift that is useful on day one
+  # and one that spends every reboot pretending it has never smelled anything.
+  - platform: sgp4x
+    i2c_id: bus_cn1
+    address: 0x59
+    update_interval: 5s
+    store_baseline: true
+    compensation:
+      humidity_source: room_hum
+      temperature_source: room_temp
+    voc_index:
+      id: voc
+      name: VOC Index
+      on_value:
+        - script.execute: render_air
+    nox_index:
+      id: nox
+      name: NOx Index
+      on_value:
+        - lvgl.label.update:
+            id: lbl_nox
+            text: !lambda 'return "NOx " + to_string((int) x);'
+
+  # AU-04 — night dimming. Sampled slowly and deliberately: ESP32 errata 3.11 briefly pulls
+  # GPIO36/39 low when ADC1 is read, and those are the touch IRQ and touch MISO. Once a minute
+  # makes a phantom tap unlikely; once a second would not.
+  - platform: adc
+    pin: GPIO34
+    id: ldr
+    update_interval: 60s
+    attenuation: 12db
+    internal: true
+    filters:
+      - median:
+          window_size: 3
+    on_value:
+      - light.turn_on:
+          id: backlight
+          brightness: !lambda |-
+            // Bright room -> low voltage on this divider. Clamp hard: a gift must never go dark.
+            float b = 1.0f - ((x - 0.15f) / 2.0f);
+            if (b < 0.25f) b = 0.25f;
+            if (b > 1.0f) b = 1.0f;
+            return b;
+
+# --------------------------------------------------------------------------------------------
+# AU-03 — the air bands, and the WARMING state that stops a stabilising zero reading as
+# "perfect air". This script owns every pixel that changes colour.
+# --------------------------------------------------------------------------------------------
+script:
+  - id: render_air
+    mode: restart
+    then:
+      - lambda: |-
+          const bool have = id(voc).has_state() && !std::isnan(id(voc).state);
+          const int v = have ? (int) id(voc).state : 0;
+
+          // The SGP41 emits 0 for its first ~90 samples while the hotplate stabilises.
+          // Zero is not a measurement; showing it would invert the meaning.
+          const bool warming = !have || v <= 0;
+
+          const char *word;
+          lv_color_t accent;
+          if (warming)        { word = "SETTLING";      accent = lv_color_hex(${col_unknown}); }
+          else if (v < 80)    { word = "FRESH";         accent = lv_color_hex(${col_fresh});   }
+          else if (v < 150)   { word = "FINE";          accent = lv_color_hex(${col_fine});    }
+          else if (v < 250)   { word = "STUFFY";        accent = lv_color_hex(${col_stuffy});  }
+          else                { word = "OPEN A WINDOW"; accent = lv_color_hex(${col_alert});   }
+
+          lv_label_set_text(id(lbl_voc), warming ? "--" : to_string(v).c_str());
+          lv_label_set_text(id(lbl_band), word);
+          lv_obj_set_style_text_color(id(lbl_band), accent, LV_PART_MAIN);
+          lv_obj_set_style_text_color(id(lbl_voc), accent, LV_PART_MAIN);
+          lv_obj_set_style_arc_color(id(voc_arc), accent, LV_PART_INDICATOR);
+          lv_arc_set_value(id(voc_arc), warming ? 0 : v);
+
+# --------------------------------------------------------------------------------------------
+# AU-04 — the Now screen.
+# --------------------------------------------------------------------------------------------
+lvgl:
+  displays:
+    - tft
+  touchscreens:
+    - touch
+  buffer_size: 50%
+  default_font: montserrat_16
+  # NOTE: no `rotation:` here, and there must never be one. See AU-01.
+  style_definitions:
+    - id: card
+      bg_color: ${col_surface}
+      bg_opa: cover
+      radius: 16
+      border_width: 0
+      pad_all: 12
+      text_color: ${col_text}
+    - id: caption
+      text_color: ${col_dim}
+      text_font: montserrat_14
+
+  pages:
+    - id: page_now
+      bg_color: ${col_bg}
+      bg_opa: cover
+      widgets:
+        # --- status strip ---------------------------------------------------------------------
+        - label:
+            id: lbl_place
+            x: 14
+            y: 10
+            text: "AURA"
+            text_color: ${col_dim}
+            text_font: montserrat_14
+        - label:
+            id: lbl_clock
+            x: 150
+            y: 10
+            width: 80
+            text: ""
+            text_align: RIGHT
+            text_color: ${col_dim}
+            text_font: montserrat_14
+
+        # --- the hero: VOC Index --------------------------------------------------------------
+        - arc:
+            id: voc_arc
+            x: 30
+            y: 36
+            width: 180
+            height: 180
+            min_value: 0
+            max_value: 250
+            value: 0
+            arc_width: 12
+            adjustable: false
+            bg_color: ${col_surface}
+            indicator:
+              arc_color: ${col_unknown}
+              arc_width: 12
+            knob:
+              bg_opa: TRANSP
+        - label:
+            id: lbl_voc
+            x: 30
+            y: 100
+            width: 180
+            text: "--"
+            text_align: CENTER
+            text_color: ${col_unknown}
+            text_font: montserrat_48
+        - label:
+            id: lbl_voc_cap
+            x: 30
+            y: 150
+            width: 180
+            text: "voc index"
+            text_align: CENTER
+            styles: caption
+        - label:
+            id: lbl_band
+            x: 20
+            y: 222
+            width: 200
+            text: "SETTLING"
+            text_align: CENTER
+            text_color: ${col_unknown}
+            text_font: montserrat_20
+
+        # --- two tiles ------------------------------------------------------------------------
+        - obj:
+            id: tile_temp
+            x: 12
+            y: 252
+            width: 106
+            height: 56
+            styles: card
+            widgets:
+              - label:
+                  id: lbl_temp
+                  align: TOP_LEFT
+                  text: "--"
+                  text_font: montserrat_28
+              - label:
+                  align: BOTTOM_LEFT
+                  text: "temperature"
+                  styles: caption
+        - obj:
+            id: tile_hum
+            x: 122
+            y: 252
+            width: 106
+            height: 56
+            styles: card
+            widgets:
+              - label:
+                  id: lbl_hum
+                  align: TOP_LEFT
+                  text: "--"
+                  text_font: montserrat_28
+              - label:
+                  align: BOTTOM_LEFT
+                  text: "humidity"
+                  styles: caption
+
+        # --- quiet secondary row --------------------------------------------------------------
+        - label:
+            id: lbl_press
+            x: 14
+            y: 300
+            text: "-- hPa"
+            styles: caption
+        - label:
+            id: lbl_nox
+            x: 150
+            y: 300
+            width: 80
+            text: "NOx --"
+            text_align: RIGHT
+            styles: caption
