@@ -29,9 +29,9 @@ The **baffle** between the two chambers blocks radiant heat from the board. Moun
 
 | File (in `out/`) | Print orientation | Notes |
 | --- | --- | --- |
-| `aura_front.3mf` | Front face on the bed (already oriented) | 3 parts: body, accent ring, "AURA" wordmark. The inlays are 0.6 mm deep, so colour changes only happen in the first 3 layers |
+| `aura_front.3mf` | Front face on the bed (already oriented) | 3 parts: body, accent ring, "AtmosMesh Aura" wordmark. The inlays are 0.6 mm deep, so colour changes only happen in the first 3 layers |
 | `aura_baffle.3mf` | Flat, standoffs up | Its 2 mm edge shows as an accent stripe at the seam, so print it in the accent colour |
-| `aura_rear.3mf` | Back face on the bed | 2 parts: body and the translucent "halo" window over the CYD's RGB LED |
+| `aura_rear.3mf` | Back face on the bed | 3 parts: body, the translucent "halo" window over the CYD's RGB LED, and the "Made by Konrad Heimel / 2026-09-25" inlay (accent colour, first 3 layers) |
 | `aura_cradle.3mf` | Ground face down | Plain single colour. U-shaped, so no supports are needed |
 
 `*.step` files are the same parts in assembled position (plus board stand-ins, for checking the fit
@@ -40,6 +40,7 @@ in any CAD tool). `*.stl` files are the individual bodies, in print orientation.
 **Bambu Studio (P2S + AMS).** Open each 3MF. It loads as one object with several parts. In the
 Objects list, give each part a filament. Suggested scheme: body in matte charcoal, ring, wordmark
 and baffle in amber/gold, halo in translucent or natural PETG/PLA, cradle in warm grey or wood PLA.
+The lettering is 3–4 mm tall, which a standard 0.4 mm nozzle handles. Print the first layer slowly so it stays crisp.
 Settings: 0.2 mm layers, 3 walls, 15 % gyroid infill, no supports. A textured PEI plate gives the
 front face a nice finish.
 
@@ -86,6 +87,13 @@ Each is a named constant at the top of `aura_case.py`.
 **Recommended first print:** in Bambu Studio, cut the front part 8 mm above the bed (Cut tool) and
 print only the lower piece. That takes about 20 minutes and checks the window, LDR hole, CYD bosses
 and USB opening before you commit to the full set.
+
+## Lettering
+
+Front chin: `WORDMARK`. Back plate: `MAKER_LINE` and `DATE_LINE`. All three are constants at the
+top of `aura_case.py`. The date is the build date, so change it when you print a new one.
+
+![back lettering](previews/back_lettering.jpg)
 
 ## Regenerate
 

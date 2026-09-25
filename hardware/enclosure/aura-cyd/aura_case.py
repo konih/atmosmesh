@@ -32,6 +32,7 @@ from build123d import (
     Rectangle,
     RectangleRounded,
     Rot,
+    FontStyle,
     Text,
     export_step,
     export_stl,
@@ -79,6 +80,12 @@ M3_CLEAR = 3.4
 M3_HEAD_D, M3_HEAD_H = 6.2, 3.0
 M2_PILOT = 1.7
 SCREW_Z_INSET = 10.0  # case screws: distance from top/bottom outer faces
+
+# ----------------------------------------------------------------- lettering
+WORDMARK = "AtmosMesh Aura"  # front chin (product name, D-037)
+MAKER_LINE = "Made by Konrad Heimel"  # back plate
+DATE_LINE = "2026-09-25"
+INLAY_DEPTH = 0.6
 
 # ------------------------------------------------------------------ cradle
 TILT_DEG = 8.0  # lean back; 0 = bolt upright
@@ -207,7 +214,7 @@ def make_front():
 
 def make_front_inlay():
     """Accent ring around the window + wordmark, 0.6 mm deep in the front face."""
-    depth = 0.6
+    depth = INLAY_DEPTH
     ring_off = FRONT_T + 1.8
     ring = extrude(
         front_plane(depth) * Pos(CX, WIN_CZ) * RectangleRounded(
@@ -222,7 +229,7 @@ def make_front_inlay():
     )
     chin_top = WIN_CZ - WIN_L / 2 - ring_off - 1.2
     chin_mid = (SOCKET_H + chin_top) / 2
-    txt = Text("AURA", font_size=5.0, align=(Align.CENTER, Align.CENTER))
+    txt = Text(WORDMARK, font_size=4.2, font_style=FontStyle.BOLD, align=(Align.CENTER, Align.CENTER))
     word = extrude(front_plane(depth) * Pos(CX, chin_mid) * txt, amount=depth)
     return ring, word
 
@@ -278,6 +285,24 @@ def make_rear():
             body -= box(CX - 16 + PB_X_OFF, CX + 16 + PB_X_OFF, Y3 - 0.1, D + 0.1, z - 1, z + 1)
     # halo window pockets (filled by the translucent inlay)
     return body
+
+
+def back_plane(y: float) -> Plane:
+    """Sketch plane on the back face: reads correctly from behind, normal +Y."""
+    return Plane(origin=(0, y, 0), x_dir=(-1, 0, 0), z_dir=(0, 1, 0))
+
+
+def make_back_text():
+    """Maker line and date, inlaid in the back plate between lower grille and halo."""
+    d = INLAY_DEPTH
+    lines = ((MAKER_LINE, 3.4, 44.0), (DATE_LINE, 3.0, 38.5))
+    out = None
+    for text, size, z in lines:
+        t = Text(text, font_size=size, font_style=FontStyle.BOLD, align=(Align.CENTER, Align.CENTER))
+        # back_plane local x runs along -X, so the case centre is at local x = -CX
+        solid = extrude(back_plane(D - d) * Pos(-CX, z) * t, amount=d)
+        out = solid if out is None else out + solid
+    return out
 
 
 def make_halo():
@@ -385,6 +410,14 @@ def tilt(shape, h_back):
     return shape.rotate(Axis((0, y_back, -h_back), (1, 0, 0)), -TILT_DEG)
 
 
+PRINT_GROUPS = {
+    "aura_front.3mf": ("front_body", "front_accent_ring", "front_accent_text"),
+    "aura_rear.3mf": ("rear_body", "rear_halo_translucent", "rear_accent_text"),
+    "aura_baffle.3mf": ("baffle",),
+    "aura_cradle.3mf": ("cradle",),
+}
+
+
 def main():
     out = Path(__file__).parent / "out"
     out.mkdir(exist_ok=True)
@@ -395,7 +428,8 @@ def main():
     baffle = make_baffle()
     rear = make_rear()
     halo = make_halo()
-    rear = rear - halo
+    back_text = make_back_text()
+    rear = rear - halo - back_text
     cradle, h_back = make_cradle()
 
     parts = {
@@ -405,6 +439,7 @@ def main():
         "baffle": baffle,
         "rear_body": rear,
         "rear_halo_translucent": halo,
+        "rear_accent_text": back_text,
         "cradle": cradle,
     }
 
@@ -422,26 +457,18 @@ def main():
         "baffle": face_down * baffle,
         "rear_body": back_down * rear,
         "rear_halo_translucent": back_down * halo,
+        "rear_accent_text": back_down * back_text,
         "cradle": tilt(cradle, h_back),
     }
-    for name, p in printable.items():
-        bb = p.bounding_box()
-        printable[name] = Pos(0, 0, -bb.min.Z) * p
-    # keep multi-colour groups on a shared origin so they import as one object
-    for group in (("front_body", "front_accent_ring", "front_accent_text"),
-                  ("rear_body", "rear_halo_translucent")):
+    # drop each print group onto the bed together, so multi-colour parts stay aligned
+    for group in PRINT_GROUPS.values():
         z0 = min(printable[g].bounding_box().min.Z for g in group)
         for g in group:
             printable[g] = Pos(0, 0, -z0) * printable[g]
     for name, p in printable.items():
         export_stl(p, str(out / f"{name}.stl"), tolerance=0.02, angular_tolerance=0.15)
 
-    for fname, group in (
-        ("aura_front.3mf", ("front_body", "front_accent_ring", "front_accent_text")),
-        ("aura_rear.3mf", ("rear_body", "rear_halo_translucent")),
-        ("aura_baffle.3mf", ("baffle",)),
-        ("aura_cradle.3mf", ("cradle",)),
-    ):
+    for fname, group in PRINT_GROUPS.items():
         write_3mf(out / fname, {g: printable[g] for g in group})
 
     print(f"outer W x H x D = {W:.1f} x {H:.1f} x {D:.1f} mm, cradle back height {h_back:.1f} mm")
