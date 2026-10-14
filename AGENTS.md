@@ -38,11 +38,26 @@ well-labelled measurements to a Kubernetes-hosted home-automation stack.
 | Acceptance contract | `agent-context/stories/RLS-*.md` |
 | Decisions and open questions | `agent-context/decisions.md` |
 | Confirmed hardware facts | `docs/hardware/inventory.md` |
+| Part-name spellings (dictation) | `docs/hardware/glossary.md` |
 | Power architecture | `docs/hardware/power.md` |
 | Manufacturer datasheets / spec comparison | `docs/hardware/datasheets/`, `docs/hardware/spec-comparison.md` |
 | System boundaries | `docs/architecture.md` |
 
 If documents disagree, stop and reconcile them. Electrical safety rules above always win.
+
+## Dictated inventory updates
+
+The operator often dictates inventory batches; speech recognition mangles part numbers.
+
+- Resolve every dictated part name against `docs/hardware/glossary.md` and the existing
+  `docs/hardware/inventory.md` entries before writing. Check for an existing entry first, so the
+  operator does not have to ask "is it already in?".
+- After each batch, print a table `part · qty · confidence · new/existing` and wait for the
+  operator's OK before editing any file. An ambiguous name gets a question, never a guess.
+- A new mis-hearing that the operator corrects goes into the glossary in the same commit.
+- Photos: evaluate them and record what they show; keep one in `docs/assets/` only when the operator
+  asks for it, otherwise delete it after documenting. Never transcribe a dictated credential;
+  ask for a vault reference instead.
 
 ## Repository map
 
